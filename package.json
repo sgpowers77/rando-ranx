@@ -8,7 +8,7 @@
     "build-movies-index": "node scripts/build-movies-index.mjs",
     "prebuild": "node scripts/build-movies-index.mjs",
     "build": "next build",
-    "export:pages": "npm run build-movies-index && GITHUB_PAGES=true NEXT_PUBLIC_BASE_PATH=/rando-ranx next build",
+    "export:pages": "npm run build-movies-index && GITHUB_PAGES=true NEXT_PUBLIC_BASE_PATH=/rando-ranx next build && touch out/.nojekyll",
     "start": "next start --port 43147 --hostname 127.0.0.1",
     "lint": "eslint"
   },
