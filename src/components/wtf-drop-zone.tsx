@@ -16,18 +16,30 @@ export function WtfDropZone({
       role="button"
       tabIndex={0}
       aria-label="WTF drop zone. Drop a title card for a short description."
-      onDragOver={(event) => {
+      onDragEnter={(event) => {
         event.preventDefault();
         onArmed(true);
       }}
-      onDragLeave={() => onArmed(false)}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+        onArmed(true);
+      }}
+      onDragLeave={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget as Node)) return;
+        onArmed(false);
+      }}
       onDrop={(event) => {
         event.preventDefault();
-        const raw = event.dataTransfer.getData(TITLE_DRAG_TYPE) || event.dataTransfer.getData("text/plain");
+        event.stopPropagation();
+        const raw =
+          event.dataTransfer.getData("text/plain") ||
+          event.dataTransfer.getData(TITLE_DRAG_TYPE) ||
+          "";
         onArmed(false);
-        if (raw) onDropId(raw);
+        onDropId(raw);
       }}
-      className={`fixed bottom-6 left-1/2 z-40 w-[min(20rem,calc(100%-2rem))] -translate-x-1/2 rounded-2xl border-2 border-dashed px-6 py-5 text-center shadow-lg ${
+      className={`fixed bottom-6 left-1/2 z-50 w-[min(20rem,calc(100%-2rem))] -translate-x-1/2 rounded-2xl border-2 border-dashed px-6 py-5 text-center shadow-lg [&>*]:pointer-events-none ${
         armed
           ? "border-primary bg-primary/20 text-foreground"
           : "border-amber-200/70 bg-background/95 text-amber-100"

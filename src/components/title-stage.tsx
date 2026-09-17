@@ -65,7 +65,9 @@ export function TitleStage({
           event.dataTransfer.effectAllowed = "copy";
           setDragging(true);
         }}
-        onDragEnd={endDrag}
+        onDragEnd={() => {
+          requestAnimationFrame(endDrag);
+        }}
       >
         <CardHeader className="gap-3">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -153,9 +155,9 @@ export function TitleStage({
         <WtfDropZone
           armed={dropArmed}
           onArmed={setDropArmed}
-          onDropId={(id) => {
+          onDropId={() => {
             endDrag();
-            if (id === title.id) setWtfOpen(true);
+            setWtfOpen(true);
           }}
         />
       ) : null}

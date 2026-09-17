@@ -84,7 +84,9 @@ export function TourneyStage({
             setNotes((prev) => ({ ...prev, [left.id]: { rating, comments } }))
           }
           onDragBegin={() => setDragging(true)}
-          onDragEnd={endDrag}
+          onDragEnd={() => {
+            requestAnimationFrame(endDrag);
+          }}
         />
         <MatchupCard
           title={right}
@@ -97,7 +99,9 @@ export function TourneyStage({
             setNotes((prev) => ({ ...prev, [right.id]: { rating, comments } }))
           }
           onDragBegin={() => setDragging(true)}
-          onDragEnd={endDrag}
+          onDragEnd={() => {
+            requestAnimationFrame(endDrag);
+          }}
         />
       </div>
       <div className="space-y-2 pt-1">
