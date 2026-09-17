@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { decadeOf } from "@/lib/filters";
 import type { CatalogTitle } from "@/lib/types";
+import { Shuffle } from "lucide-react";
 import { useRef, useState } from "react";
 
 type TourneyStageProps = {
@@ -19,6 +20,7 @@ type TourneyStageProps = {
   onComplete: (extras?: { rating?: number; comments?: string }) => void;
   onSkipScoringChange: (skip: boolean) => void;
   onWatchlist: (title: CatalogTitle) => void;
+  onReshufflePair: () => void;
 };
 
 const DRAG_TYPE = "application/x-randoranx-title";
@@ -32,6 +34,7 @@ export function TourneyStage({
   onComplete,
   onSkipScoringChange,
   onWatchlist,
+  onReshufflePair,
 }: TourneyStageProps) {
   const [left, right] = pair;
   const medium = left.medium;
@@ -139,6 +142,21 @@ export function TourneyStage({
           onDragBegin={() => setDragging(true)}
           onDragEnd={endDrag}
         />
+      </div>
+      <div className="space-y-2 pt-1">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full gap-2 text-base"
+          onClick={onReshufflePair}
+        >
+          <Shuffle className="size-4" />
+          Reshuffle
+        </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          Skip both titles without picking a winner and deal a new pair. They will not show up again
+          right away.
+        </p>
       </div>
 
       {dragging ? (

@@ -13,6 +13,7 @@ import {
   getSessionSnapshot,
   mergeLiveTitles,
   rememberShown,
+  skipTourneyPair,
   subscribeSession,
   usedTitleIds,
   withDealtQueue,
@@ -85,21 +86,24 @@ export function useRandoRanx() {
     writeSession(updater(getSessionSnapshot()));
   }, []);
 
-  const refreshPool = useCallback(async () => {
+  const refreshPool = useCallback(async (opts?: { silent?: boolean }) => {
     const snapshot = getSessionSnapshot();
     if (!snapshot.medium || !snapshot.playMode || fetching.current) return;
     fetching.current = true;
-    setPoolStatus("loading");
-    setPoolError(null);
+    if (!opts?.silent) {
+      setPoolStatus("loading");
+      setPoolError(null);
+    }
     try {
       const filters = filtersFor(snapshot, snapshot.medium, snapshot.playMode);
+      const recent = snapshot.recentlyShown?.[snapshot.medium] ?? [];
       const res = await fetch("/api/title-pool", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           medium: snapshot.medium,
           filters,
-          excludeIds: [...usedTitleIds(snapshot, snapshot.medium)],
+          excludeIds: [...usedTitleIds(snapshot, snapshot.medium), ...recent],
           limit: snapshot.playMode === "tourney" ? 40 : 36,
         }),
       });
@@ -115,6 +119,13 @@ export function useRandoRanx() {
         if (!prev.medium || !prev.playMode) return prev;
         const liveTitles = mergeLiveTitles(prev.liveTitles ?? [], titles);
         const next: StoredSession = { ...prev, liveTitles, pendingTourney: null };
+        if (
+          opts?.silent &&
+          prev.playMode === "tourney" &&
+          (prev.remainingIds[prev.medium]?.length ?? 0) >= 2
+        ) {
+          return next;
+        }
         return withDealtQueue(next, prev.medium, prev.playMode);
       });
       if (!res.ok || data.error) {
@@ -314,6 +325,11 @@ export function useRandoRanx() {
     });
   }, [persist]);
 
+  const skipTourneyMatchup = useCallback(() => {
+    persist((prev) => skipTourneyPair(prev));
+    void refreshPool({ silent: true });
+  }, [persist, refreshPool]);
+
   const reshuffleMedium = useCallback(() => {
     void refreshPool();
   }, [refreshPool]);
@@ -370,6 +386,7 @@ export function useRandoRanx() {
     addWatchTag,
     updateResponse,
     reshuffleMedium,
+    skipTourneyMatchup,
     clearSession,
     dismissError: dismissHydrateError,
   };

@@ -69,6 +69,22 @@ export function rememberShown(session: StoredSession, medium: Medium, ids: strin
   return next.slice(-RECENT_CAP);
 }
 
+export function skipTourneyPair(session: StoredSession): StoredSession {
+  if (!session.medium || session.playMode !== "tourney") return session;
+  const pairIds = session.remainingIds[session.medium].slice(0, 2);
+  if (pairIds.length === 0) return session;
+  const marked: StoredSession = {
+    ...session,
+    pendingTourney: null,
+    recentlyShown: {
+      movie: session.recentlyShown?.movie ?? [],
+      game: session.recentlyShown?.game ?? [],
+      [session.medium]: rememberShown(session, session.medium, pairIds),
+    },
+  };
+  return withDealtQueue(marked, session.medium, "tourney");
+}
+
 export function withDealtQueue(
   session: StoredSession,
   medium: Medium,

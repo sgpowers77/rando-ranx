@@ -45,6 +45,7 @@ export function RandoRanxApp() {
     addWatchTag,
     updateResponse,
     reshuffleMedium,
+    skipTourneyMatchup,
     clearSession,
     dismissError,
   } = useRandoRanx();
@@ -224,6 +225,7 @@ export function RandoRanxApp() {
                 onComplete={completeTourneyRound}
                 onSkipScoringChange={setSkipTourneyScoring}
                 onWatchlist={addWatchTag}
+                onReshufflePair={skipTourneyMatchup}
               />
               <TitleSearch medium={tourneyPair[0].medium} onUse={useSearchedTitle} />
             </div>
