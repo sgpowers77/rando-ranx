@@ -64,6 +64,7 @@ function WtfBody({
       year: String(title.year),
       medium: title.medium,
     });
+    if (title.imdbId) params.set("imdb", title.imdbId);
     fetch(`/api/title-blurb?${params}`, { signal: controller.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error("blurb failed");

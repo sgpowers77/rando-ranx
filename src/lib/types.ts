@@ -11,7 +11,8 @@ export type CatalogTitle = {
   year: number;
   genres: string[];
   obscurity: 1 | 2 | 3 | 4 | 5;
-  source?: "catalog" | "search";
+  source?: "catalog" | "search" | "dataset";
+  imdbId?: string;
 };
 
 export type PathFilters = {
@@ -71,4 +72,5 @@ export type StoredSession = {
   pathFilters: Partial<Record<PathKey, PathFilters>>;
   recentlyShown: Record<Medium, string[]>;
   releaseYears: Record<string, number>;
+  liveTitles: CatalogTitle[];
 };

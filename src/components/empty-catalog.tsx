@@ -9,6 +9,8 @@ type EmptyCatalogProps = {
   playMode: PlayMode;
   leftoverTitle: string | null;
   filterEmpty?: boolean;
+  poolError?: string | null;
+  poolSource?: string;
   onHome: () => void;
   onChangeMode: () => void;
   onReshuffle: () => void;
@@ -19,11 +21,35 @@ export function EmptyCatalog({
   playMode,
   leftoverTitle,
   filterEmpty,
+  poolError,
+  poolSource,
   onHome,
   onChangeMode,
   onReshuffle,
 }: EmptyCatalogProps) {
   const noun = medium === "movie" ? "movies" : "games";
+
+  if (poolError) {
+    return (
+      <Card className="border-none bg-card/80 ring-1 ring-white/10">
+        <CardHeader>
+          <CardTitle className="font-heading text-2xl">Could not load the live catalog</CardTitle>
+          <CardDescription>
+            {poolError} Rank still works from a small local fallback if the Kaggle movies file is
+            missing. Drop movies_metadata.csv into data/ or retry the fetch.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button type="button" onClick={onReshuffle} className="h-11">
+            Retry live catalog
+          </Button>
+          <Button type="button" variant="outline" onClick={onChangeMode} className="h-11">
+            Rank or Tourney
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (filterEmpty) {
     return (
@@ -32,8 +58,8 @@ export function EmptyCatalog({
           <CardTitle className="font-heading text-2xl">Nothing matches these filters</CardTitle>
           <CardDescription>
             No {noun} in the current stack sit in the decades, genres, and obscurity levels you
-            checked. Open Path settings and include at least one decade — unchecked decades stay
-            out of Rank and Tourney.
+            checked. Open Path settings and include at least one decade. Movie years and genres come
+            from The Movies Dataset (release_date, genres, vote/popularity).
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -63,7 +89,7 @@ export function EmptyCatalog({
             Rank or Tourney
           </Button>
           <Button type="button" variant="outline" onClick={onReshuffle} className="h-11">
-            Deal leftover titles
+            Deal more titles
           </Button>
         </CardContent>
       </Card>
@@ -75,9 +101,9 @@ export function EmptyCatalog({
       <CardHeader>
         <CardTitle className="font-heading text-2xl">You worked through this stack</CardTitle>
         <CardDescription>
-          Every {noun.slice(0, -1)} in the current {noun} catalog already has a result or a Discard
-          entry. Switch catalogs, change mode, or reshuffle only unused titles if that should not be
-          true.
+          Every {noun.slice(0, -1)} in this deal already has a result or a Discard entry. Fetch
+          another sample from the {poolSource === "dataset" ? "movies dataset" : medium === "movie" ? "movies dataset" : "games list"}, switch
+          catalogs, or change filters.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -88,7 +114,7 @@ export function EmptyCatalog({
           Rank or Tourney
         </Button>
         <Button type="button" variant="outline" onClick={onReshuffle} className="h-11">
-          Deal leftover titles
+          Deal more titles
         </Button>
       </CardContent>
     </Card>

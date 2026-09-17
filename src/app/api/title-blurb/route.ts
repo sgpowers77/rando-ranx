@@ -10,8 +10,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ extract: "", sourceUrl: "", source: "none" }, { status: 400 });
   }
 
+  const imdb = request.nextUrl.searchParams.get("imdb")?.trim() ?? "";
   const hint = medium === "movie" ? "film" : "video game";
-  const query = year ? `${title} ${year} ${hint}` : `${title} ${hint}`;
+  const query = [title, year, imdb, hint].filter(Boolean).join(" ");
 
   try {
     const wiki = await fetchWikipediaBlurb(query, title);

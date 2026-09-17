@@ -1,6 +1,6 @@
 "use client";
 
-import { resolveTitle, titlesFor } from "@/data/catalog";
+import { resolveTitle } from "@/data/catalog";
 import { matchesFilters, pathKey } from "@/lib/filters";
 import {
   applyTourneyOutcome,
@@ -11,8 +11,10 @@ import {
   getHydrateError,
   getServerSessionSnapshot,
   getSessionSnapshot,
+  mergeLiveTitles,
   rememberShown,
   subscribeSession,
+  usedTitleIds,
   withDealtQueue,
   writeSession,
 } from "@/lib/session";
@@ -24,10 +26,14 @@ import type {
   SessionResponse,
   StoredSession,
 } from "@/lib/types";
-import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 function subscribeNoop() {
   return () => {};
+}
+
+function titleLookup(session: StoredSession, id: string) {
+  return resolveTitle(id, session.customTitles, session.releaseYears, session.liveTitles);
 }
 
 export function useRandoRanx() {
@@ -38,12 +44,16 @@ export function useRandoRanx() {
     getServerSessionSnapshot
   );
   const errorMessage = useSyncExternalStore(subscribeSession, getHydrateError, () => null);
+  const [poolStatus, setPoolStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [poolError, setPoolError] = useState<string | null>(null);
+  const [poolSource, setPoolSource] = useState<"dataset" | "catalog" | "none">("none");
+  const fetching = useRef(false);
 
   const visibleQueue = useMemo(() => {
     if (!session.medium || !session.playMode) return [];
     const filters = filtersFor(session, session.medium, session.playMode);
     return session.remainingIds[session.medium]
-      .map((id) => resolveTitle(id, session.customTitles, session.releaseYears))
+      .map((id) => titleLookup(session, id))
       .filter((title): title is CatalogTitle => title != null && matchesFilters(title, filters));
   }, [session]);
 
@@ -68,61 +78,68 @@ export function useRandoRanx() {
   const pendingWinner = useMemo<CatalogTitle | null>(() => {
     const pending = session.pendingTourney;
     if (!pending) return null;
-    return resolveTitle(pending.winnerId, session.customTitles, session.releaseYears) ?? null;
-  }, [session.customTitles, session.pendingTourney, session.releaseYears]);
+    return titleLookup(session, pending.winnerId) ?? null;
+  }, [session]);
 
   const persist = useCallback((updater: (prev: StoredSession) => StoredSession) => {
     writeSession(updater(getSessionSnapshot()));
   }, []);
 
-  const syncingYears = useRef(false);
-
-  const loadReleaseYears = useCallback(
-    async (medium: Medium) => {
-      const snapshot = getSessionSnapshot();
-      const known = snapshot.releaseYears ?? {};
-      const missing = titlesFor(medium).filter((item) => known[item.id] == null);
-      if (missing.length === 0) return;
-      if (syncingYears.current) return;
-      syncingYears.current = true;
-      try {
-        const res = await fetch("/api/title-years", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            titles: missing.map((item) => ({
-              id: item.id,
-              title: item.title,
-              medium: item.medium,
-            })),
-          }),
-        });
-        if (!res.ok) return;
-        const data = (await res.json()) as { years?: Record<string, number> };
-        const years = data.years ?? {};
-        persist((prev) => {
-          const next: StoredSession = {
-            ...prev,
-            releaseYears: { ...prev.releaseYears, ...years },
-          };
-          if (prev.medium === medium && prev.playMode) {
-            return withDealtQueue({ ...next, pendingTourney: null }, medium, prev.playMode);
-          }
-          return next;
-        });
-      } catch {
-        // Catalog years remain until Wikipedia answers.
-      } finally {
-        syncingYears.current = false;
+  const refreshPool = useCallback(async () => {
+    const snapshot = getSessionSnapshot();
+    if (!snapshot.medium || !snapshot.playMode || fetching.current) return;
+    fetching.current = true;
+    setPoolStatus("loading");
+    setPoolError(null);
+    try {
+      const filters = filtersFor(snapshot, snapshot.medium, snapshot.playMode);
+      const res = await fetch("/api/title-pool", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          medium: snapshot.medium,
+          filters,
+          excludeIds: [...usedTitleIds(snapshot, snapshot.medium)],
+          limit: snapshot.playMode === "tourney" ? 40 : 36,
+        }),
+      });
+      const data = (await res.json()) as {
+        titles?: CatalogTitle[];
+        source?: "dataset" | "catalog" | "none";
+        error?: string;
+        available?: number;
+      };
+      const titles = Array.isArray(data.titles) ? data.titles : [];
+      setPoolSource(data.source === "dataset" || data.source === "catalog" ? data.source : "none");
+      persist((prev) => {
+        if (!prev.medium || !prev.playMode) return prev;
+        const liveTitles = mergeLiveTitles(prev.liveTitles ?? [], titles);
+        const next: StoredSession = { ...prev, liveTitles, pendingTourney: null };
+        return withDealtQueue(next, prev.medium, prev.playMode);
+      });
+      if (!res.ok || data.error) {
+        setPoolStatus(titles.length > 0 ? "ready" : "error");
+        setPoolError(data.error ?? "Could not load titles from the movies dataset.");
+      } else {
+        setPoolStatus("ready");
       }
-    },
-    [persist]
-  );
+    } catch {
+      persist((prev) => {
+        if (!prev.medium || !prev.playMode) return prev;
+        return withDealtQueue({ ...prev, pendingTourney: null }, prev.medium, prev.playMode);
+      });
+      setPoolStatus("error");
+      setPoolError("Could not reach the title pool. Using a local fallback if anything is available.");
+      setPoolSource("catalog");
+    } finally {
+      fetching.current = false;
+    }
+  }, [persist]);
 
   useEffect(() => {
-    if (!mounted || !session.medium) return;
-    void loadReleaseYears(session.medium);
-  }, [loadReleaseYears, mounted, session.medium]);
+    if (!mounted || session.medium !== "movie") return;
+    void fetch("/api/title-pool");
+  }, [mounted, session.medium]);
 
   const eligibleCount = useMemo(() => {
     if (!session.medium || !session.playMode) return 0;
@@ -137,6 +154,8 @@ export function useRandoRanx() {
         playMode: null,
         pendingTourney: null,
       }));
+      setPoolStatus("idle");
+      setPoolError(null);
     },
     [persist]
   );
@@ -145,18 +164,21 @@ export function useRandoRanx() {
     (playMode: PlayMode) => {
       persist((prev) => {
         if (!prev.medium) return prev;
-        return withDealtQueue(
-          { ...prev, playMode, pendingTourney: null },
-          prev.medium,
-          playMode
-        );
+        return {
+          ...prev,
+          playMode,
+          pendingTourney: null,
+          remainingIds: { ...prev.remainingIds, [prev.medium]: [] },
+        };
       });
+      void refreshPool();
     },
-    [persist]
+    [persist, refreshPool]
   );
 
   const goHome = useCallback(() => {
     persist((prev) => ({ ...prev, medium: null, playMode: null, pendingTourney: null }));
+    setPoolStatus("idle");
   }, [persist]);
 
   const goToModePick = useCallback(() => {
@@ -169,11 +191,11 @@ export function useRandoRanx() {
         if (!prev.medium || !prev.playMode) return prev;
         const filters = filtersFor(prev, prev.medium, prev.playMode);
         const matching = prev.remainingIds[prev.medium].filter((id) => {
-          const item = resolveTitle(id, prev.customTitles, prev.releaseYears);
+          const item = titleLookup(prev, id);
           return Boolean(item) && matchesFilters(item!, filters);
         });
         const currentId = matching[0];
-        const title = currentId ? resolveTitle(currentId, prev.customTitles, prev.releaseYears) : undefined;
+        const title = currentId ? titleLookup(prev, currentId) : undefined;
         if (!title) return prev;
 
         const response: SessionResponse = {
@@ -247,22 +269,16 @@ export function useRandoRanx() {
 
   const savePathFilters = useCallback(
     (medium: Medium, playMode: PlayMode, filters: PathFilters) => {
-      persist((prev) => {
-        const next: StoredSession = {
-          ...prev,
-          pathFilters: { ...prev.pathFilters, [pathKey(medium, playMode)]: filters },
-        };
-        if (prev.medium === medium && prev.playMode === playMode) {
-          return withDealtQueue(
-            { ...next, pendingTourney: null },
-            medium,
-            playMode
-          );
-        }
-        return next;
-      });
+      persist((prev) => ({
+        ...prev,
+        pathFilters: { ...prev.pathFilters, [pathKey(medium, playMode)]: filters },
+      }));
+      const snap = getSessionSnapshot();
+      if (snap.medium === medium && snap.playMode === playMode) {
+        void refreshPool();
+      }
     },
-    [persist]
+    [persist, refreshPool]
   );
 
   const useSearchedTitle = useCallback(
@@ -299,15 +315,8 @@ export function useRandoRanx() {
   }, [persist]);
 
   const reshuffleMedium = useCallback(() => {
-    persist((prev) => {
-      if (!prev.medium || !prev.playMode) return prev;
-      return withDealtQueue(
-        { ...prev, pendingTourney: null },
-        prev.medium,
-        prev.playMode
-      );
-    });
-  }, [persist]);
+    void refreshPool();
+  }, [refreshPool]);
 
   const updateResponse = useCallback(
     (id: string, kind: SessionResponse["kind"], extras?: { rating?: number; comments?: string }) => {
@@ -330,6 +339,8 @@ export function useRandoRanx() {
 
   const clearSession = useCallback(() => {
     clearStoredSession();
+    setPoolStatus("idle");
+    setPoolError(null);
   }, []);
 
   return {
@@ -342,6 +353,9 @@ export function useRandoRanx() {
     pendingWinner,
     eligibleCount,
     remainingVisible: visibleQueue.length,
+    poolStatus,
+    poolError,
+    poolSource,
     chooseMedium,
     choosePlayMode,
     goHome,

@@ -33,6 +33,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# The Movies Dataset drop-in (https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset)
+/data/*.csv
+/data/*.zip
+
 # vercel
 .vercel
 

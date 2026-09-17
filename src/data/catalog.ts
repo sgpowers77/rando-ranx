@@ -1,5 +1,7 @@
 import type { CatalogTitle } from "@/lib/types";
 
+/** Small local movie list used only if movies_metadata.csv cannot be loaded. */
+
 function movie(
   id: string,
   title: string,
@@ -151,9 +153,13 @@ export function withReleaseYear(
 export function resolveTitle(
   id: string,
   customTitles: CatalogTitle[] = [],
-  releaseYears?: Record<string, number>
+  releaseYears?: Record<string, number>,
+  liveTitles: CatalogTitle[] = []
 ): CatalogTitle | undefined {
-  const found = customTitles.find((item) => item.id === id) ?? CATALOG_BY_ID.get(id);
+  const found =
+    customTitles.find((item) => item.id === id) ??
+    liveTitles.find((item) => item.id === id) ??
+    CATALOG_BY_ID.get(id);
   return found ? withReleaseYear(found, releaseYears) : undefined;
 }
 

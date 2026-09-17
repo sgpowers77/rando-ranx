@@ -27,6 +27,7 @@ export const EMPTY_SESSION: StoredSession = {
   pathFilters: {},
   recentlyShown: { movie: [], game: [] },
   releaseYears: {},
+  liveTitles: [],
 };
 
 export function shuffleIds(ids: string[]): string[] {
@@ -89,7 +90,21 @@ export function withDealtQueue(
 
 function catalogWithYears(session: StoredSession, medium: Medium): CatalogTitle[] {
   const extras = session.customTitles.filter((item) => item.medium === medium);
-  return [...titlesFor(medium), ...extras].map((item) => withReleaseYear(item, session.releaseYears));
+  const live = (session.liveTitles ?? []).filter((item) => item.medium === medium);
+  const preset = titlesFor(medium);
+  const primary = medium === "movie" ? (live.length > 0 ? live : preset) : [...preset, ...live];
+  return [...primary, ...extras].map((item) => withReleaseYear(item, session.releaseYears));
+}
+
+const LIVE_TITLE_CAP = 240;
+
+export function mergeLiveTitles(existing: CatalogTitle[], incoming: CatalogTitle[]): CatalogTitle[] {
+  const next = new Map<string, CatalogTitle>();
+  for (const item of incoming) next.set(item.id, item);
+  for (const item of existing) {
+    if (!next.has(item.id)) next.set(item.id, item);
+  }
+  return [...next.values()].slice(0, LIVE_TITLE_CAP);
 }
 
 export function eligibleFor(session: StoredSession, medium: Medium, playMode: PlayMode): CatalogTitle[] {
@@ -218,6 +233,7 @@ export function parseSession(raw: string): StoredSession {
         : null,
     skipTourneyScoring: parsed.skipTourneyScoring === true,
     customTitles: parseCustomTitles(parsed.customTitles),
+    liveTitles: parseCustomTitles(parsed.liveTitles),
     pathFilters: parsePathFilters(parsed.pathFilters),
     recentlyShown: {
       movie: parseIdList(parsed.recentlyShown?.movie),
@@ -253,8 +269,8 @@ export function applyTourneyOutcome(
 ): StoredSession {
   if (!prev.medium) return prev;
   const medium = prev.medium;
-  const winner = resolveTitle(winnerId, prev.customTitles, prev.releaseYears);
-  const loser = resolveTitle(loserId, prev.customTitles, prev.releaseYears);
+  const winner = resolveTitle(winnerId, prev.customTitles, prev.releaseYears, prev.liveTitles);
+  const loser = resolveTitle(loserId, prev.customTitles, prev.releaseYears, prev.liveTitles);
   if (!winner || !loser) return prev;
 
   const now = new Date().toISOString();
@@ -273,7 +289,7 @@ export function applyTourneyOutcome(
 
   const remaining = prev.remainingIds[medium].filter((id) => {
     if (id === winnerId || id === loserId) return false;
-    const item = resolveTitle(id, prev.customTitles, prev.releaseYears);
+    const item = resolveTitle(id, prev.customTitles, prev.releaseYears, prev.liveTitles);
     if (!item) return false;
     return matchesFilters(item, filtersFor(prev, medium, prev.playMode ?? "tourney"));
   });
@@ -360,6 +376,7 @@ export function normalizeSession(session: StoredSession): StoredSession {
     pendingTourney: session.pendingTourney ?? null,
     skipTourneyScoring: session.skipTourneyScoring === true,
     customTitles: Array.isArray(session.customTitles) ? session.customTitles : [],
+    liveTitles: Array.isArray(session.liveTitles) ? session.liveTitles : [],
     pathFilters: session.pathFilters ?? {},
     recentlyShown: {
       movie: parseIdList(session.recentlyShown?.movie),

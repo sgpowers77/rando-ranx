@@ -28,6 +28,9 @@ export function RandoRanxApp() {
     pendingWinner,
     eligibleCount,
     remainingVisible,
+    poolStatus,
+    poolError,
+    poolSource,
     chooseMedium,
     choosePlayMode,
     goHome,
@@ -74,16 +77,20 @@ export function RandoRanxApp() {
 
   const remainingCount = remainingVisible;
   const ready = status !== "loading";
+  const poolLoading = poolStatus === "loading";
   const showLanding = ready && !editingEntry && !session.medium;
   const showModePick = ready && !editingEntry && session.medium && !session.playMode;
   const showRank =
-    ready && !editingEntry && session.playMode === "rank" && Boolean(currentTitle);
+    ready && !editingEntry && session.playMode === "rank" && Boolean(currentTitle) && !poolLoading;
   const showTourney =
-    ready && !editingEntry && session.playMode === "tourney" && Boolean(tourneyPair);
+    ready && !editingEntry && session.playMode === "tourney" && Boolean(tourneyPair) && !poolLoading;
+  const showPoolLoading =
+    ready && !editingEntry && Boolean(session.playMode) && poolLoading;
   const showEmpty =
     ready &&
     !editingEntry &&
     session.playMode &&
+    !poolLoading &&
     ((session.playMode === "rank" && !currentTitle) ||
       (session.playMode === "tourney" && !tourneyPair));
 
@@ -163,10 +170,27 @@ export function RandoRanxApp() {
             />
           ) : null}
 
+          {showPoolLoading ? (
+            <div className="flex flex-1 flex-col justify-center" role="status" aria-live="polite">
+              <p className="text-sm font-medium tracking-wide text-amber-200/80 uppercase">
+                Live catalog
+              </p>
+              <h1 className="mt-2 font-heading text-3xl">
+                {session.medium === "movie"
+                  ? "Sampling The Movies Dataset…"
+                  : "Shuffling game titles…"}
+              </h1>
+              <p className="mt-2 text-muted-foreground">
+                {session.medium === "movie"
+                  ? "Dealing films from movies_metadata.csv using release date, genres, and vote/popularity. Wikipedia stays on search and WTF blurbs."
+                  : "Pulling a fresh game stack that matches your path filters."}
+              </p>
+            </div>
+          ) : null}
           {showRank && currentTitle ? (
             <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-4">
               <StageMeta
-                label={`Rank · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left including this one`}
+                label={`Rank · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} in this deal${poolSource === "dataset" ? " · Movies Dataset" : ""}`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
                 onOpenSettings={() => setSettingsOpen(true)}
@@ -212,6 +236,8 @@ export function RandoRanxApp() {
                 playMode={session.playMode}
                 leftoverTitle={leftoverTitle?.title ?? null}
                 filterEmpty={eligibleCount === 0}
+                poolError={poolStatus === "error" && eligibleCount === 0 ? poolError : null}
+                poolSource={poolSource}
                 onHome={goHome}
                 onChangeMode={goToModePick}
                 onReshuffle={reshuffleMedium}
