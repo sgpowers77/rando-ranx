@@ -23,10 +23,36 @@ Answers stay in this browser via `localStorage`. There is no account and no data
 
 ```bash
 npm install
+npm run fetch-movies
+npm run build-movies-index
 npm run dev -- --port 43147 --hostname 127.0.0.1
 ```
 
 Open [http://127.0.0.1:43147](http://127.0.0.1:43147).
+
+## GitHub Pages
+
+Published URL: [https://sgpowers77.github.io/rando-ranx/](https://sgpowers77.github.io/rando-ranx/)
+
+This app is a static Next.js export. GitHub Actions (`.github/workflows/pages.yml`) downloads The Movies Dataset, writes `public/movies-index.json`, and deploys the `out/` folder with `basePath` `/rando-ranx`.
+
+### Enable Pages (once)
+
+1. Open [https://github.com/sgpowers77/rando-ranx](https://github.com/sgpowers77/rando-ranx).
+2. **Settings → Pages → Build and deployment → Source:** GitHub Actions.
+3. Push or merge to **`main`** so the **Deploy GitHub Pages** workflow runs (Actions tab).
+4. When the workflow is green, open `https://sgpowers77.github.io/rando-ranx/`.
+
+### Local commands to produce the same export
+
+```bash
+npm run fetch-movies
+npm run export:pages
+```
+
+The static site is written to `out/`.
+
+If `git push` to GitHub fails with `could not read Username for 'https://github.com'`, authenticate (GitHub CLI `gh auth login`, or SSH `git remote set-url github git@github.com:sgpowers77/rando-ranx.git`) and push `main`. Enabling Pages from Actions is still required in the repo settings.
 
 ## Movie catalog (The Movies Dataset)
 

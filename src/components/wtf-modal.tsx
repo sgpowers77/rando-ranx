@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { fetchWikipediaBlurbClient } from "@/lib/wiki-client";
 import type { CatalogTitle } from "@/lib/types";
 import { useEffect, useState } from "react";
 
@@ -59,17 +60,7 @@ function WtfBody({
 
   useEffect(() => {
     const controller = new AbortController();
-    const params = new URLSearchParams({
-      title: title.title,
-      year: String(title.year),
-      medium: title.medium,
-    });
-    if (title.imdbId) params.set("imdb", title.imdbId);
-    fetch(`/api/title-blurb?${params}`, { signal: controller.signal })
-      .then(async (res) => {
-        if (!res.ok) throw new Error("blurb failed");
-        return (await res.json()) as Blurb;
-      })
+    fetchWikipediaBlurbClient(title.title, String(title.year), title.medium, title.imdbId, controller.signal)
       .then((data) => {
         if (!controller.signal.aborted) setBlurb(data);
       })

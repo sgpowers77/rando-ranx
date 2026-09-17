@@ -37,6 +37,9 @@ yarn-error.log*
 /data/*.csv
 /data/*.zip
 
+# Generated movie catalog for static / GitHub Pages builds
+/public/movies-index.json
+
 # vercel
 .vercel
 

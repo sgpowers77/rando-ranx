@@ -1,6 +1,7 @@
 "use client";
 
 import { resolveTitle } from "@/data/catalog";
+import { loadMovieCatalog, sampleClientPool } from "@/lib/client-pool";
 import { matchesFilters, pathKey } from "@/lib/filters";
 import {
   applyTourneyOutcome,
@@ -97,24 +98,14 @@ export function useRandoRanx() {
     try {
       const filters = filtersFor(snapshot, snapshot.medium, snapshot.playMode);
       const recent = snapshot.recentlyShown?.[snapshot.medium] ?? [];
-      const res = await fetch("/api/title-pool", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          medium: snapshot.medium,
-          filters,
-          excludeIds: [...usedTitleIds(snapshot, snapshot.medium), ...recent],
-          limit: snapshot.playMode === "tourney" ? 40 : 36,
-        }),
+      const data = await sampleClientPool({
+        medium: snapshot.medium,
+        filters,
+        excludeIds: [...usedTitleIds(snapshot, snapshot.medium), ...recent],
+        limit: snapshot.playMode === "tourney" ? 40 : 36,
       });
-      const data = (await res.json()) as {
-        titles?: CatalogTitle[];
-        source?: "dataset" | "catalog" | "none";
-        error?: string;
-        available?: number;
-      };
-      const titles = Array.isArray(data.titles) ? data.titles : [];
-      setPoolSource(data.source === "dataset" || data.source === "catalog" ? data.source : "none");
+      const titles = data.titles;
+      setPoolSource(data.source);
       persist((prev) => {
         if (!prev.medium || !prev.playMode) return prev;
         const liveTitles = mergeLiveTitles(prev.liveTitles ?? [], titles);
@@ -128,11 +119,9 @@ export function useRandoRanx() {
         }
         return withDealtQueue(next, prev.medium, prev.playMode);
       });
-      if (!res.ok || data.error) {
-        setPoolStatus(titles.length > 0 ? "ready" : "error");
-        setPoolError(data.error ?? "Could not load titles from the movies dataset.");
-      } else {
-        setPoolStatus("ready");
+      setPoolStatus("ready");
+      if (data.source === "catalog" && snapshot.medium === "movie") {
+        setPoolError(null);
       }
     } catch {
       persist((prev) => {
@@ -149,7 +138,7 @@ export function useRandoRanx() {
 
   useEffect(() => {
     if (!mounted || session.medium !== "movie") return;
-    void fetch("/api/title-pool");
+    void loadMovieCatalog();
   }, [mounted, session.medium]);
 
   const eligibleCount = useMemo(() => {

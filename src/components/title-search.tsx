@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { searchWikipediaClient } from "@/lib/wiki-client";
 import type { CatalogTitle, Medium, PlayMode } from "@/lib/types";
 import { useState } from "react";
 
@@ -28,11 +29,7 @@ export function TitleSearch({ medium, onUse }: TitleSearchProps) {
     if (query.trim().length < 2) return;
     setStatus("loading");
     try {
-      const res = await fetch(
-        `/api/title-search?q=${encodeURIComponent(query.trim())}&medium=${medium}`
-      );
-      if (!res.ok) throw new Error("search failed");
-      const data = (await res.json()) as SearchResponse;
+      const data = await searchWikipediaClient(query.trim(), medium);
       setResults(data.results);
       setSource(data.source);
       setStatus("idle");
