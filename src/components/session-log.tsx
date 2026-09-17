@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { resultLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
-import type { DiscardEntry, SessionResponse, WatchTag } from "@/lib/types";
+import type { DiscardEntry, PlayMode, SessionResponse, WatchTag } from "@/lib/types";
+import { ListPlus } from "lucide-react";
 
 type SessionLogProps = {
   responses: SessionResponse[];
@@ -18,6 +19,10 @@ type SessionLogProps = {
   canFinalRound?: boolean;
   finalRoundActive?: boolean;
   contenderCount?: number;
+  hideDiscard?: boolean;
+  playMode?: PlayMode | null;
+  queueCount?: number;
+  onOpenQueue?: () => void;
 };
 
 export function SessionLog({
@@ -30,6 +35,10 @@ export function SessionLog({
   canFinalRound = false,
   finalRoundActive = false,
   contenderCount = 0,
+  hideDiscard = false,
+  playMode = null,
+  queueCount = 0,
+  onOpenQueue,
 }: SessionLogProps) {
   const newestResults = [...responses].reverse();
   const newestDiscards = [...discards].reverse();
@@ -37,12 +46,25 @@ export function SessionLog({
   const watchIds = new Set(watchTags.map((tag) => tag.titleId));
 
   return (
-    <Tabs defaultValue="results" className="flex h-full min-h-0 flex-col gap-0">
+    <Tabs key={hideDiscard ? "ranx" : "all"} defaultValue="results" className="flex h-full min-h-0 flex-col gap-0">
       <div className="border-b px-3 py-3">
-        <p className="font-heading text-sm font-medium">Session log</p>
-        <TabsList className="mt-3 grid h-9 w-full grid-cols-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-heading text-sm font-medium">Session log</p>
+          {queueCount > 0 && onOpenQueue ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              aria-label={`Open queue, ${queueCount} ${queueCount === 1 ? "title" : "titles"}`}
+              onClick={onOpenQueue}
+            >
+              <ListPlus className="size-4" />
+            </Button>
+          ) : null}
+        </div>
+        <TabsList className={`mt-3 grid h-9 w-full ${hideDiscard ? "grid-cols-2" : "grid-cols-3"}`}>
           <TabsTrigger value="results">Results ({responses.length})</TabsTrigger>
-          <TabsTrigger value="discard">Discard ({discards.length})</TabsTrigger>
+          {hideDiscard ? null : <TabsTrigger value="discard">Discard ({discards.length})</TabsTrigger>}
           <TabsTrigger value="watch">Watch ({watchTags.length})</TabsTrigger>
         </TabsList>
       </div>
@@ -66,8 +88,9 @@ export function SessionLog({
         <ul aria-label="Session results">
           {newestResults.length === 0 ? (
             <li className="px-3 py-8 text-sm text-muted-foreground">
-              Ranked titles, skips, and the want list land here. Tourney Contenders show up after you
-              pick them.
+              {playMode === "rank"
+                ? "Rated titles, skips, and the want list land here. Titles already in Results will not be dealt again in Ranx."
+                : "Ranx titles, skips, and the want list land here. Tourney Contenders show up after you pick them."}
             </li>
           ) : (
             newestResults.map((entry) => {
@@ -126,6 +149,7 @@ export function SessionLog({
         </ul>
       </TabsContent>
 
+      {hideDiscard ? null : (
       <TabsContent value="discard" className="min-h-0 flex-1 overflow-auto p-2">
         <ul aria-label="Discarded titles">
           {newestDiscards.length === 0 ? (
@@ -169,12 +193,13 @@ export function SessionLog({
           )}
         </ul>
       </TabsContent>
+      )}
 
       <TabsContent value="watch" className="min-h-0 flex-1 overflow-auto p-2">
         <ul aria-label="Watch tags">
           {newestWatch.length === 0 ? (
             <li className="px-3 py-8 text-sm text-muted-foreground">
-              Drop a Tourney card on WTF?? and choose Watchlist to tag it here.
+              Bookmark a Ranx or Tourney card, or drop it on WTF?? and choose Watchlist.
             </li>
           ) : (
             newestWatch.map((entry) => (

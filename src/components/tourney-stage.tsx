@@ -3,6 +3,7 @@
 import { BookmarkIconButton, CardIconBar, StarIconButton } from "@/components/card-icon-bar";
 import { RatingForm } from "@/components/rating-form";
 import { TitlePoster } from "@/components/title-poster";
+import { WtfDropZone, TITLE_DRAG_TYPE } from "@/components/wtf-drop-zone";
 import { WtfModal } from "@/components/wtf-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +31,7 @@ type TourneyStageProps = {
   isFinalRound?: boolean;
 };
 
-const DRAG_TYPE = "application/x-randoranx-title";
+const DRAG_TYPE = TITLE_DRAG_TYPE;
 
 export function TourneyStage({
   pair,
@@ -122,31 +123,15 @@ export function TourneyStage({
       </div>
 
       {dragging ? (
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label="WTF drop zone. Drop a tourney card for a short description."
-          onDragOver={(event) => {
-            event.preventDefault();
-            setDropArmed(true);
-          }}
-          onDragLeave={() => setDropArmed(false)}
-          onDrop={(event) => {
-            event.preventDefault();
-            const raw = event.dataTransfer.getData(DRAG_TYPE) || event.dataTransfer.getData("text/plain");
-            const dropped = pair.find((item) => item.id === raw) ?? null;
+        <WtfDropZone
+          armed={dropArmed}
+          onArmed={setDropArmed}
+          onDropId={(id) => {
+            const dropped = pair.find((item) => item.id === id) ?? null;
             endDrag();
             if (dropped) setWtfTitle(dropped);
           }}
-          className={`fixed bottom-6 left-1/2 z-40 w-[min(20rem,calc(100%-2rem))] -translate-x-1/2 rounded-2xl border-2 border-dashed px-6 py-5 text-center shadow-lg ${
-            dropArmed
-              ? "border-primary bg-primary/20 text-foreground"
-              : "border-amber-200/70 bg-background/95 text-amber-100"
-          }`}
-        >
-          <p className="font-heading text-2xl tracking-tight">WTF??</p>
-          <p className="mt-1 text-xs text-muted-foreground">Drop a card for a quick description</p>
-        </div>
+        />
       ) : null}
 
       <WtfModal

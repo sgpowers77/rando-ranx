@@ -23,6 +23,8 @@ export const EMPTY_SESSION: StoredSession = {
   responses: [],
   discards: [],
   watchTags: [],
+  userQueue: [],
+  queueOnly: false,
   pendingTourney: null,
   skipTourneyScoring: false,
   customTitles: [],
@@ -47,18 +49,25 @@ export function filtersFor(session: StoredSession, medium: Medium, playMode: Pla
   return session.pathFilters[pathKey(medium, playMode)] ?? defaultFilters(medium);
 }
 
-export function usedTitleIds(session: StoredSession, medium: Medium): Set<string> {
+export function resultTitleIds(session: StoredSession, medium: Medium): Set<string> {
   const used = new Set<string>();
   for (const entry of session.responses) {
     if (entry.medium === medium) used.add(entry.titleId);
   }
+  return used;
+}
+
+export function usedTitleIds(session: StoredSession, medium: Medium, playMode?: PlayMode): Set<string> {
+  const used = resultTitleIds(session, medium);
+  if (playMode === "rank") return used;
   for (const entry of session.discards) {
     if (entry.medium === medium) used.add(entry.titleId);
   }
-  for (const entry of session.watchTags ?? []) {
-    if (entry.medium === medium) used.add(entry.titleId);
-  }
   return used;
+}
+
+export function queuedForMedium(session: StoredSession, medium: Medium): CatalogTitle[] {
+  return (session.userQueue ?? []).filter((item) => item.medium === medium);
 }
 
 const RECENT_CAP = 12;
@@ -141,15 +150,16 @@ export function mergeLiveTitles(existing: CatalogTitle[], incoming: CatalogTitle
 }
 
 export function eligibleFor(session: StoredSession, medium: Medium, playMode: PlayMode): CatalogTitle[] {
+  if (session.queueOnly) {
+    return queuedForMedium(session, medium);
+  }
   const filters = filtersFor(session, medium, playMode);
   return catalogWithYears(session, medium).filter((item) => matchesFilters(item, filters));
 }
 
 export function poolFor(session: StoredSession, medium: Medium, playMode: PlayMode): CatalogTitle[] {
-  const used = usedTitleIds(session, medium);
-  const eligible = eligibleFor(session, medium, playMode);
-  const unused = eligible.filter((item) => !used.has(item.id));
-  return unused.length > 0 ? unused : eligible;
+  const used = usedTitleIds(session, medium, playMode);
+  return eligibleFor(session, medium, playMode).filter((item) => !used.has(item.id));
 }
 
 export function dealtQueue(
@@ -158,16 +168,47 @@ export function dealtQueue(
   playMode: PlayMode,
   pinnedId?: string
 ): string[] {
-  const eligible = eligibleFor(session, medium, playMode);
-  const used = usedTitleIds(session, medium);
-  const unused = eligible.filter((item) => !used.has(item.id));
-  const pool = unused.length > 0 ? unused : eligible;
+  const used = usedTitleIds(session, medium, playMode);
+  const pool = eligibleFor(session, medium, playMode).filter((item) => !used.has(item.id));
   const recent = new Set((session.recentlyShown?.[medium] ?? []).filter((id) => id !== pinnedId));
   const fresh = pool.filter((item) => item.id !== pinnedId && !recent.has(item.id));
   const stale = pool.filter((item) => item.id !== pinnedId && recent.has(item.id));
   const rest = [...shuffleIds(fresh.map((item) => item.id)), ...shuffleIds(stale.map((item) => item.id))];
-  if (pinnedId) return [pinnedId, ...rest.filter((id) => id !== pinnedId)];
+  if (pinnedId && !used.has(pinnedId)) return [pinnedId, ...rest.filter((id) => id !== pinnedId)];
   return rest;
+}
+
+export function enqueueUserTitles(session: StoredSession, titles: CatalogTitle[]): StoredSession {
+  let customTitles = [...(session.customTitles ?? [])];
+  let userQueue = [...(session.userQueue ?? [])];
+  for (const title of titles) {
+    if (!customTitles.some((item) => item.id === title.id)) customTitles = [...customTitles, title];
+    if (!userQueue.some((item) => item.id === title.id)) userQueue = [...userQueue, title];
+  }
+  let next: StoredSession = { ...session, customTitles, userQueue };
+  if (next.queueOnly && next.medium && next.playMode && !next.finalRound) {
+    next = withDealtQueue(next, next.medium, next.playMode);
+  }
+  return next;
+}
+
+export function removeQueuedTitle(session: StoredSession, titleId: string): StoredSession {
+  let next: StoredSession = {
+    ...session,
+    userQueue: (session.userQueue ?? []).filter((item) => item.id !== titleId),
+  };
+  if (next.queueOnly && next.medium && next.playMode && !next.finalRound) {
+    next = withDealtQueue(next, next.medium, next.playMode);
+  }
+  return next;
+}
+
+export function setQueueOnlyMode(session: StoredSession, queueOnly: boolean): StoredSession {
+  let next: StoredSession = { ...session, queueOnly };
+  if (next.medium && next.playMode && !next.finalRound) {
+    next = withDealtQueue(next, next.medium, next.playMode);
+  }
+  return next;
 }
 
 export function ensureQueue(session: StoredSession, medium: Medium, playMode: PlayMode): string[] {
@@ -266,6 +307,8 @@ export function parseSession(raw: string): StoredSession {
     })),
     discards: parseDiscards(parsed.discards),
     watchTags: parseWatchTags(parsed.watchTags),
+    userQueue: parseCustomTitles(parsed.userQueue),
+    queueOnly: parsed.queueOnly === true,
     pendingTourney:
       pending && typeof pending.winnerId === "string" && typeof pending.loserId === "string"
         ? { winnerId: pending.winnerId, loserId: pending.loserId }
@@ -558,6 +601,8 @@ export function normalizeSession(session: StoredSession): StoredSession {
     responses: Array.isArray(session.responses) ? session.responses : [],
     discards: Array.isArray(session.discards) ? session.discards : [],
     watchTags: Array.isArray(session.watchTags) ? session.watchTags : [],
+    userQueue: Array.isArray(session.userQueue) ? session.userQueue : [],
+    queueOnly: session.queueOnly === true,
     pendingTourney: session.pendingTourney ?? null,
     skipTourneyScoring: session.skipTourneyScoring === true,
     customTitles: Array.isArray(session.customTitles) ? session.customTitles : [],

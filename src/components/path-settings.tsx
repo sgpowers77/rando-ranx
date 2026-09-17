@@ -79,7 +79,7 @@ export function PathSettings({
         <DialogHeader>
           <DialogTitle>Path settings</DialogTitle>
           <DialogDescription>
-            Filters apply separately to Rank and Tourney for{" "}
+            Filters apply separately to Ranx and Tourney for{" "}
             {medium === "movie" ? "Movies" : "Games"}. Each of Year, Genre, and Obscurity needs at
             least one box checked on both paths. Unchecked boxes drop those titles from the deal
             right away. Done stays off until every group has a selection.
@@ -88,7 +88,7 @@ export function PathSettings({
 
         <Tabs value={mode} onValueChange={(value) => setMode(value as PlayMode)}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="rank">Rank</TabsTrigger>
+            <TabsTrigger value="rank">Ranx</TabsTrigger>
             <TabsTrigger value="tourney">Tourney</TabsTrigger>
           </TabsList>
           <TabsContent value={mode} className="space-y-5 pt-4">
@@ -102,7 +102,7 @@ export function PathSettings({
               </legend>
               <p className="text-xs text-muted-foreground">
                 Decade uses the Wikipedia / Wikidata release year (same source as search and blurbs).
-                Local catalog years are only a fallback. Unchecked decades are left out of Rank and
+                Local catalog years are only a fallback. Unchecked decades are left out of Ranx and
                 Tourney. Keep at least one decade checked.
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -230,7 +230,7 @@ function missingGroups(filters: PathFilters): string[] {
 
 function closeBlockedCopy(rankMissing: string[], tourneyMissing: string[]): string {
   const parts: string[] = [];
-  if (rankMissing.length > 0) parts.push(`Rank still needs ${rankMissing.join(", ")}`);
+  if (rankMissing.length > 0) parts.push(`Ranx still needs ${rankMissing.join(", ")}`);
   if (tourneyMissing.length > 0) parts.push(`Tourney still needs ${tourneyMissing.join(", ")}`);
   return `${parts.join(". ")}. Check at least one box in each group before Done.`;
 }

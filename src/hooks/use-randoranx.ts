@@ -8,12 +8,15 @@ import {
   clearStoredSession,
   dismissHydrateError,
   eligibleFor,
+  enqueueUserTitles,
   filtersFor,
   getHydrateError,
   getServerSessionSnapshot,
   getSessionSnapshot,
   mergeLiveTitles,
   rememberShown,
+  removeQueuedTitle,
+  setQueueOnlyMode,
   skipTourneyPair,
   startFinalRound,
   subscribeSession,
@@ -61,10 +64,20 @@ export function useRandoRanx() {
         .map((id) => titleLookup(session, id))
         .filter((title): title is CatalogTitle => title != null);
     }
+    if (session.queueOnly) {
+      const used = usedTitleIds(session, session.medium, session.playMode);
+      return session.remainingIds[session.medium]
+        .map((id) => titleLookup(session, id))
+        .filter((title): title is CatalogTitle => title != null && !used.has(title.id));
+    }
     const filters = filtersFor(session, session.medium, session.playMode);
+    const used = usedTitleIds(session, session.medium, session.playMode);
     return session.remainingIds[session.medium]
       .map((id) => titleLookup(session, id))
-      .filter((title): title is CatalogTitle => title != null && matchesFilters(title, filters));
+      .filter(
+        (title): title is CatalogTitle =>
+          title != null && matchesFilters(title, filters) && !used.has(title.id)
+      );
   }, [session]);
 
   const currentTitle = useMemo<CatalogTitle | null>(() => {
@@ -98,6 +111,16 @@ export function useRandoRanx() {
   const refreshPool = useCallback(async (opts?: { silent?: boolean }) => {
     const snapshot = getSessionSnapshot();
     if (!snapshot.medium || !snapshot.playMode || fetching.current) return;
+    if (snapshot.queueOnly) {
+      persist((prev) => {
+        if (!prev.medium || !prev.playMode || prev.finalRound) return prev;
+        return withDealtQueue(prev, prev.medium, prev.playMode);
+      });
+      setPoolStatus("ready");
+      setPoolSource("catalog");
+      setPoolError(null);
+      return;
+    }
     fetching.current = true;
     if (!opts?.silent) {
       setPoolStatus("loading");
@@ -109,7 +132,7 @@ export function useRandoRanx() {
       const data = await sampleClientPool({
         medium: snapshot.medium,
         filters,
-        excludeIds: [...usedTitleIds(snapshot, snapshot.medium), ...recent],
+        excludeIds: [...usedTitleIds(snapshot, snapshot.medium, snapshot.playMode), ...recent],
         limit: snapshot.playMode === "tourney" ? 40 : 36,
       });
       const titles = data.titles;
@@ -224,7 +247,11 @@ export function useRandoRanx() {
           origin: "rank",
         };
 
-        const rest = matching.slice(1);
+        const used = new Set(
+          prev.responses.filter((entry) => entry.medium === prev.medium).map((entry) => entry.titleId)
+        );
+        used.add(title.id);
+        const rest = matching.slice(1).filter((id) => !used.has(id));
         return {
           ...prev,
           remainingIds: { ...prev.remainingIds, [prev.medium]: rest },
@@ -295,18 +322,26 @@ export function useRandoRanx() {
     [persist, refreshPool]
   );
 
-  const useSearchedTitle = useCallback(
-    (title: CatalogTitle, playMode: PlayMode) => {
-      persist((prev) => {
-        if (!prev.medium) return prev;
-        const customTitles = prev.customTitles.some((item) => item.id === title.id)
-          ? prev.customTitles
-          : [...prev.customTitles, title];
-        const withTitle: StoredSession = { ...prev, customTitles, playMode, pendingTourney: null, finalRound: null, tourneyUndo: [] };
-        return withDealtQueue(withTitle, prev.medium, playMode, title.id);
-      });
+  const queueSearchedTitles = useCallback(
+    (titles: CatalogTitle[]) => {
+      persist((prev) => enqueueUserTitles(prev, titles));
     },
     [persist]
+  );
+
+  const removeFromUserQueue = useCallback((titleId: string) => {
+    persist((prev) => removeQueuedTitle(prev, titleId));
+  }, [persist]);
+
+  const setPresentQueuedOnly = useCallback(
+    (queueOnly: boolean) => {
+      persist((prev) => setQueueOnlyMode(prev, queueOnly));
+      const snap = getSessionSnapshot();
+      if (snap.medium && snap.playMode && !queueOnly) {
+        void refreshPool();
+      }
+    },
+    [persist, refreshPool]
   );
 
   const addWatchTag = useCallback((title: CatalogTitle) => {
@@ -419,7 +454,9 @@ export function useRandoRanx() {
     completeTourneyRound,
     setSkipTourneyScoring,
     savePathFilters,
-    useSearchedTitle,
+    queueSearchedTitles,
+    removeFromUserQueue,
+    setPresentQueuedOnly,
     addWatchTag,
     toggleWatchTag,
     updateResponse,

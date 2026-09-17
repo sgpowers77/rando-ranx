@@ -71,7 +71,7 @@ export function ResultsTable({
         {empty ? (
           <TableRow>
             <TableCell colSpan={7} className="py-8 text-muted-foreground">
-              No answers yet. Pick Movies or Games, then Rank or Tourney.
+              No answers yet. Pick Movies or Games, then Ranx or Tourney.
             </TableCell>
           </TableRow>
         ) : (

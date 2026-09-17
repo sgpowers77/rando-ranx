@@ -1,4 +1,8 @@
-import type { SessionResponse } from "@/lib/types";
+import type { PlayMode, SessionResponse } from "@/lib/types";
+
+export function playModeLabel(mode: PlayMode | null | undefined): string {
+  return mode === "tourney" ? "Tourney" : "Ranx";
+}
 
 export function resultLabel(entry: SessionResponse): string {
   if (entry.origin === "final") {

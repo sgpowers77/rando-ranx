@@ -32,7 +32,7 @@ export function Landing({ onChoose, onResetAll }: LandingProps) {
     <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-10 sm:px-6">
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium tracking-wide text-amber-200/80 uppercase">
-          Movies or Games, then Rank or Tourney
+          It&apos;s Showdown Time
         </p>
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -54,12 +54,12 @@ export function Landing({ onChoose, onResetAll }: LandingProps) {
         </DropdownMenu>
       </div>
       <h1 className="mt-2 max-w-xl font-heading text-4xl leading-tight tracking-tight text-balance sm:text-5xl">
-        Rank a random title, or put two in a Tourney.
+        Rank. Compare. Discover.
       </h1>
       <p className="mt-4 max-w-lg text-base text-muted-foreground sm:text-lg">
-        Start with Movies or Games. Rank deals one title at a time. Tourney shows two; you pick a
-        winner to score, and the other goes to Discard. Filter each path by year, genre, and
-        obscurity, or search Wikipedia for a film. Print from the top-right icon.
+        Select a media and rate titles individually with Ranx, or put titles to the test in Tourney
+        mode. Log your reviews and notes, save a watchlist, or queue up your own lists to rank and
+        watch in RandoRanx.
       </p>
       <div className="mt-10 grid gap-3 sm:grid-cols-2">
         <Button
@@ -86,8 +86,8 @@ export function Landing({ onChoose, onResetAll }: LandingProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Reset all progress?</AlertDialogTitle>
             <AlertDialogDescription>
-              This clears your results log, Discard pile, Watch tags, remembered Tourney skip, path
-              filters, and searched titles. The built-in catalog stays. This cannot be undone.
+              This clears your results log, Discard pile, Watch tags, Queue, remembered Tourney skip,
+              path filters, and searched titles. The built-in catalog stays. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

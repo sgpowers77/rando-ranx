@@ -43,7 +43,7 @@ export function EmptyCatalog({
         <CardHeader>
           <CardTitle className="font-heading text-2xl">Could not load the live catalog</CardTitle>
           <CardDescription>
-            {poolError} Rank still works from a small local fallback if the Kaggle movies file is
+            {poolError} Ranx still works from a small local fallback if the Kaggle movies file is
             missing. Drop movies_metadata.csv into data/ or retry the fetch.
           </CardDescription>
         </CardHeader>
@@ -52,7 +52,7 @@ export function EmptyCatalog({
             Retry live catalog
           </Button>
           <Button type="button" variant="outline" onClick={onChangeMode} className="h-11">
-            Rank or Tourney
+            Ranx or Tourney
           </Button>
         </CardContent>
       </Card>
@@ -72,7 +72,7 @@ export function EmptyCatalog({
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Button type="button" onClick={onChangeMode} className="h-11">
-            Rank or Tourney
+            Ranx or Tourney
           </Button>
           <Button type="button" variant="outline" onClick={onHome} className="h-11">
             Back to Movies or Games
@@ -110,7 +110,7 @@ export function EmptyCatalog({
             </Button>
           ) : null}
           <Button type="button" onClick={onChangeMode} className="h-11">
-            Rank or Tourney
+            Ranx or Tourney
           </Button>
           <Button type="button" variant="outline" onClick={onHome} className="h-11">
             Switch catalog
@@ -127,7 +127,7 @@ export function EmptyCatalog({
           <CardTitle className="font-heading text-2xl">Odd one out</CardTitle>
           <CardDescription>
             Tourney needs two titles. {leftoverTitle.title} is the last {noun.slice(0, -1)} left in this
-            stack. Switch to Rank to deal it, or reshuffle leftovers if something was missed.
+            stack. Switch to Ranx to deal it, or reshuffle leftovers if something was missed.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -138,7 +138,7 @@ export function EmptyCatalog({
             </Button>
           ) : null}
           <Button type="button" onClick={onChangeMode} className="h-11">
-            Rank or Tourney
+            Ranx or Tourney
           </Button>
           <Button type="button" variant="outline" onClick={onReshuffle} className="h-11">
             Deal more titles

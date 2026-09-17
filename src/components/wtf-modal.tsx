@@ -79,14 +79,14 @@ function WtfBody({
           {title.title} ({title.year})
         </DialogTitle>
         <DialogDescription>
-          A short Wikipedia summary. This does not pick a winner or discard the card.
+          A short Wikipedia summary. This does not log a Ranx result or pick a Tourney winner.
         </DialogDescription>
       </DialogHeader>
       <TitlePoster catalog={title} size="md" className="mx-auto w-40" />
       {!blurb && !failed ? <p className="text-sm text-muted-foreground">Looking it up…</p> : null}
       {failed ? (
         <p className="text-sm text-destructive" role="alert">
-          Could not load a description. Continue the matchup, or try WTF?? again.
+          Could not load a description. Continue, or try WTF?? again.
         </p>
       ) : null}
       {blurb ? (

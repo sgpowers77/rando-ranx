@@ -1,22 +1,22 @@
 # RandoRanx
 
-Shuffle real movie or game titles. Rank them one at a time, or run a Tourney and score the winner.
+It's Showdown Time. Rank. Compare. Discover.
 
 ## What it does
 
 1. Choose **Movies** or **Games**.
-2. Choose **Rank** or **Tourney**.
-3. **Rank** deals one title. Movies: Seen It / Haven't Seen It / Want to See It. Games: Played It / Haven't Played It / Want to Play It.
+2. Choose **Ranx** or **Tourney**. Wikipedia search stays hidden until a mode is selected.
+3. **Ranx** deals one title. Movies: Seen It / Haven't Seen It / Want to See It. Games: Played It / Haven't Played It / Want to Play It. A title already in Results is never dealt again. Discard is hidden in Ranx. Drag the card onto **WTF??** for a blurb; **Continue** does not log a result.
 4. Seen / played opens a 1–10 scale and optional comments. **Next** saves and deals the next title. Haven't skips. Want parks the title on your list.
-5. **Tourney** deals two titles. **Select** logs a Contender; the other card goes to **Discard**. A **star** opens an optional 1–10 score and comment modal (X or overlay to close). A **bookmark** adds or removes Watch without voting. **Back** undoes the last Select (pair, log, and Discard), up to three times. **Reshuffle** skips both cards with no winner.
-6. After Movies or Games, **Path settings** filters Rank and Tourney separately by decade, genre, and obscurity (1 = blockbuster, 5 = extremely obscure indie). Each group has **Check all** / **Uncheck all**. Year, Genre, and Obscurity each need at least one box on both Rank and Tourney; **Done** stays greyed out until they do. Movie decades, genres, and obscurity come from [The Movies Dataset](https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset) (`release_date`, `genres`, `popularity` / `vote_count`). Wikipedia is used for search and Tourney WTF blurbs, not as the movie catalog.
-7. Search Wikipedia for any film (or game, on the Games path). **Use in Rank** or **Use in Tourney** deals it next. If Wikipedia is unreachable, a local fallback list is used.
-8. The left-hand log has **Results**, **Discard**, and **Watch** tabs. **Final Round** in Results pairs logged Contenders like Tourney until a champion. Select a Results row to change action, rating, or comments. Discard is listed, not scored.
+5. **Tourney** deals two titles. **Select** logs a Contender; the other card goes to **Discard**. A **star** opens an optional 1–10 score and comment modal (X or overlay to close). A **bookmark** adds or removes Watch without voting. **Back** undoes the last Select (pair, log, and Discard), up to three times. **Reshuffle** skips both cards with no winner. Drag onto **WTF??** the same way as Ranx.
+6. After Movies or Games, **Path settings** filters Ranx and Tourney separately by decade, genre, and obscurity (1 = blockbuster, 5 = extremely obscure indie). Each group has **Check all** / **Uncheck all**. Year, Genre, and Obscurity each need at least one box on both Ranx and Tourney; **Done** stays greyed out until they do. Movie decades, genres, and obscurity come from [The Movies Dataset](https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset) (`release_date`, `genres`, `popularity` / `vote_count`). Wikipedia is used for search and WTF blurbs, not as the movie catalog.
+7. Search Wikipedia after Ranx or Tourney is selected. **Queue** adds search results you pick (checkboxes for several at once). Queue is never filled by random deals. A queue icon appears opposite Session log once at least one title is queued. The queue modal lists the current catalog, lets you remove items, search again, and optionally **Only present user-queued items**.
+8. The left-hand log has **Results**, **Discard** (Tourney only), and **Watch** tabs. **Final Round** in Results pairs logged Contenders like Tourney until a champion. Select a Results row to change action, rating, or comments. Discard is listed, not scored.
 9. On smaller screens, open the same log from the list icon in the header.
 10. The printable table in the header can be printed or downloaded as **CSV** (results, ratings, comments, discards, and watchlist status).
-11. Home settings includes **Reset all**, which asks for confirmation then clears logs, Discard, Watch tags, remembered skip, filters, and searched titles. The catalog stays.
-12. In Tourney, drag a card onto the **WTF??** drop zone for a Wikipedia blurb. **Watchlist** tags it in the left log. **Continue** leaves the matchup as-is.
-13. Rank, Tourney, WTF, the session log, and Wikipedia search show a **portrait** poster only from a Wikipedia **film** (or video game) page — not people, books, or same-name articles. The caption credits Wikipedia/Wikimedia. Missing film-page images stay as an empty frame.
+11. Home settings includes **Reset all**, which asks for confirmation then clears logs, Discard, Watch tags, Queue, remembered skip, filters, and searched titles. The catalog stays.
+12. Drag a Ranx or Tourney card onto the **WTF??** drop zone (visible while dragging) for a Wikipedia blurb. **Watchlist** tags it in the left log. **Continue** leaves the current title or matchup as-is.
+13. Ranx, Tourney, WTF, the session log, and Wikipedia search show a **portrait** poster only from a Wikipedia **film** (or video game) page — not people, books, or same-name articles. The caption credits Wikipedia/Wikimedia. Missing film-page images stay as an empty frame.
 
 Answers stay in this browser via `localStorage`. There is no account and no database.
 
@@ -26,7 +26,7 @@ Answers stay in this browser via `localStorage`. There is no account and no data
 npm install
 npm run fetch-movies
 npm run build-movies-index
-npm run dev -- --port 43147 --hostname 127.0.0.1
+npm run dev -- --port 43147 --hostname 0.0.0.0
 ```
 
 Open [http://127.0.0.1:43147](http://127.0.0.1:43147).
@@ -57,7 +57,7 @@ If `git push` to GitHub fails with `could not read Username for 'https://github.
 
 ## Movie catalog (The Movies Dataset)
 
-Rank and Tourney sample films from `movies_metadata.csv` in [The Movies Dataset](https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset) (MovieLens / TMDb metadata, ~45k titles). Place the file at:
+Ranx and Tourney sample films from `movies_metadata.csv` in [The Movies Dataset](https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset) (MovieLens / TMDb metadata, ~45k titles). Place the file at:
 
 ```
 data/movies_metadata.csv
@@ -76,7 +76,7 @@ kaggle datasets download -d rounakbanik/the-movies-dataset
 unzip the-movies-dataset.zip movies_metadata.csv -d data
 ```
 
-If download fails, Rank still deals a small built-in movie fallback so the app is usable. Wikipedia search, WTF blurbs, Path settings Done-lock, and CSV export stay available either way.
+If download fails, Ranx still deals a small built-in movie fallback so the app is usable. Wikipedia search, WTF blurbs, Path settings Done-lock, and CSV export stay available either way.
 
 ```bash
 npm run build

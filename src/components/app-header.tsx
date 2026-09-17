@@ -38,7 +38,7 @@ export function AppHeader({
           aria-label={showHome ? "Back to Movies or Games" : "RandoRanx home"}
         >
           <p className="font-heading text-lg tracking-tight">RandoRanx</p>
-          <p className="text-xs text-muted-foreground">Shuffle a title. Rank it honestly.</p>
+          <p className="text-xs text-muted-foreground">It&apos;s Showdown Time</p>
         </button>
       </div>
       <Button

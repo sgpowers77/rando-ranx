@@ -83,6 +83,8 @@ export type StoredSession = {
   responses: SessionResponse[];
   discards: DiscardEntry[];
   watchTags: WatchTag[];
+  userQueue: CatalogTitle[];
+  queueOnly: boolean;
   pendingTourney: PendingTourney | null;
   skipTourneyScoring: boolean;
   customTitles: CatalogTitle[];

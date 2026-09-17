@@ -2,14 +2,16 @@
 
 import { TitlePoster } from "@/components/title-poster";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { searchWikipediaClient } from "@/lib/wiki-client";
-import type { CatalogTitle, Medium, PlayMode } from "@/lib/types";
+import type { CatalogTitle, Medium } from "@/lib/types";
 import { useState } from "react";
 
 type TitleSearchProps = {
   medium: Medium;
-  onUse: (title: CatalogTitle, playMode: PlayMode) => void;
+  queuedIds?: string[];
+  onQueue: (titles: CatalogTitle[]) => void;
 };
 
 type SearchResponse = {
@@ -17,13 +19,15 @@ type SearchResponse = {
   source: "wikipedia" | "local" | "none";
 };
 
-export function TitleSearch({ medium, onUse }: TitleSearchProps) {
+export function TitleSearch({ medium, queuedIds = [], onQueue }: TitleSearchProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CatalogTitle[]>([]);
   const [source, setSource] = useState<SearchResponse["source"] | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [selected, setSelected] = useState<string[]>([]);
 
   const noun = medium === "movie" ? "film" : "game";
+  const queued = new Set(queuedIds);
 
   async function runSearch(event: React.FormEvent) {
     event.preventDefault();
@@ -33,6 +37,7 @@ export function TitleSearch({ medium, onUse }: TitleSearchProps) {
       const data = await searchWikipediaClient(query.trim(), medium);
       setResults(data.results);
       setSource(data.source);
+      setSelected([]);
       setStatus("idle");
     } catch {
       setStatus("error");
@@ -40,14 +45,20 @@ export function TitleSearch({ medium, onUse }: TitleSearchProps) {
     }
   }
 
+  const toggle = (id: string) => {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  };
+
+  const picked = results.filter((item) => selected.includes(item.id) && !queued.has(item.id));
+
   return (
     <div className="rounded-xl border border-border/70 bg-card/50 p-4">
       <p className="text-sm font-medium">
         Search {medium === "movie" ? "films on Wikipedia" : "games on Wikipedia"}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        Look up any {noun} Wikipedia knows. If the live lookup is down, RandoRanx falls back to a
-        local list. Use a result in Rank or Tourney.
+        Queue is search-only. Check one or more titles, then Queue. This never deals a random catalog
+        title on its own.
       </p>
       <form className="mt-3 flex flex-col gap-2 sm:flex-row" onSubmit={runSearch}>
         <Input
@@ -72,33 +83,64 @@ export function TitleSearch({ medium, onUse }: TitleSearchProps) {
         <p className="mt-3 text-sm text-muted-foreground">No matching {noun}s. Try another title.</p>
       ) : null}
       {results.length > 0 ? (
-        <ul className="mt-3 space-y-2">
-          {results.map((item) => (
-            <li
-              key={item.id}
-              className="flex flex-col gap-2 rounded-lg bg-background/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+        <div className="mt-3 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {picked.length} selected · checkboxes queue several at once
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              disabled={picked.length === 0}
+              onClick={() => {
+                onQueue(picked);
+                setSelected([]);
+              }}
             >
-              <div className="flex min-w-0 items-start gap-3">
-                <TitlePoster catalog={item} size="sm" showCredit />
-                <div className="min-w-0">
-                  <p className="font-medium">
-                    {item.title}{" "}
-                    <span className="text-sm font-normal text-muted-foreground">{item.year}</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">{item.genres.join(" · ")}</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button type="button" size="sm" onClick={() => onUse(item, "rank")}>
-                  Use in Rank
-                </Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => onUse(item, "tourney")}>
-                  Use in Tourney
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
+              Queue
+            </Button>
+          </div>
+          <ul className="space-y-2">
+            {results.map((item) => {
+              const already = queued.has(item.id);
+              const checked = selected.includes(item.id);
+              const checkId = `queue-${item.id}`;
+              return (
+                <li
+                  key={item.id}
+                  className="flex flex-col gap-2 rounded-lg bg-background/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <label htmlFor={checkId} className="flex min-w-0 items-start gap-3">
+                    <Checkbox
+                      id={checkId}
+                      checked={already || checked}
+                      disabled={already}
+                      onCheckedChange={() => toggle(item.id)}
+                      className="mt-1"
+                    />
+                    <TitlePoster catalog={item} size="sm" showCredit />
+                    <div className="min-w-0">
+                      <p className="font-medium">
+                        {item.title}{" "}
+                        <span className="text-sm font-normal text-muted-foreground">{item.year}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">{item.genres.join(" · ")}</p>
+                    </div>
+                  </label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={already}
+                    onClick={() => onQueue([item])}
+                  >
+                    {already ? "Queued" : "Queue"}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       ) : null}
     </div>
   );

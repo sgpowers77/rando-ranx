@@ -10,10 +10,12 @@ import { SessionLog } from "@/components/session-log";
 import { TitleStage } from "@/components/title-stage";
 import { TourneyStage } from "@/components/tourney-stage";
 import { PathSettings } from "@/components/path-settings";
+import { QueueModal } from "@/components/queue-modal";
 import { TitleSearch } from "@/components/title-search";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { defaultFilters, pathKey } from "@/lib/filters";
+import { queuedForMedium } from "@/lib/session";
 import { useRandoRanx } from "@/hooks/use-randoranx";
 import { useMemo, useState } from "react";
 
@@ -37,7 +39,9 @@ export function RandoRanxApp() {
     recordAndAdvance,
     pickTourneyWinner,
     savePathFilters,
-    useSearchedTitle,
+    queueSearchedTitles,
+    removeFromUserQueue,
+    setPresentQueuedOnly,
     addWatchTag,
     toggleWatchTag,
     updateResponse,
@@ -53,8 +57,12 @@ export function RandoRanxApp() {
   } = useRandoRanx();
   const [printOpen, setPrintOpen] = useState(false);
   const [mobileLogOpen, setMobileLogOpen] = useState(false);
+  const [queueOpen, setQueueOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const mediumQueue = session.medium ? queuedForMedium(session, session.medium) : session.userQueue;
+  const showQueueIcon = (session.userQueue?.length ?? 0) > 0;
 
   const editingEntry = useMemo(
     () => session.responses.find((entry) => entry.id === editingId) ?? null,
@@ -83,6 +91,10 @@ export function RandoRanxApp() {
       canFinalRound={contenderCount >= 2}
       finalRoundActive={finalRoundActive}
       contenderCount={contenderCount}
+      hideDiscard={session.playMode === "rank"}
+      playMode={session.playMode}
+      queueCount={session.userQueue?.length ?? 0}
+      onOpenQueue={showQueueIcon ? () => setQueueOpen(true) : undefined}
     />
   );
 
@@ -176,7 +188,6 @@ export function RandoRanxApp() {
                 if (!session.medium) return;
                 savePathFilters(session.medium, playMode, filters);
               }}
-              onUseSearch={useSearchedTitle}
               onBack={goHome}
             />
           ) : null}
@@ -201,7 +212,7 @@ export function RandoRanxApp() {
           {showRank && currentTitle ? (
             <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-4">
               <StageMeta
-                label={`Rank · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} in this deal${poolSource === "dataset" ? " · Movies Dataset" : ""}`}
+                label={`Ranx · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} in this deal${poolSource === "dataset" ? " · Movies Dataset" : ""}`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
                 onOpenSettings={() => setSettingsOpen(true)}
@@ -211,11 +222,16 @@ export function RandoRanxApp() {
                 title={currentTitle}
                 watched={session.watchTags.some((tag) => tag.titleId === currentTitle.id)}
                 onToggleWatch={() => toggleWatchTag(currentTitle)}
+                onWatchlist={addWatchTag}
                 onRated={(rating, comments) => recordAndAdvance("rated", { rating, comments })}
                 onSkip={() => recordAndAdvance("skipped")}
                 onQueue={() => recordAndAdvance("queued")}
               />
-              <TitleSearch medium={currentTitle.medium} onUse={useSearchedTitle} />
+              <TitleSearch
+                medium={currentTitle.medium}
+                queuedIds={mediumQueue.map((item) => item.id)}
+                onQueue={queueSearchedTitles}
+              />
             </div>
           ) : null}
 
@@ -239,7 +255,11 @@ export function RandoRanxApp() {
                 undoCount={tourneyUndoCount}
                 isFinalRound={finalRoundActive}
               />
-              <TitleSearch medium={tourneyPair[0].medium} onUse={useSearchedTitle} />
+              <TitleSearch
+                medium={tourneyPair[0].medium}
+                queuedIds={mediumQueue.map((item) => item.id)}
+                onQueue={queueSearchedTitles}
+              />
             </div>
           ) : null}
 
@@ -258,6 +278,11 @@ export function RandoRanxApp() {
                 onReshuffle={reshuffleMedium}
                 onUndo={undoTourneyPick}
                 undoCount={tourneyUndoCount}
+              />
+              <TitleSearch
+                medium={session.medium}
+                queuedIds={mediumQueue.map((item) => item.id)}
+                onQueue={queueSearchedTitles}
               />
             </div>
           ) : null}
@@ -289,6 +314,17 @@ export function RandoRanxApp() {
           }}
         />
       ) : null}
+
+      <QueueModal
+        open={queueOpen}
+        onOpenChange={setQueueOpen}
+        medium={session.medium}
+        titles={mediumQueue}
+        queueOnly={session.queueOnly}
+        onQueue={queueSearchedTitles}
+        onRemove={removeFromUserQueue}
+        onQueueOnlyChange={setPresentQueuedOnly}
+      />
 
       <ResultsLog
         open={printOpen}
@@ -336,7 +372,7 @@ function StageMeta({
           Path settings
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={onChangeMode}>
-          Rank or Tourney
+          Ranx or Tourney
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={onHome}>
           Switch catalog

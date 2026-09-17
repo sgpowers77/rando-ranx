@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "RandoRanx",
   description:
-    "Rank a random movie or game, skip what you have not tried, and keep a printable want list.",
+    "Rate movies or games in Ranx, compare them in Tourney, and keep a printable watchlist.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
