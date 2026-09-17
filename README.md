@@ -13,7 +13,8 @@ Shuffle real movie or game titles. Rank them one at a time, or run a Tourney and
 7. Search Wikipedia for any film (or game, on the Games path). **Use in Rank** or **Use in Tourney** deals it next. If Wikipedia is unreachable, a local fallback list is used.
 8. The left-hand log has **Results** and **Discard** tabs. Select a Results row to change action, rating, or comments. Discard is listed, not scored.
 9. On smaller screens, open the same log from the list icon in the header.
-10. The printer icon opens a printable table of results and discards.
+11. Home settings includes **Reset all**, which asks for confirmation then clears logs, Discard, Watch tags, remembered skip, filters, and searched titles. The catalog stays.
+12. In Tourney, drag a card onto the **WTF??** drop zone for a Wikipedia blurb. **Watchlist** tags it in the left log. **Continue** leaves the matchup as-is.
 
 Answers stay in this browser via `localStorage`. There is no account and no database.
 

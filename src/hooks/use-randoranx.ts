@@ -218,6 +218,25 @@ export function useRandoRanx() {
     [persist]
   );
 
+  const addWatchTag = useCallback((title: CatalogTitle) => {
+    persist((prev) => {
+      if (prev.watchTags.some((tag) => tag.titleId === title.id)) return prev;
+      return {
+        ...prev,
+        watchTags: [
+          ...prev.watchTags,
+          {
+            titleId: title.id,
+            medium: title.medium,
+            title: title.title,
+            year: title.year,
+            taggedAt: new Date().toISOString(),
+          },
+        ],
+      };
+    });
+  }, [persist]);
+
   const reshuffleMedium = useCallback(() => {
     persist((prev) => {
       if (!prev.medium || !prev.playMode) return prev;
@@ -274,6 +293,7 @@ export function useRandoRanx() {
     setSkipTourneyScoring,
     savePathFilters,
     useSearchedTitle,
+    addWatchTag,
     updateResponse,
     reshuffleMedium,
     clearSession,

@@ -20,6 +20,7 @@ export const EMPTY_SESSION: StoredSession = {
   remainingIds: { movie: [], game: [] },
   responses: [],
   discards: [],
+  watchTags: [],
   pendingTourney: null,
   skipTourneyScoring: false,
   customTitles: [],
@@ -67,6 +68,15 @@ export function usedTitleIds(session: StoredSession, medium: Medium): Set<string
     if (entry.medium === medium) used.add(entry.titleId);
   }
   return used;
+}
+
+function parseWatchTags(value: unknown): StoredSession["watchTags"] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is StoredSession["watchTags"][number] => {
+    if (!entry || typeof entry.titleId !== "string" || typeof entry.title !== "string") return false;
+    if (typeof entry.year !== "number") return false;
+    return entry.medium === "movie" || entry.medium === "game";
+  });
 }
 
 function parseCustomTitles(value: unknown): CatalogTitle[] {
@@ -140,6 +150,7 @@ export function parseSession(raw: string): StoredSession {
           entry.kind === "winner")
     ),
     discards: parseDiscards(parsed.discards),
+    watchTags: parseWatchTags(parsed.watchTags),
     pendingTourney:
       pending && typeof pending.winnerId === "string" && typeof pending.loserId === "string"
         ? { winnerId: pending.winnerId, loserId: pending.loserId }
@@ -250,10 +261,7 @@ export function writeSession(next: StoredSession) {
 }
 
 export function clearStoredSession() {
-  const skipTourneyScoring = memory.skipTourneyScoring;
-  const pathFilters = memory.pathFilters;
-  const customTitles = memory.customTitles;
-  memory = { ...EMPTY_SESSION, skipTourneyScoring, pathFilters, customTitles };
+  memory = EMPTY_SESSION;
   hydrateError = null;
   if (typeof window !== "undefined") {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memory));

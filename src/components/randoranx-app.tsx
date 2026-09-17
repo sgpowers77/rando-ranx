@@ -37,6 +37,7 @@ export function RandoRanxApp() {
     setSkipTourneyScoring,
     savePathFilters,
     useSearchedTitle,
+    addWatchTag,
     updateResponse,
     reshuffleMedium,
     clearSession,
@@ -63,6 +64,7 @@ export function RandoRanxApp() {
     <SessionLog
       responses={session.responses}
       discards={session.discards}
+      watchTags={session.watchTags}
       selectedId={editingId}
       onSelect={selectEntry}
     />
@@ -138,7 +140,7 @@ export function RandoRanxApp() {
             </div>
           ) : null}
 
-          {showLanding ? <Landing onChoose={chooseMedium} /> : null}
+          {showLanding ? <Landing onChoose={chooseMedium} onResetAll={clearSession} /> : null}
 
           {showModePick && session.medium ? (
             <ModePicker
@@ -195,6 +197,7 @@ export function RandoRanxApp() {
                 onCancelPick={cancelTourneyPick}
                 onComplete={completeTourneyRound}
                 onSkipScoringChange={setSkipTourneyScoring}
+                onWatchlist={addWatchTag}
               />
               <TitleSearch medium={tourneyPair[0].medium} onUse={useSearchedTitle} />
             </div>

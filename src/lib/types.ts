@@ -49,6 +49,14 @@ export type PendingTourney = {
   loserId: string;
 };
 
+export type WatchTag = {
+  titleId: string;
+  medium: Medium;
+  title: string;
+  year: number;
+  taggedAt: string;
+};
+
 export type StoredSession = {
   version: 1;
   medium: Medium | null;
@@ -56,6 +64,7 @@ export type StoredSession = {
   remainingIds: Record<Medium, string[]>;
   responses: SessionResponse[];
   discards: DiscardEntry[];
+  watchTags: WatchTag[];
   pendingTourney: PendingTourney | null;
   skipTourneyScoring: boolean;
   customTitles: CatalogTitle[];
