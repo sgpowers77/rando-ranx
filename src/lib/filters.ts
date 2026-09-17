@@ -27,8 +27,13 @@ export const GAME_GENRES = [
 ] as const;
 
 export const DECADES = [1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020] as const;
+export const GAME_DECADES = [1970, 1980, 1990, 2000, 2010, 2020] as const;
 
 export const OBSCURITY_LEVELS = [1, 2, 3, 4, 5] as const;
+
+export function decadesFor(medium: Medium): readonly number[] {
+  return medium === "game" ? GAME_DECADES : DECADES;
+}
 
 export function pathKey(medium: Medium, playMode: PlayMode): PathKey {
   return `${medium}:${playMode}`;
@@ -40,7 +45,7 @@ export function decadeOf(year: number): number {
 
 export function defaultFilters(medium: Medium): PathFilters {
   return {
-    decades: [...DECADES],
+    decades: [...decadesFor(medium)],
     genres: [...(medium === "movie" ? MOVIE_GENRES : GAME_GENRES)],
     obscurity: [...OBSCURITY_LEVELS],
     mpaa: medium === "movie" ? [...MPAA_RATINGS] : [],
@@ -55,7 +60,8 @@ export function matchesFilters(title: CatalogTitle, filters: PathFilters): boole
     return false;
   }
   const decade = decadeOf(title.year);
-  const decadeOk = decades.includes(decade) || (decade < 1940 && decades.includes(1940));
+  const floor = title.medium === "game" ? 1970 : 1940;
+  const decadeOk = decades.includes(decade) || (decade < floor && decades.includes(floor));
   const genreOk = title.genres.some((genre) => genres.includes(genre));
   const obscurityOk = obscurity.includes(title.obscurity);
   if (!decadeOk || !genreOk || !obscurityOk) return false;
@@ -64,6 +70,20 @@ export function matchesFilters(title: CatalogTitle, filters: PathFilters): boole
     if (allowed.length === 0 || !allowed.includes(titleMpaa(title))) return false;
   }
   return true;
+}
+
+export function sanitizeFilters(filters: PathFilters, medium: Medium): PathFilters {
+  const defaults = defaultFilters(medium);
+  const allowedDecades = new Set(decadesFor(medium));
+  const decades = (filters.decades ?? []).filter((decade) => allowedDecades.has(decade));
+  return {
+    ...defaults,
+    ...filters,
+    decades: decades.length > 0 ? decades : [...defaults.decades],
+    genres: (filters.genres?.length ?? 0) > 0 ? filters.genres : [...defaults.genres],
+    obscurity: (filters.obscurity?.length ?? 0) > 0 ? filters.obscurity : [...defaults.obscurity],
+    mpaa: medium === "movie" ? ((filters.mpaa?.length ?? 0) > 0 ? filters.mpaa : [...defaults.mpaa]) : [],
+  };
 }
 
 export function filtersComplete(filters: PathFilters, medium: Medium): boolean {

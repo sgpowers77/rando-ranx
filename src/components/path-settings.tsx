@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DECADES, defaultFilters, filtersComplete, GAME_GENRES, MOVIE_GENRES, OBSCURITY_LEVELS } from "@/lib/filters";
+import { defaultFilters, decadesFor, filtersComplete, GAME_GENRES, MOVIE_GENRES, OBSCURITY_LEVELS, sanitizeFilters } from "@/lib/filters";
 import { MPAA_RATINGS } from "@/lib/mpaa";
 import type { Medium, PathFilters, PlayMode } from "@/lib/types";
 import { useState } from "react";
@@ -24,12 +24,20 @@ type PathSettingsProps = {
   onSave: (playMode: PlayMode, filters: PathFilters) => void;
 };
 
-const OBSCURITY_COPY: Record<number, string> = {
+const MOVIE_OBSCURITY_COPY: Record<number, string> = {
   1: "1 · Blockbuster / household name",
   2: "2 · Widely seen",
   3: "3 · Known if you follow the medium",
   4: "4 · Cult / limited release",
   5: "5 · Extremely obscure indie",
+};
+
+const GAME_OBSCURITY_COPY: Record<number, string> = {
+  1: "1 · AAA+ Blockbuster",
+  2: "2 · AA Mid-Market Production",
+  3: "3 · A • Independent Studio",
+  4: "4 · Cult / Niche Release",
+  5: "5 · Micro-Indie / Ultra Obscure",
 };
 
 export function PathSettings({
@@ -40,9 +48,14 @@ export function PathSettings({
   onSave,
 }: PathSettingsProps) {
   const [mode, setMode] = useState<PlayMode>("rank");
-  const [draft, setDraft] = useState<Record<PlayMode, PathFilters>>(filtersByMode);
+  const [draft, setDraft] = useState<Record<PlayMode, PathFilters>>({
+    rank: sanitizeFilters(filtersByMode.rank, medium),
+    tourney: sanitizeFilters(filtersByMode.tourney, medium),
+  });
 
   const genres = medium === "movie" ? MOVIE_GENRES : GAME_GENRES;
+  const decades = decadesFor(medium);
+  const obscurityCopy = medium === "game" ? GAME_OBSCURITY_COPY : MOVIE_OBSCURITY_COPY;
   const current = draft[mode];
   const canClose = filtersComplete(draft.rank, medium) && filtersComplete(draft.tourney, medium);
   const rankMissing = missingGroups(draft.rank, medium);
@@ -68,7 +81,10 @@ export function PathSettings({
       open={open}
       onOpenChange={(next) => {
         if (next) {
-          setDraft(filtersByMode);
+          setDraft({
+            rank: sanitizeFilters(filtersByMode.rank, medium),
+            tourney: sanitizeFilters(filtersByMode.tourney, medium),
+          });
           onOpenChange(true);
           return;
         }
@@ -98,17 +114,19 @@ export function PathSettings({
               <legend className="w-full">
                 <GroupControls
                   label="Year"
-                  onCheckAll={() => applyMode(mode, { decades: [...DECADES] })}
+                  onCheckAll={() => applyMode(mode, { decades: [...decades] })}
                   onUncheckAll={() => applyMode(mode, { decades: [] })}
                 />
               </legend>
               <p className="text-xs text-muted-foreground">
                 Decade uses the Wikipedia / Wikidata release year (same source as search and blurbs).
-                Local catalog years are only a fallback. Unchecked decades are left out of Ranx and
-                Tourney. Keep at least one decade checked.
+                {medium === "game"
+                  ? " Games start at the 1970s — there is no 1960s or earlier bucket."
+                  : " Local catalog years are only a fallback."}{" "}
+                Unchecked decades are left out of Ranx and Tourney. Keep at least one decade checked.
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {DECADES.map((decade) => {
+                {decades.map((decade) => {
                   const id = `${mode}-decade-${decade}`;
                   const checked = current.decades.includes(decade);
                   return (
@@ -167,7 +185,9 @@ export function PathSettings({
                 />
               </legend>
               <p className="text-xs text-muted-foreground">
-                1 is a Hollywood-scale blockbuster. 5 is extremely obscure indie / low exposure.
+                {medium === "game"
+                  ? "1 is an AAA+ blockbuster. 5 is a micro-indie / ultra obscure release."
+                  : "1 is a Hollywood-scale blockbuster. 5 is extremely obscure indie / low exposure."}
               </p>
               <div className="grid gap-2">
                 {OBSCURITY_LEVELS.map((level) => {
@@ -183,7 +203,7 @@ export function PathSettings({
                           })
                         }
                       />
-                      {OBSCURITY_COPY[level]}
+                      {obscurityCopy[level]}
                     </label>
                   );
                 })}
