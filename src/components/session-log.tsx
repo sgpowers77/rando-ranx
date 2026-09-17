@@ -1,6 +1,6 @@
 "use client";
 
-import { resultLabel } from "@/components/results-log";
+import { resultLabel } from "@/lib/labels";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";

@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DECADES, defaultFilters, GAME_GENRES, MOVIE_GENRES, OBSCURITY_LEVELS } from "@/lib/filters";
+import { DECADES, defaultFilters, filtersComplete, GAME_GENRES, MOVIE_GENRES, OBSCURITY_LEVELS } from "@/lib/filters";
 import type { Medium, PathFilters, PlayMode } from "@/lib/types";
 import { useState } from "react";
 
@@ -43,6 +43,9 @@ export function PathSettings({
 
   const genres = medium === "movie" ? MOVIE_GENRES : GAME_GENRES;
   const current = draft[mode];
+  const canClose = filtersComplete(draft.rank) && filtersComplete(draft.tourney);
+  const rankMissing = missingGroups(draft.rank);
+  const tourneyMissing = missingGroups(draft.tourney);
 
   const applyMode = (playMode: PlayMode, patch: Partial<PathFilters>) => {
     const nextFilters: PathFilters = {
@@ -63,17 +66,23 @@ export function PathSettings({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (next) setDraft(filtersByMode);
-        onOpenChange(next);
+        if (next) {
+          setDraft(filtersByMode);
+          onOpenChange(true);
+          return;
+        }
+        if (!canClose) return;
+        onOpenChange(false);
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={canClose}>
         <DialogHeader>
           <DialogTitle>Path settings</DialogTitle>
           <DialogDescription>
             Filters apply separately to Rank and Tourney for{" "}
-            {medium === "movie" ? "Movies" : "Games"}. Unchecked boxes drop those titles from the
-            deal right away.
+            {medium === "movie" ? "Movies" : "Games"}. Each of Year, Genre, and Obscurity needs at
+            least one box checked on both paths. Unchecked boxes drop those titles from the deal
+            right away. Done stays off until every group has a selection.
           </DialogDescription>
         </DialogHeader>
 
@@ -94,7 +103,7 @@ export function PathSettings({
               <p className="text-xs text-muted-foreground">
                 Decade uses the Wikipedia / Wikidata release year (same source as search and blurbs).
                 Local catalog years are only a fallback. Unchecked decades are left out of Rank and
-                Tourney. Uncheck all decades to deal nothing.
+                Tourney. Keep at least one decade checked.
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {DECADES.map((decade) => {
@@ -181,6 +190,11 @@ export function PathSettings({
           </TabsContent>
         </Tabs>
 
+        {canClose ? null : (
+          <p className="text-sm text-muted-foreground" role="status">
+            {closeBlockedCopy(rankMissing, tourneyMissing)}
+          </p>
+        )}
         <DialogFooter className="gap-2 sm:justify-between">
           <Button
             type="button"
@@ -189,13 +203,28 @@ export function PathSettings({
           >
             Reset this path
           </Button>
-          <Button type="button" onClick={() => onOpenChange(false)}>
+          <Button type="button" disabled={!canClose} onClick={() => onOpenChange(false)}>
             Done
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
+}
+
+function missingGroups(filters: PathFilters): string[] {
+  const missing: string[] = [];
+  if ((filters.decades?.length ?? 0) === 0) missing.push("Year");
+  if ((filters.genres?.length ?? 0) === 0) missing.push("Genre");
+  if ((filters.obscurity?.length ?? 0) === 0) missing.push("Obscurity");
+  return missing;
+}
+
+function closeBlockedCopy(rankMissing: string[], tourneyMissing: string[]): string {
+  const parts: string[] = [];
+  if (rankMissing.length > 0) parts.push(`Rank still needs ${rankMissing.join(", ")}`);
+  if (tourneyMissing.length > 0) parts.push(`Tourney still needs ${tourneyMissing.join(", ")}`);
+  return `${parts.join(". ")}. Check at least one box in each group before Done.`;
 }
 
 function GroupControls({

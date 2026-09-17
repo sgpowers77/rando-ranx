@@ -59,6 +59,14 @@ export function matchesFilters(title: CatalogTitle, filters: PathFilters): boole
   return decadeOk && genreOk && obscurityOk;
 }
 
+export function filtersComplete(filters: PathFilters): boolean {
+  return (
+    (filters.decades?.length ?? 0) > 0 &&
+    (filters.genres?.length ?? 0) > 0 &&
+    (filters.obscurity?.length ?? 0) > 0
+  );
+}
+
 export function filtersActive(filters: PathFilters, medium: Medium): boolean {
   const defaults = defaultFilters(medium);
   return (

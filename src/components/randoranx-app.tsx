@@ -252,6 +252,7 @@ export function RandoRanxApp() {
         onOpenChange={setPrintOpen}
         responses={session.responses}
         discards={session.discards}
+        watchTags={session.watchTags}
         onClear={() => {
           clearSession();
           setPrintOpen(false);
@@ -265,7 +266,8 @@ export function RandoRanxApp() {
         <ResultsTable
           responses={session.responses}
           discards={session.discards}
-          caption="Rated titles, skips, the want list, and Tourney discards"
+          watchTags={session.watchTags}
+          caption="Rated titles, skips, the want list, Tourney discards, and Watch tags"
         />
       </section>
     </div>
