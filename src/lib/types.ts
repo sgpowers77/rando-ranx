@@ -67,6 +67,14 @@ export type FinalRound = {
   remainingIds: string[];
 };
 
+export type TourneyUndoFrame = {
+  remainingIds: string[];
+  finalRound: FinalRound | null;
+  responses: SessionResponse[];
+  discards: DiscardEntry[];
+  recentlyShown: Record<Medium, string[]>;
+};
+
 export type StoredSession = {
   version: 1;
   medium: Medium | null;
@@ -83,4 +91,5 @@ export type StoredSession = {
   releaseYears: Record<string, number>;
   liveTitles: CatalogTitle[];
   finalRound: FinalRound | null;
+  tourneyUndo: TourneyUndoFrame[];
 };

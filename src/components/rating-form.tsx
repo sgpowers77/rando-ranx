@@ -12,6 +12,8 @@ type RatingFormProps = {
   initialComments?: string;
   submitLabel?: string;
   cancelLabel?: string;
+  className?: string;
+  hideCancel?: boolean;
 };
 
 export function RatingForm({
@@ -22,6 +24,8 @@ export function RatingForm({
   initialComments = "",
   submitLabel = "Next",
   cancelLabel = "Back to choices",
+  className,
+  hideCancel = false,
 }: RatingFormProps) {
   const [rating, setRating] = useState<number | null>(initialRating ?? null);
   const [comments, setComments] = useState(initialComments);
@@ -30,7 +34,7 @@ export function RatingForm({
 
   return (
     <form
-      className="mt-6 space-y-5"
+      className={className ?? "mt-6 space-y-5"}
       onSubmit={(event) => {
         event.preventDefault();
         if (rating == null) return;
@@ -74,9 +78,11 @@ export function RatingForm({
         />
       </div>
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button type="button" variant="ghost" onClick={onCancel}>
-          {cancelLabel}
-        </Button>
+        {hideCancel ? null : (
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            {cancelLabel}
+          </Button>
+        )}
         <Button type="submit" disabled={rating == null} className="sm:min-w-28">
           {submitLabel}
         </Button>

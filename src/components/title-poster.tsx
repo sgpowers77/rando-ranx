@@ -14,9 +14,6 @@ type TitlePosterProps = {
   medium?: Medium;
   imdbId?: string;
   id?: string;
-  imageUrl?: string;
-  imageCreditLabel?: string;
-  imageCreditHref?: string;
   catalog?: CatalogTitle;
   size?: PosterSize;
   className?: string;
@@ -24,9 +21,9 @@ type TitlePosterProps = {
 };
 
 const frame: Record<PosterSize, string> = {
-  lg: "aspect-[2/3] w-full max-w-[14rem] sm:max-w-[16rem]",
-  md: "aspect-[2/3] w-full max-h-56",
-  sm: "h-16 w-11 shrink-0",
+  lg: "aspect-[2/3] w-full max-w-[18rem] sm:max-w-[20rem]",
+  md: "aspect-[2/3] w-full max-w-[16rem] sm:max-w-[18rem]",
+  sm: "aspect-[2/3] h-28 w-auto shrink-0",
 };
 
 export function TitlePoster(props: TitlePosterProps) {
@@ -40,9 +37,6 @@ export function TitlePoster(props: TitlePosterProps) {
           year: props.year,
           medium: props.medium,
           imdbId: props.imdbId,
-          imageUrl: props.imageUrl,
-          imageCreditLabel: props.imageCreditLabel,
-          imageCreditHref: props.imageCreditHref,
         }
       : null;
   const { poster, status } = usePoster(subject);
@@ -67,7 +61,7 @@ export function TitlePoster(props: TitlePosterProps) {
             key={poster.url}
             src={poster.url}
             alt=""
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain object-center"
             onLoad={() => setBroken(false)}
             onError={() => setBroken(true)}
           />

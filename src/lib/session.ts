@@ -10,6 +10,7 @@ import type {
   PlayMode,
   SessionResponse,
   StoredSession,
+  TourneyUndoFrame,
 } from "@/lib/types";
 
 export const STORAGE_KEY = "randoranx-session-v1";
@@ -30,6 +31,7 @@ export const EMPTY_SESSION: StoredSession = {
   releaseYears: {},
   liveTitles: [],
   finalRound: null,
+  tourneyUndo: [],
 };
 
 export function shuffleIds(ids: string[]): string[] {
@@ -80,6 +82,7 @@ export function skipTourneyPair(session: StoredSession): StoredSession {
     return {
       ...session,
       pendingTourney: null,
+      tourneyUndo: [],
       finalRound: { ...session.finalRound, remainingIds: shuffleIds([...rest, ...pair]) },
     };
   }
@@ -89,6 +92,7 @@ export function skipTourneyPair(session: StoredSession): StoredSession {
   const marked: StoredSession = {
     ...session,
     pendingTourney: null,
+    tourneyUndo: [],
     recentlyShown: {
       movie: session.recentlyShown?.movie ?? [],
       game: session.recentlyShown?.game ?? [],
@@ -276,7 +280,31 @@ export function parseSession(raw: string): StoredSession {
     },
     releaseYears: parseReleaseYears(parsed.releaseYears),
     finalRound: parseFinalRound(parsed.finalRound),
+    tourneyUndo: parseTourneyUndo(parsed.tourneyUndo),
   };
+}
+
+function parseTourneyUndo(value: unknown): TourneyUndoFrame[] {
+  if (!Array.isArray(value)) return [];
+  const frames: TourneyUndoFrame[] = [];
+  for (const item of value.slice(-3)) {
+    if (!item || typeof item !== "object") continue;
+    const frame = item as TourneyUndoFrame;
+    if (!Array.isArray(frame.remainingIds) || !Array.isArray(frame.responses) || !Array.isArray(frame.discards)) {
+      continue;
+    }
+    frames.push({
+      remainingIds: frame.remainingIds.filter((id) => typeof id === "string"),
+      finalRound: parseFinalRound(frame.finalRound),
+      responses: frame.responses,
+      discards: frame.discards,
+      recentlyShown: {
+        movie: parseIdList(frame.recentlyShown?.movie),
+        game: parseIdList(frame.recentlyShown?.game),
+      },
+    });
+  }
+  return frames;
 }
 
 function parseFinalRound(value: unknown): FinalRound | null {
@@ -303,6 +331,31 @@ let hydrateError: string | null = null;
 
 function emit() {
   for (const listener of listeners) listener();
+}
+
+const UNDO_CAP = 3;
+
+function captureTourneyUndo(session: StoredSession): TourneyUndoFrame {
+  const medium = session.medium ?? "movie";
+  return {
+    remainingIds: [...(session.remainingIds[medium] ?? [])],
+    finalRound: session.finalRound
+      ? { medium: session.finalRound.medium, remainingIds: [...session.finalRound.remainingIds] }
+      : null,
+    responses: session.responses,
+    discards: session.discards,
+    recentlyShown: {
+      movie: [...(session.recentlyShown?.movie ?? [])],
+      game: [...(session.recentlyShown?.game ?? [])],
+    },
+  };
+}
+
+function withTourneyUndo(prev: StoredSession, next: StoredSession): StoredSession {
+  return {
+    ...next,
+    tourneyUndo: [...(prev.tourneyUndo ?? []), captureTourneyUndo(prev)].slice(-UNDO_CAP),
+  };
 }
 
 export function applyTourneyOutcome(
@@ -335,7 +388,7 @@ export function applyTourneyOutcome(
 
   if (prev.finalRound) {
     const remaining = prev.finalRound.remainingIds.filter((id) => id !== winnerId && id !== loserId);
-    return {
+    return withTourneyUndo(prev, {
       ...prev,
       pendingTourney: null,
       finalRound: {
@@ -355,7 +408,7 @@ export function applyTourneyOutcome(
           recordedAt: now,
         },
       ],
-    };
+    });
   }
 
   const remaining = prev.remainingIds[medium].filter((id) => {
@@ -364,7 +417,7 @@ export function applyTourneyOutcome(
     if (!item) return false;
     return matchesFilters(item, filtersFor(prev, medium, prev.playMode ?? "tourney"));
   });
-  return {
+  return withTourneyUndo(prev, {
     ...prev,
     pendingTourney: null,
     remainingIds: {
@@ -389,6 +442,25 @@ export function applyTourneyOutcome(
         recordedAt: now,
       },
     ],
+  });
+}
+
+export function undoTourneySelect(session: StoredSession): StoredSession {
+  const stack = session.tourneyUndo ?? [];
+  if (stack.length === 0 || !session.medium) return session;
+  const frame = stack[stack.length - 1];
+  const medium = session.medium;
+  return {
+    ...session,
+    pendingTourney: null,
+    remainingIds: session.finalRound || frame.finalRound
+      ? session.remainingIds
+      : { ...session.remainingIds, [medium]: frame.remainingIds },
+    finalRound: frame.finalRound,
+    responses: frame.responses,
+    discards: frame.discards,
+    recentlyShown: frame.recentlyShown,
+    tourneyUndo: stack.slice(0, -1),
   };
 }
 
@@ -429,6 +501,7 @@ export function startFinalRound(session: StoredSession): StoredSession {
     medium,
     playMode: "tourney",
     pendingTourney: null,
+    tourneyUndo: [],
     finalRound: { medium, remainingIds: ids },
   };
 }
@@ -503,6 +576,7 @@ export function normalizeSession(session: StoredSession): StoredSession {
             : [],
         }
       : null,
+    tourneyUndo: Array.isArray(session.tourneyUndo) ? session.tourneyUndo.slice(-3) : [],
   };
 }
 

@@ -4,6 +4,7 @@ import { TitlePoster } from "@/components/title-poster";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CatalogTitle, Medium, PlayMode } from "@/lib/types";
+import { Undo2 } from "lucide-react";
 
 type EmptyCatalogProps = {
   medium: Medium;
@@ -16,6 +17,8 @@ type EmptyCatalogProps = {
   onHome: () => void;
   onChangeMode: () => void;
   onReshuffle: () => void;
+  onUndo?: () => void;
+  undoCount?: number;
 };
 
 export function EmptyCatalog({
@@ -29,6 +32,8 @@ export function EmptyCatalog({
   onHome,
   onChangeMode,
   onReshuffle,
+  onUndo,
+  undoCount = 0,
 }: EmptyCatalogProps) {
   const noun = medium === "movie" ? "movies" : "games";
 
@@ -97,7 +102,13 @@ export function EmptyCatalog({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-2 sm:flex-row">
+        <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          {undoCount > 0 && onUndo ? (
+            <Button type="button" variant="secondary" className="h-11 gap-2" onClick={onUndo}>
+              <Undo2 className="size-4" />
+              Back
+            </Button>
+          ) : null}
           <Button type="button" onClick={onChangeMode} className="h-11">
             Rank or Tourney
           </Button>
@@ -119,7 +130,13 @@ export function EmptyCatalog({
             stack. Switch to Rank to deal it, or reshuffle leftovers if something was missed.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-2 sm:flex-row">
+        <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          {undoCount > 0 && onUndo ? (
+            <Button type="button" variant="secondary" className="h-11 gap-2" onClick={onUndo}>
+              <Undo2 className="size-4" />
+              Back
+            </Button>
+          ) : null}
           <Button type="button" onClick={onChangeMode} className="h-11">
             Rank or Tourney
           </Button>

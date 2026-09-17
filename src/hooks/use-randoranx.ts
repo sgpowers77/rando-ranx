@@ -18,6 +18,7 @@ import {
   startFinalRound,
   subscribeSession,
   tourneyContenderIds,
+  undoTourneySelect,
   usedTitleIds,
   withDealtQueue,
   writeSession,
@@ -162,6 +163,7 @@ export function useRandoRanx() {
         playMode: null,
         pendingTourney: null,
         finalRound: null,
+        tourneyUndo: [],
       }));
       setPoolStatus("idle");
       setPoolError(null);
@@ -178,6 +180,7 @@ export function useRandoRanx() {
           playMode,
           pendingTourney: null,
           finalRound: null,
+          tourneyUndo: [],
           remainingIds: { ...prev.remainingIds, [prev.medium]: [] },
         };
       });
@@ -187,12 +190,12 @@ export function useRandoRanx() {
   );
 
   const goHome = useCallback(() => {
-    persist((prev) => ({ ...prev, medium: null, playMode: null, pendingTourney: null, finalRound: null }));
+    persist((prev) => ({ ...prev, medium: null, playMode: null, pendingTourney: null, finalRound: null, tourneyUndo: [] }));
     setPoolStatus("idle");
   }, [persist]);
 
   const goToModePick = useCallback(() => {
-    persist((prev) => ({ ...prev, playMode: null, pendingTourney: null, finalRound: null }));
+    persist((prev) => ({ ...prev, playMode: null, pendingTourney: null, finalRound: null, tourneyUndo: [] }));
   }, [persist]);
 
   const recordAndAdvance = useCallback(
@@ -238,19 +241,19 @@ export function useRandoRanx() {
   );
 
   const pickTourneyWinner = useCallback(
-    (winnerId: string, loserId: string) => {
-      persist((prev) => {
-        if (prev.skipTourneyScoring) {
-          return applyTourneyOutcome(prev, winnerId, loserId);
-        }
-        return {
-          ...prev,
-          pendingTourney: { winnerId, loserId },
-        };
-      });
+    (winnerId: string, loserId: string, extras?: { rating?: number; comments?: string }) => {
+      persist((prev) => applyTourneyOutcome(prev, winnerId, loserId, extras));
     },
     [persist]
   );
+
+  useEffect(() => {
+    if (!session.pendingTourney) return;
+    persist((prev) => {
+      if (!prev.pendingTourney) return prev;
+      return applyTourneyOutcome(prev, prev.pendingTourney.winnerId, prev.pendingTourney.loserId);
+    });
+  }, [persist, session.pendingTourney]);
 
   const cancelTourneyPick = useCallback(() => {
     persist((prev) => ({ ...prev, pendingTourney: null }));
@@ -299,7 +302,7 @@ export function useRandoRanx() {
         const customTitles = prev.customTitles.some((item) => item.id === title.id)
           ? prev.customTitles
           : [...prev.customTitles, title];
-        const withTitle: StoredSession = { ...prev, customTitles, playMode, pendingTourney: null, finalRound: null };
+        const withTitle: StoredSession = { ...prev, customTitles, playMode, pendingTourney: null, finalRound: null, tourneyUndo: [] };
         return withDealtQueue(withTitle, prev.medium, playMode, title.id);
       });
     },
@@ -325,6 +328,27 @@ export function useRandoRanx() {
     });
   }, [persist]);
 
+  const toggleWatchTag = useCallback((title: CatalogTitle) => {
+    persist((prev) => {
+      if (prev.watchTags.some((tag) => tag.titleId === title.id)) {
+        return { ...prev, watchTags: prev.watchTags.filter((tag) => tag.titleId !== title.id) };
+      }
+      return {
+        ...prev,
+        watchTags: [
+          ...prev.watchTags,
+          {
+            titleId: title.id,
+            medium: title.medium,
+            title: title.title,
+            year: title.year,
+            taggedAt: new Date().toISOString(),
+          },
+        ],
+      };
+    });
+  }, [persist]);
+
   const skipTourneyMatchup = useCallback(() => {
     persist((prev) => skipTourneyPair(prev));
     void refreshPool({ silent: true });
@@ -332,6 +356,10 @@ export function useRandoRanx() {
 
   const beginFinalRound = useCallback(() => {
     persist((prev) => startFinalRound(prev));
+  }, [persist]);
+
+  const undoTourneyPick = useCallback(() => {
+    persist((prev) => undoTourneySelect(prev));
   }, [persist]);
 
   const reshuffleMedium = useCallback(() => {
@@ -377,6 +405,7 @@ export function useRandoRanx() {
     poolError,
     poolSource,
     finalRoundActive: Boolean(session.finalRound),
+    tourneyUndoCount: session.tourneyUndo?.length ?? 0,
     contenderCount: session.medium
       ? tourneyContenderIds(session, session.medium).length
       : Math.max(tourneyContenderIds(session, "movie").length, tourneyContenderIds(session, "game").length),
@@ -392,9 +421,11 @@ export function useRandoRanx() {
     savePathFilters,
     useSearchedTitle,
     addWatchTag,
+    toggleWatchTag,
     updateResponse,
     reshuffleMedium,
     skipTourneyMatchup,
+    undoTourneyPick,
     beginFinalRound,
     clearSession,
     dismissError: dismissHydrateError,

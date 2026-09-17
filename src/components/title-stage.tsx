@@ -1,5 +1,6 @@
 "use client";
 
+import { BookmarkIconButton, CardIconBar } from "@/components/card-icon-bar";
 import { RatingForm } from "@/components/rating-form";
 import { TitlePoster } from "@/components/title-poster";
 import { Button } from "@/components/ui/button";
@@ -10,12 +11,14 @@ import { useState } from "react";
 
 type TitleStageProps = {
   title: CatalogTitle;
+  watched?: boolean;
+  onToggleWatch?: () => void;
   onRated: (rating: number, comments: string) => void;
   onSkip: () => void;
   onQueue: () => void;
 };
 
-export function TitleStage({ title, onRated, onSkip, onQueue }: TitleStageProps) {
+export function TitleStage({ title, watched = false, onToggleWatch, onRated, onSkip, onQueue }: TitleStageProps) {
   const [mode, setMode] = useState<"choose" | "rate">("choose");
   const medium: Medium = title.medium;
   const seenLabel = medium === "movie" ? "Seen It" : "Played It";
@@ -23,8 +26,17 @@ export function TitleStage({ title, onRated, onSkip, onQueue }: TitleStageProps)
   const wantLabel = medium === "movie" ? "Want to See It" : "Want to Play It";
 
   return (
-    <Card className="border-none bg-card/80 ring-1 ring-white/10">
-      <CardHeader className="gap-3">
+    <Card className="relative border-none bg-card/80 ring-1 ring-white/10">
+      {onToggleWatch ? (
+        <CardIconBar>
+          <BookmarkIconButton
+            active={watched}
+            label={watched ? `Remove ${title.title} from watchlist` : `Add ${title.title} to watchlist`}
+            onClick={onToggleWatch}
+          />
+        </CardIconBar>
+      ) : null}
+      <CardHeader className="gap-3 pr-12">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <TitlePoster catalog={title} size="lg" className="mx-auto sm:mx-0" />
           <div className="min-w-0 flex-1 space-y-3">

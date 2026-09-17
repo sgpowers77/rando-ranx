@@ -1,4 +1,5 @@
 import { localSearchFallback } from "@/lib/client-pool";
+import { isCinemaWikiPage } from "@/lib/poster";
 import type { CatalogTitle, Medium } from "@/lib/types";
 
 function extractYearFromWikiText(text: string, timestamp?: string): number | null {
@@ -101,22 +102,17 @@ export async function searchWikipediaClient(
         };
         const blob = `${summary.description ?? ""} ${summary.extract ?? ""} ${hit.snippet}`;
         if (!looksLikeMedium(blob, medium, hit.title)) return null;
+        const cinemaPage = await isCinemaWikiPage(summary.title ?? hit.title, medium);
+        if (!cinemaPage) return null;
         const year = extractYearFromWikiText(blob, summary.timestamp) ?? 2000;
-        const article =
-          summary.content_urls?.desktop?.page ??
-          `https://en.wikipedia.org/wiki/${encodeURIComponent((summary.title ?? hit.title).replaceAll(" ", "_"))}`;
-        const imageUrl = summary.thumbnail?.source;
         const title: CatalogTitle = {
-          id: `wiki-${medium}-${slug(summary.title ?? hit.title)}`,
+          id: `wiki-${medium}-${slug(cinemaPage)}`,
           medium,
-          title: cleanTitle(summary.title ?? hit.title),
+          title: cleanTitle(cinemaPage),
           year,
           genres: guessGenres(blob, medium),
           obscurity: 3,
           source: "search",
-          imageUrl,
-          imageCreditLabel: imageUrl?.includes("/commons/") ? "Wikimedia Commons" : "Wikipedia",
-          imageCreditHref: article,
         };
         return title;
       })

@@ -25,7 +25,6 @@ export function RandoRanxApp() {
     currentTitle,
     tourneyPair,
     leftoverTitle,
-    pendingWinner,
     eligibleCount,
     remainingVisible,
     poolStatus,
@@ -37,19 +36,19 @@ export function RandoRanxApp() {
     goToModePick,
     recordAndAdvance,
     pickTourneyWinner,
-    cancelTourneyPick,
-    completeTourneyRound,
-    setSkipTourneyScoring,
     savePathFilters,
     useSearchedTitle,
     addWatchTag,
+    toggleWatchTag,
     updateResponse,
     reshuffleMedium,
     skipTourneyMatchup,
+    undoTourneyPick,
     beginFinalRound,
     clearSession,
     dismissError,
     finalRoundActive,
+    tourneyUndoCount,
     contenderCount,
   } = useRandoRanx();
   const [printOpen, setPrintOpen] = useState(false);
@@ -210,6 +209,8 @@ export function RandoRanxApp() {
               <TitleStage
                 key={currentTitle.id}
                 title={currentTitle}
+                watched={session.watchTags.some((tag) => tag.titleId === currentTitle.id)}
+                onToggleWatch={() => toggleWatchTag(currentTitle)}
                 onRated={(rating, comments) => recordAndAdvance("rated", { rating, comments })}
                 onSkip={() => recordAndAdvance("skipped")}
                 onQueue={() => recordAndAdvance("queued")}
@@ -227,16 +228,15 @@ export function RandoRanxApp() {
                 onOpenSettings={() => setSettingsOpen(true)}
               />
               <TourneyStage
-                key={`${tourneyPair[0].id}-${tourneyPair[1].id}-${pendingWinner?.id ?? "open"}`}
+                key={`${tourneyPair[0].id}-${tourneyPair[1].id}`}
                 pair={tourneyPair}
-                pendingWinner={pendingWinner}
-                skipScoring={session.skipTourneyScoring}
                 onPick={pickTourneyWinner}
-                onCancelPick={cancelTourneyPick}
-                onComplete={completeTourneyRound}
-                onSkipScoringChange={setSkipTourneyScoring}
                 onWatchlist={addWatchTag}
+                onToggleWatch={toggleWatchTag}
+                watchedIds={session.watchTags.map((tag) => tag.titleId)}
                 onReshufflePair={skipTourneyMatchup}
+                onUndo={undoTourneyPick}
+                undoCount={tourneyUndoCount}
                 isFinalRound={finalRoundActive}
               />
               <TitleSearch medium={tourneyPair[0].medium} onUse={useSearchedTitle} />
@@ -256,6 +256,8 @@ export function RandoRanxApp() {
                 onHome={goHome}
                 onChangeMode={goToModePick}
                 onReshuffle={reshuffleMedium}
+                onUndo={undoTourneyPick}
+                undoCount={tourneyUndoCount}
               />
             </div>
           ) : null}

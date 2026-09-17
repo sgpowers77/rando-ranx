@@ -135,10 +135,10 @@ export function ResultsLog({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full gap-0 sm:max-w-3xl"
+        className="flex h-dvh max-h-dvh w-full flex-col gap-0 overflow-hidden sm:max-w-3xl"
         showCloseButton
       >
-        <SheetHeader className="border-b">
+        <SheetHeader className="shrink-0 border-b">
           <SheetTitle>Printable table</SheetTitle>
           <SheetDescription>
             {!hasAnything
@@ -149,35 +149,42 @@ export function ResultsLog({
         <div className="min-h-0 flex-1 overflow-auto px-4 py-4">
           <ResultsTable responses={responses} discards={discards} watchTags={watchTags} />
         </div>
-        <SheetFooter className="border-t sm:flex-row sm:justify-between">
+        <SheetFooter className="mt-0 shrink-0 border-t pb-[max(1rem,env(safe-area-inset-bottom))]">
           <Button
             type="button"
             variant="ghost"
+            className="h-11 w-full"
             onClick={onClear}
             disabled={!hasAnything}
           >
             Clear session
           </Button>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-2"
-              disabled={!hasAnything}
-              onClick={() => downloadSessionCsv(responses, discards, watchTags)}
-            >
-              <Download className="size-4" />
-              Download CSV
-            </Button>
-            <Button
-              type="button"
-              onClick={() => window.print()}
-              className="gap-2"
-            >
-              <Printer className="size-4" />
-              Print table
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 w-full gap-2"
+            disabled={!hasAnything}
+            onClick={() => downloadSessionCsv(responses, discards, watchTags)}
+          >
+            <Download className="size-4" />
+            Download CSV
+          </Button>
+          <Button
+            type="button"
+            className="h-11 w-full gap-2"
+            onClick={() => window.print()}
+          >
+            <Printer className="size-4" />
+            Print table
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-11 w-full"
+            onClick={() => onOpenChange(false)}
+          >
+            Close
+          </Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
