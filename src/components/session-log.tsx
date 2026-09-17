@@ -17,7 +17,7 @@ type SessionLogProps = {
 export function SessionLog({
   responses,
   discards,
-  watchTags,
+  watchTags = [],
   selectedId,
   onSelect,
 }: SessionLogProps) {

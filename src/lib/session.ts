@@ -50,7 +50,7 @@ export function usedTitleIds(session: StoredSession, medium: Medium): Set<string
   for (const entry of session.discards) {
     if (entry.medium === medium) used.add(entry.titleId);
   }
-  for (const entry of session.watchTags) {
+  for (const entry of session.watchTags ?? []) {
     if (entry.medium === medium) used.add(entry.titleId);
   }
   return used;
@@ -317,7 +317,7 @@ export function getSessionSnapshot(): StoredSession {
     didHydrate = true;
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      memory = raw ? parseSession(raw) : EMPTY_SESSION;
+      memory = raw ? normalizeSession(parseSession(raw)) : EMPTY_SESSION;
       hydrateError = null;
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -338,11 +338,35 @@ export function getHydrateError(): string | null {
 }
 
 export function writeSession(next: StoredSession) {
-  memory = next;
+  memory = normalizeSession(next);
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memory));
   }
   emit();
+}
+
+export function normalizeSession(session: StoredSession): StoredSession {
+  return {
+    version: 1,
+    medium: session.medium === "movie" || session.medium === "game" ? session.medium : null,
+    playMode: parsePlayMode(session.playMode),
+    remainingIds: {
+      movie: Array.isArray(session.remainingIds?.movie) ? session.remainingIds.movie : [],
+      game: Array.isArray(session.remainingIds?.game) ? session.remainingIds.game : [],
+    },
+    responses: Array.isArray(session.responses) ? session.responses : [],
+    discards: Array.isArray(session.discards) ? session.discards : [],
+    watchTags: Array.isArray(session.watchTags) ? session.watchTags : [],
+    pendingTourney: session.pendingTourney ?? null,
+    skipTourneyScoring: session.skipTourneyScoring === true,
+    customTitles: Array.isArray(session.customTitles) ? session.customTitles : [],
+    pathFilters: session.pathFilters ?? {},
+    recentlyShown: {
+      movie: parseIdList(session.recentlyShown?.movie),
+      game: parseIdList(session.recentlyShown?.game),
+    },
+    releaseYears: parseReleaseYears(session.releaseYears),
+  };
 }
 
 export function clearStoredSession() {

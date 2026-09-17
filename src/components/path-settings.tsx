@@ -45,7 +45,11 @@ export function PathSettings({
   const current = draft[mode];
 
   const applyMode = (playMode: PlayMode, patch: Partial<PathFilters>) => {
-    const nextFilters = { ...draft[playMode], ...patch };
+    const nextFilters: PathFilters = {
+      ...defaultFilters(medium),
+      ...draft[playMode],
+      ...patch,
+    };
     setDraft((prev) => ({ ...prev, [playMode]: nextFilters }));
     onSave(playMode, nextFilters);
   };

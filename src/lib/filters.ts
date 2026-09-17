@@ -46,14 +46,16 @@ export function defaultFilters(medium: Medium): PathFilters {
 }
 
 export function matchesFilters(title: CatalogTitle, filters: PathFilters): boolean {
-  if (filters.decades.length === 0 || filters.genres.length === 0 || filters.obscurity.length === 0) {
+  const decades = filters.decades ?? [];
+  const genres = filters.genres ?? [];
+  const obscurity = filters.obscurity ?? [];
+  if (decades.length === 0 || genres.length === 0 || obscurity.length === 0) {
     return false;
   }
   const decade = decadeOf(title.year);
-  const decadeOk =
-    filters.decades.includes(decade) || (decade < 1940 && filters.decades.includes(1940));
-  const genreOk = title.genres.some((genre) => filters.genres.includes(genre));
-  const obscurityOk = filters.obscurity.includes(title.obscurity);
+  const decadeOk = decades.includes(decade) || (decade < 1940 && decades.includes(1940));
+  const genreOk = title.genres.some((genre) => genres.includes(genre));
+  const obscurityOk = obscurity.includes(title.obscurity);
   return decadeOk && genreOk && obscurityOk;
 }
 

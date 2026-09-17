@@ -230,7 +230,7 @@ export function RandoRanxApp() {
         </SheetContent>
       </Sheet>
 
-      {session.medium ? (
+      {session.medium && session.playMode ? (
         <PathSettings
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
