@@ -9,8 +9,11 @@ import { ResultsLog, ResultsTable } from "@/components/results-log";
 import { SessionLog } from "@/components/session-log";
 import { TitleStage } from "@/components/title-stage";
 import { TourneyStage } from "@/components/tourney-stage";
+import { PathSettings } from "@/components/path-settings";
+import { TitleSearch } from "@/components/title-search";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { defaultFilters, pathKey } from "@/lib/filters";
 import { useRandoRanx } from "@/hooks/use-randoranx";
 import { useMemo, useState } from "react";
 
@@ -32,6 +35,8 @@ export function RandoRanxApp() {
     cancelTourneyPick,
     completeTourneyRound,
     setSkipTourneyScoring,
+    savePathFilters,
+    useSearchedTitle,
     updateResponse,
     reshuffleMedium,
     clearSession,
@@ -40,6 +45,7 @@ export function RandoRanxApp() {
   const [printOpen, setPrintOpen] = useState(false);
   const [mobileLogOpen, setMobileLogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const editingEntry = useMemo(
     () => session.responses.find((entry) => entry.id === editingId) ?? null,
@@ -135,7 +141,22 @@ export function RandoRanxApp() {
           {showLanding ? <Landing onChoose={chooseMedium} /> : null}
 
           {showModePick && session.medium ? (
-            <ModePicker medium={session.medium} onChoose={choosePlayMode} onBack={goHome} />
+            <ModePicker
+              medium={session.medium}
+              filtersByMode={{
+                rank: session.pathFilters[pathKey(session.medium, "rank")] ?? defaultFilters(session.medium),
+                tourney:
+                  session.pathFilters[pathKey(session.medium, "tourney")] ??
+                  defaultFilters(session.medium),
+              }}
+              onChoose={choosePlayMode}
+              onSaveFilters={(playMode, filters) => {
+                if (!session.medium) return;
+                savePathFilters(session.medium, playMode, filters);
+              }}
+              onUseSearch={useSearchedTitle}
+              onBack={goHome}
+            />
           ) : null}
 
           {showRank && currentTitle ? (
@@ -144,6 +165,7 @@ export function RandoRanxApp() {
                 label={`Rank · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left including this one`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
+                onOpenSettings={() => setSettingsOpen(true)}
               />
               <TitleStage
                 key={currentTitle.id}
@@ -152,6 +174,7 @@ export function RandoRanxApp() {
                 onSkip={() => recordAndAdvance("skipped")}
                 onQueue={() => recordAndAdvance("queued")}
               />
+              <TitleSearch medium={currentTitle.medium} onUse={useSearchedTitle} />
             </div>
           ) : null}
 
@@ -161,6 +184,7 @@ export function RandoRanxApp() {
                 label={`Tourney · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left in this stack`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
+                onOpenSettings={() => setSettingsOpen(true)}
               />
               <TourneyStage
                 key={`${tourneyPair[0].id}-${tourneyPair[1].id}-${pendingWinner?.id ?? "open"}`}
@@ -172,6 +196,7 @@ export function RandoRanxApp() {
                 onComplete={completeTourneyRound}
                 onSkipScoringChange={setSkipTourneyScoring}
               />
+              <TitleSearch medium={tourneyPair[0].medium} onUse={useSearchedTitle} />
             </div>
           ) : null}
 
@@ -198,6 +223,23 @@ export function RandoRanxApp() {
           {log}
         </SheetContent>
       </Sheet>
+
+      {session.medium ? (
+        <PathSettings
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          medium={session.medium}
+          filtersByMode={{
+            rank: session.pathFilters[pathKey(session.medium, "rank")] ?? defaultFilters(session.medium),
+            tourney:
+              session.pathFilters[pathKey(session.medium, "tourney")] ?? defaultFilters(session.medium),
+          }}
+          onSave={(playMode, filters) => {
+            if (!session.medium) return;
+            savePathFilters(session.medium, playMode, filters);
+          }}
+        />
+      ) : null}
 
       <ResultsLog
         open={printOpen}
@@ -228,15 +270,20 @@ function StageMeta({
   label,
   onChangeMode,
   onHome,
+  onOpenSettings,
 }: {
   label: string;
   onChangeMode: () => void;
   onHome: () => void;
+  onOpenSettings: () => void;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
       <p>{label}</p>
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-1">
+        <Button type="button" variant="ghost" size="sm" onClick={onOpenSettings}>
+          Path settings
+        </Button>
         <Button type="button" variant="ghost" size="sm" onClick={onChangeMode}>
           Rank or Tourney
         </Button>

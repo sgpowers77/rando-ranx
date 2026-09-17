@@ -18,8 +18,8 @@ export function Landing({ onChoose }: LandingProps) {
       </h1>
       <p className="mt-4 max-w-lg text-base text-muted-foreground sm:text-lg">
         Start with Movies or Games. Rank deals one title at a time. Tourney shows two; you pick a
-        winner to score, and the other goes to Discard. The left-hand log keeps Results and Discard
-        tabs. Print from the top-right icon.
+        winner to score, and the other goes to Discard. Filter each path by year, genre, and
+        obscurity, or search Wikipedia for a film. Print from the top-right icon.
       </p>
       <div className="mt-10 grid gap-3 sm:grid-cols-2">
         <Button

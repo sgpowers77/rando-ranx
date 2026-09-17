@@ -1,5 +1,15 @@
-import { CATALOG_BY_ID, titlesFor } from "@/data/catalog";
-import type { DiscardEntry, Medium, PlayMode, SessionResponse, StoredSession } from "@/lib/types";
+import { resolveTitle, titlesFor } from "@/data/catalog";
+import { defaultFilters, matchesFilters, pathKey } from "@/lib/filters";
+import type {
+  CatalogTitle,
+  DiscardEntry,
+  Medium,
+  PathFilters,
+  PathKey,
+  PlayMode,
+  SessionResponse,
+  StoredSession,
+} from "@/lib/types";
 
 export const STORAGE_KEY = "randoranx-session-v1";
 
@@ -12,6 +22,8 @@ export const EMPTY_SESSION: StoredSession = {
   discards: [],
   pendingTourney: null,
   skipTourneyScoring: false,
+  customTitles: [],
+  pathFilters: {},
 };
 
 export function shuffleIds(ids: string[]): string[] {
@@ -23,11 +35,27 @@ export function shuffleIds(ids: string[]): string[] {
   return next;
 }
 
-export function dealtQueue(medium: Medium, used: Set<string>): string[] {
-  const leftover = titlesFor(medium)
-    .map((item) => item.id)
-    .filter((id) => !used.has(id));
-  return shuffleIds(leftover);
+export function filtersFor(session: StoredSession, medium: Medium, playMode: PlayMode): PathFilters {
+  return session.pathFilters[pathKey(medium, playMode)] ?? defaultFilters(medium);
+}
+
+export function poolFor(session: StoredSession, medium: Medium, playMode: PlayMode): CatalogTitle[] {
+  const used = usedTitleIds(session, medium);
+  const filters = filtersFor(session, medium, playMode);
+  const extras = session.customTitles.filter((item) => item.medium === medium);
+  return [...titlesFor(medium), ...extras].filter(
+    (item) => !used.has(item.id) && matchesFilters(item, filters)
+  );
+}
+
+export function dealtQueue(session: StoredSession, medium: Medium, playMode: PlayMode): string[] {
+  return shuffleIds(poolFor(session, medium, playMode).map((item) => item.id));
+}
+
+export function ensureQueue(session: StoredSession, medium: Medium, playMode: PlayMode): string[] {
+  const allowed = new Set(poolFor(session, medium, playMode).map((item) => item.id));
+  const remaining = session.remainingIds[medium].filter((id) => allowed.has(id));
+  return remaining.length > 0 ? remaining : dealtQueue(session, medium, playMode);
 }
 
 export function usedTitleIds(session: StoredSession, medium: Medium): Set<string> {
@@ -39,6 +67,34 @@ export function usedTitleIds(session: StoredSession, medium: Medium): Set<string
     if (entry.medium === medium) used.add(entry.titleId);
   }
   return used;
+}
+
+function parseCustomTitles(value: unknown): CatalogTitle[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is CatalogTitle => {
+    if (!item || typeof item.id !== "string" || typeof item.title !== "string") return false;
+    if (typeof item.year !== "number") return false;
+    if (item.medium !== "movie" && item.medium !== "game") return false;
+    if (!Array.isArray(item.genres)) return false;
+    return [1, 2, 3, 4, 5].includes(item.obscurity);
+  });
+}
+
+function parsePathFilters(value: unknown): StoredSession["pathFilters"] {
+  if (!value || typeof value !== "object") return {};
+  const next: StoredSession["pathFilters"] = {};
+  for (const key of ["movie:rank", "movie:tourney", "game:rank", "game:tourney"] as PathKey[]) {
+    const raw = (value as Record<string, PathFilters | undefined>)[key];
+    if (!raw) continue;
+    next[key] = {
+      decades: Array.isArray(raw.decades) ? raw.decades.filter((n) => typeof n === "number") : [],
+      genres: Array.isArray(raw.genres) ? raw.genres.filter((n) => typeof n === "string") : [],
+      obscurity: Array.isArray(raw.obscurity)
+        ? raw.obscurity.filter((n) => typeof n === "number")
+        : [],
+    };
+  }
+  return next;
 }
 
 function parsePlayMode(value: unknown): PlayMode | null {
@@ -89,6 +145,8 @@ export function parseSession(raw: string): StoredSession {
         ? { winnerId: pending.winnerId, loserId: pending.loserId }
         : null,
     skipTourneyScoring: parsed.skipTourneyScoring === true,
+    customTitles: parseCustomTitles(parsed.customTitles),
+    pathFilters: parsePathFilters(parsed.pathFilters),
   };
 }
 
@@ -108,8 +166,8 @@ export function applyTourneyOutcome(
   extras?: { rating?: number; comments?: string }
 ): StoredSession {
   if (!prev.medium) return prev;
-  const winner = CATALOG_BY_ID.get(winnerId);
-  const loser = CATALOG_BY_ID.get(loserId);
+  const winner = resolveTitle(winnerId, prev.customTitles);
+  const loser = resolveTitle(loserId, prev.customTitles);
   if (!winner || !loser) return prev;
 
   const now = new Date().toISOString();
@@ -193,7 +251,9 @@ export function writeSession(next: StoredSession) {
 
 export function clearStoredSession() {
   const skipTourneyScoring = memory.skipTourneyScoring;
-  memory = { ...EMPTY_SESSION, skipTourneyScoring };
+  const pathFilters = memory.pathFilters;
+  const customTitles = memory.customTitles;
+  memory = { ...EMPTY_SESSION, skipTourneyScoring, pathFilters, customTitles };
   hydrateError = null;
   if (typeof window !== "undefined") {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memory));

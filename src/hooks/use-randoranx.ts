@@ -1,21 +1,23 @@
 "use client";
 
-import { CATALOG_BY_ID } from "@/data/catalog";
+import { resolveTitle } from "@/data/catalog";
+import { pathKey } from "@/lib/filters";
 import {
   applyTourneyOutcome,
   clearStoredSession,
   dealtQueue,
   dismissHydrateError,
+  ensureQueue,
   getHydrateError,
   getServerSessionSnapshot,
   getSessionSnapshot,
   subscribeSession,
-  usedTitleIds,
   writeSession,
 } from "@/lib/session";
 import type {
   CatalogTitle,
   Medium,
+  PathFilters,
   PlayMode,
   SessionResponse,
   StoredSession,
@@ -24,12 +26,6 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
 
 function subscribeNoop() {
   return () => {};
-}
-
-function ensureQueue(prev: StoredSession, medium: Medium): string[] {
-  const used = usedTitleIds(prev, medium);
-  const remaining = prev.remainingIds[medium].filter((id) => !used.has(id));
-  return remaining.length > 0 ? remaining : dealtQueue(medium, used);
 }
 
 export function useRandoRanx() {
@@ -44,14 +40,14 @@ export function useRandoRanx() {
   const currentTitle = useMemo<CatalogTitle | null>(() => {
     if (!session.medium || session.playMode !== "rank") return null;
     const nextId = session.remainingIds[session.medium][0];
-    return nextId ? (CATALOG_BY_ID.get(nextId) ?? null) : null;
+    return nextId ? (resolveTitle(nextId, session.customTitles) ?? null) : null;
   }, [session]);
 
   const tourneyPair = useMemo<[CatalogTitle, CatalogTitle] | null>(() => {
     if (!session.medium || session.playMode !== "tourney") return null;
     const queue = session.remainingIds[session.medium];
-    const first = queue[0] ? CATALOG_BY_ID.get(queue[0]) : undefined;
-    const second = queue[1] ? CATALOG_BY_ID.get(queue[1]) : undefined;
+    const first = queue[0] ? resolveTitle(queue[0], session.customTitles) : undefined;
+    const second = queue[1] ? resolveTitle(queue[1], session.customTitles) : undefined;
     return first && second ? [first, second] : null;
   }, [session]);
 
@@ -59,14 +55,14 @@ export function useRandoRanx() {
     if (!session.medium || session.playMode !== "tourney") return null;
     const queue = session.remainingIds[session.medium];
     if (queue.length !== 1) return null;
-    return CATALOG_BY_ID.get(queue[0]) ?? null;
+    return resolveTitle(queue[0], session.customTitles) ?? null;
   }, [session]);
 
   const pendingWinner = useMemo<CatalogTitle | null>(() => {
     const pending = session.pendingTourney;
     if (!pending) return null;
-    return CATALOG_BY_ID.get(pending.winnerId) ?? null;
-  }, [session.pendingTourney]);
+    return resolveTitle(pending.winnerId, session.customTitles) ?? null;
+  }, [session.customTitles, session.pendingTourney]);
 
   const persist = useCallback((updater: (prev: StoredSession) => StoredSession) => {
     writeSession(updater(getSessionSnapshot()));
@@ -79,7 +75,6 @@ export function useRandoRanx() {
         medium,
         playMode: null,
         pendingTourney: null,
-        remainingIds: { ...prev.remainingIds, [medium]: ensureQueue(prev, medium) },
       }));
     },
     [persist]
@@ -93,7 +88,10 @@ export function useRandoRanx() {
           ...prev,
           playMode,
           pendingTourney: null,
-          remainingIds: { ...prev.remainingIds, [prev.medium]: ensureQueue(prev, prev.medium) },
+          remainingIds: {
+            ...prev.remainingIds,
+            [prev.medium]: ensureQueue(prev, prev.medium, playMode),
+          },
         };
       });
     },
@@ -113,7 +111,7 @@ export function useRandoRanx() {
       persist((prev) => {
         if (!prev.medium) return prev;
         const [currentId, ...rest] = prev.remainingIds[prev.medium];
-        const title = currentId ? CATALOG_BY_ID.get(currentId) : undefined;
+        const title = currentId ? resolveTitle(currentId, prev.customTitles) : undefined;
         if (!title) return prev;
 
         const response: SessionResponse = {
@@ -179,15 +177,56 @@ export function useRandoRanx() {
     [persist]
   );
 
+  const savePathFilters = useCallback(
+    (medium: Medium, playMode: PlayMode, filters: PathFilters) => {
+      persist((prev) => {
+        const next: StoredSession = {
+          ...prev,
+          pathFilters: { ...prev.pathFilters, [pathKey(medium, playMode)]: filters },
+        };
+        if (prev.medium === medium && prev.playMode === playMode) {
+          next.pendingTourney = null;
+          next.remainingIds = {
+            ...prev.remainingIds,
+            [medium]: dealtQueue(next, medium, playMode),
+          };
+        }
+        return next;
+      });
+    },
+    [persist]
+  );
+
+  const useSearchedTitle = useCallback(
+    (title: CatalogTitle, playMode: PlayMode) => {
+      persist((prev) => {
+        if (!prev.medium) return prev;
+        const customTitles = prev.customTitles.some((item) => item.id === title.id)
+          ? prev.customTitles
+          : [...prev.customTitles, title];
+        const withTitle: StoredSession = { ...prev, customTitles, playMode, pendingTourney: null };
+        const rest = ensureQueue(withTitle, prev.medium, playMode).filter((id) => id !== title.id);
+        return {
+          ...withTitle,
+          remainingIds: {
+            ...prev.remainingIds,
+            [prev.medium]: [title.id, ...rest],
+          },
+        };
+      });
+    },
+    [persist]
+  );
+
   const reshuffleMedium = useCallback(() => {
     persist((prev) => {
-      if (!prev.medium) return prev;
+      if (!prev.medium || !prev.playMode) return prev;
       return {
         ...prev,
         pendingTourney: null,
         remainingIds: {
           ...prev.remainingIds,
-          [prev.medium]: dealtQueue(prev.medium, usedTitleIds(prev, prev.medium)),
+          [prev.medium]: dealtQueue(prev, prev.medium, prev.playMode),
         },
       };
     });
@@ -233,6 +272,8 @@ export function useRandoRanx() {
     cancelTourneyPick,
     completeTourneyRound,
     setSkipTourneyScoring,
+    savePathFilters,
+    useSearchedTitle,
     updateResponse,
     reshuffleMedium,
     clearSession,

@@ -2,11 +2,22 @@ export type Medium = "movie" | "game";
 
 export type PlayMode = "rank" | "tourney";
 
+export type PathKey = `${Medium}:${PlayMode}`;
+
 export type CatalogTitle = {
   id: string;
   medium: Medium;
   title: string;
   year: number;
+  genres: string[];
+  obscurity: 1 | 2 | 3 | 4 | 5;
+  source?: "catalog" | "search";
+};
+
+export type PathFilters = {
+  decades: number[];
+  genres: string[];
+  obscurity: number[];
 };
 
 export type ResponseKind = "rated" | "skipped" | "queued" | "winner";
@@ -47,4 +58,6 @@ export type StoredSession = {
   discards: DiscardEntry[];
   pendingTourney: PendingTourney | null;
   skipTourneyScoring: boolean;
+  customTitles: CatalogTitle[];
+  pathFilters: Partial<Record<PathKey, PathFilters>>;
 };
