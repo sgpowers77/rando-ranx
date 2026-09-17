@@ -74,6 +74,14 @@ export function EntryEditor({ entry, onSave, onCancel }: EntryEditorProps) {
                 setSaved(false);
               }}
             />
+            <ActionChoice
+              label="Tourney winner (no score)"
+              selected={kind === "winner"}
+              onSelect={() => {
+                setKind("winner");
+                setSaved(false);
+              }}
+            />
           </div>
 
           {kind === "rated" ? (

@@ -35,6 +35,9 @@ export function resultLabel(entry: SessionResponse): string {
   if (entry.kind === "queued") {
     return entry.medium === "movie" ? "Want to see it" : "Want to play it";
   }
+  if (entry.kind === "winner") {
+    return "Tourney winner";
+  }
   return entry.medium === "movie" ? "Haven't seen it" : "Haven't played it";
 }
 

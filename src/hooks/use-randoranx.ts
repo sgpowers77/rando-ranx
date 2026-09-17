@@ -2,6 +2,7 @@
 
 import { CATALOG_BY_ID } from "@/data/catalog";
 import {
+  applyTourneyOutcome,
   clearStoredSession,
   dealtQueue,
   dismissHydrateError,
@@ -139,10 +140,15 @@ export function useRandoRanx() {
 
   const pickTourneyWinner = useCallback(
     (winnerId: string, loserId: string) => {
-      persist((prev) => ({
-        ...prev,
-        pendingTourney: { winnerId, loserId },
-      }));
+      persist((prev) => {
+        if (prev.skipTourneyScoring) {
+          return applyTourneyOutcome(prev, winnerId, loserId);
+        }
+        return {
+          ...prev,
+          pendingTourney: { winnerId, loserId },
+        };
+      });
     },
     [persist]
   );
@@ -152,51 +158,23 @@ export function useRandoRanx() {
   }, [persist]);
 
   const completeTourneyRound = useCallback(
-    (rating: number, comments: string) => {
+    (extras?: { rating?: number; comments?: string }) => {
       persist((prev) => {
-        if (!prev.medium || !prev.pendingTourney) return prev;
-        const { winnerId, loserId } = prev.pendingTourney;
-        const winner = CATALOG_BY_ID.get(winnerId);
-        const loser = CATALOG_BY_ID.get(loserId);
-        if (!winner || !loser) return prev;
-
-        const now = new Date().toISOString();
-        const response: SessionResponse = {
-          id: `${winner.id}-${Date.now()}`,
-          titleId: winner.id,
-          medium: winner.medium,
-          title: winner.title,
-          year: winner.year,
-          kind: "rated",
-          rating,
-          comments: comments.trim() ? comments.trim() : undefined,
-          recordedAt: now,
-        };
-
-        return {
-          ...prev,
-          pendingTourney: null,
-          remainingIds: {
-            ...prev.remainingIds,
-            [prev.medium]: prev.remainingIds[prev.medium].filter(
-              (id) => id !== winnerId && id !== loserId
-            ),
-          },
-          responses: [...prev.responses, response],
-          discards: [
-            ...prev.discards,
-            {
-              id: `${loser.id}-${Date.now()}-discard`,
-              titleId: loser.id,
-              medium: loser.medium,
-              title: loser.title,
-              year: loser.year,
-              lostToTitle: winner.title,
-              recordedAt: now,
-            },
-          ],
-        };
+        if (!prev.pendingTourney) return prev;
+        return applyTourneyOutcome(
+          prev,
+          prev.pendingTourney.winnerId,
+          prev.pendingTourney.loserId,
+          extras
+        );
       });
+    },
+    [persist]
+  );
+
+  const setSkipTourneyScoring = useCallback(
+    (skipTourneyScoring: boolean) => {
+      persist((prev) => ({ ...prev, skipTourneyScoring }));
     },
     [persist]
   );
@@ -254,6 +232,7 @@ export function useRandoRanx() {
     pickTourneyWinner,
     cancelTourneyPick,
     completeTourneyRound,
+    setSkipTourneyScoring,
     updateResponse,
     reshuffleMedium,
     clearSession,

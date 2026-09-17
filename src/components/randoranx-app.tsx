@@ -31,6 +31,7 @@ export function RandoRanxApp() {
     pickTourneyWinner,
     cancelTourneyPick,
     completeTourneyRound,
+    setSkipTourneyScoring,
     updateResponse,
     reshuffleMedium,
     clearSession,
@@ -165,9 +166,11 @@ export function RandoRanxApp() {
                 key={`${tourneyPair[0].id}-${tourneyPair[1].id}-${pendingWinner?.id ?? "open"}`}
                 pair={tourneyPair}
                 pendingWinner={pendingWinner}
+                skipScoring={session.skipTourneyScoring}
                 onPick={pickTourneyWinner}
                 onCancelPick={cancelTourneyPick}
                 onComplete={completeTourneyRound}
+                onSkipScoringChange={setSkipTourneyScoring}
               />
             </div>
           ) : null}

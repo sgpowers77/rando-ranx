@@ -1,5 +1,5 @@
-import { titlesFor } from "@/data/catalog";
-import type { DiscardEntry, Medium, PlayMode, StoredSession } from "@/lib/types";
+import { CATALOG_BY_ID, titlesFor } from "@/data/catalog";
+import type { DiscardEntry, Medium, PlayMode, SessionResponse, StoredSession } from "@/lib/types";
 
 export const STORAGE_KEY = "randoranx-session-v1";
 
@@ -11,6 +11,7 @@ export const EMPTY_SESSION: StoredSession = {
   responses: [],
   discards: [],
   pendingTourney: null,
+  skipTourneyScoring: false,
 };
 
 export function shuffleIds(ids: string[]): string[] {
@@ -77,13 +78,17 @@ export function parseSession(raw: string): StoredSession {
         typeof entry.titleId === "string" &&
         typeof entry.title === "string" &&
         typeof entry.year === "number" &&
-        (entry.kind === "rated" || entry.kind === "skipped" || entry.kind === "queued")
+        (entry.kind === "rated" ||
+          entry.kind === "skipped" ||
+          entry.kind === "queued" ||
+          entry.kind === "winner")
     ),
     discards: parseDiscards(parsed.discards),
     pendingTourney:
       pending && typeof pending.winnerId === "string" && typeof pending.loserId === "string"
         ? { winnerId: pending.winnerId, loserId: pending.loserId }
         : null,
+    skipTourneyScoring: parsed.skipTourneyScoring === true,
   };
 }
 
@@ -94,6 +99,56 @@ let hydrateError: string | null = null;
 
 function emit() {
   for (const listener of listeners) listener();
+}
+
+export function applyTourneyOutcome(
+  prev: StoredSession,
+  winnerId: string,
+  loserId: string,
+  extras?: { rating?: number; comments?: string }
+): StoredSession {
+  if (!prev.medium) return prev;
+  const winner = CATALOG_BY_ID.get(winnerId);
+  const loser = CATALOG_BY_ID.get(loserId);
+  if (!winner || !loser) return prev;
+
+  const now = new Date().toISOString();
+  const scored = extras?.rating != null;
+  const response: SessionResponse = {
+    id: `${winner.id}-${Date.now()}`,
+    titleId: winner.id,
+    medium: winner.medium,
+    title: winner.title,
+    year: winner.year,
+    kind: scored ? "rated" : "winner",
+    rating: scored ? extras.rating : undefined,
+    comments: extras?.comments?.trim() ? extras.comments.trim() : undefined,
+    recordedAt: now,
+  };
+
+  return {
+    ...prev,
+    pendingTourney: null,
+    remainingIds: {
+      ...prev.remainingIds,
+      [prev.medium]: prev.remainingIds[prev.medium].filter(
+        (id) => id !== winnerId && id !== loserId
+      ),
+    },
+    responses: [...prev.responses, response],
+    discards: [
+      ...prev.discards,
+      {
+        id: `${loser.id}-${Date.now()}-discard`,
+        titleId: loser.id,
+        medium: loser.medium,
+        title: loser.title,
+        year: loser.year,
+        lostToTitle: winner.title,
+        recordedAt: now,
+      },
+    ],
+  };
 }
 
 export function subscribeSession(listener: () => void) {
@@ -137,10 +192,11 @@ export function writeSession(next: StoredSession) {
 }
 
 export function clearStoredSession() {
-  memory = EMPTY_SESSION;
+  const skipTourneyScoring = memory.skipTourneyScoring;
+  memory = { ...EMPTY_SESSION, skipTourneyScoring };
   hydrateError = null;
   if (typeof window !== "undefined") {
-    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memory));
   }
   emit();
 }

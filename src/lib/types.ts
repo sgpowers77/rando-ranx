@@ -9,7 +9,7 @@ export type CatalogTitle = {
   year: number;
 };
 
-export type ResponseKind = "rated" | "skipped" | "queued";
+export type ResponseKind = "rated" | "skipped" | "queued" | "winner";
 
 export type SessionResponse = {
   id: string;
@@ -46,4 +46,5 @@ export type StoredSession = {
   responses: SessionResponse[];
   discards: DiscardEntry[];
   pendingTourney: PendingTourney | null;
+  skipTourneyScoring: boolean;
 };

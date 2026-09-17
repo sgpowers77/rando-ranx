@@ -22,8 +22,8 @@ export function ModePicker({ medium, onChoose, onBack }: ModePickerProps) {
         Rank one at a time, or run a Tourney.
       </h1>
       <p className="mt-4 max-w-lg text-base text-muted-foreground sm:text-lg">
-        Rank deals a single {catalog.slice(0, -1)}. Tourney puts two titles against each other; the
-        winner gets a 1–10 score, and the other lands in Discard.
+        Rank deals a single {catalog.slice(0, -1)}. Tourney puts two titles against each other; pick
+        a winner to score or skip scoring, and the other lands in Discard.
       </p>
       <div className="mt-10 grid gap-3 sm:grid-cols-2">
         <Button type="button" onClick={() => onChoose("rank")} className="h-14 w-full gap-2 text-base">
