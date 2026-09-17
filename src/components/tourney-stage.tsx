@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { decadeOf } from "@/lib/filters";
 import type { CatalogTitle } from "@/lib/types";
-import { Shuffle, Undo2 } from "lucide-react";
+import { SkipForward, Undo2 } from "lucide-react";
 import { useRef, useState } from "react";
 
 type TourneyStageProps = {
@@ -115,10 +115,11 @@ export function TourneyStage({
           type="button"
           variant="outline"
           className="h-11 w-full gap-2 text-base"
+          aria-label="Skip both titles"
           onClick={onReshufflePair}
         >
-          <Shuffle className="size-4" />
-          Reshuffle
+          <SkipForward className="size-4" />
+          Skip
         </Button>
         <p className="hidden text-center text-xs text-muted-foreground lg:block">
           Skip both titles without picking a winner and deal a new pair. They will not show up again

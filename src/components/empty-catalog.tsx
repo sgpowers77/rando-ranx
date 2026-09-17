@@ -127,7 +127,7 @@ export function EmptyCatalog({
           <CardTitle className="font-heading text-2xl">Odd one out</CardTitle>
           <CardDescription>
             Tourney needs two titles. {leftoverTitle.title} is the last {noun.slice(0, -1)} left in this
-            stack. Switch to Ranx to deal it, or reshuffle leftovers if something was missed.
+            stack. Switch to Ranx to deal it, or deal more titles if something was missed.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">

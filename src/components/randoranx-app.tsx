@@ -353,8 +353,8 @@ export function RandoRanxApp() {
               Drag a card onto WTF?? for a Wikipedia blurb — that does not count as a pick.
             </p>
             <p>
-              Reshuffle skips both titles without picking a winner and deals a new pair. They will
-              not show up again right away. Back undoes the last Select, up to three times.
+              Skip both titles without picking a winner and deal a new pair. They will not show up
+              again right away. Back undoes the last Select, up to three times.
             </p>
             <p className="text-muted-foreground">
               Path settings stay available above the cards. Star and bookmark sit on each poster.
