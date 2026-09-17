@@ -44,6 +44,12 @@ export function PathSettings({
   const genres = medium === "movie" ? MOVIE_GENRES : GAME_GENRES;
   const current = draft[mode];
 
+  const applyMode = (playMode: PlayMode, patch: Partial<PathFilters>) => {
+    const nextFilters = { ...draft[playMode], ...patch };
+    setDraft((prev) => ({ ...prev, [playMode]: nextFilters }));
+    onSave(playMode, nextFilters);
+  };
+
   const toggle = (list: number[] | string[], value: number | string) => {
     if (list.includes(value as never)) return list.filter((item) => item !== value);
     return [...list, value];
@@ -63,7 +69,7 @@ export function PathSettings({
           <DialogDescription>
             Filters apply separately to Rank and Tourney for{" "}
             {medium === "movie" ? "Movies" : "Games"}. Unchecked boxes drop those titles from the
-            deal.
+            deal right away.
           </DialogDescription>
         </DialogHeader>
 
@@ -74,8 +80,18 @@ export function PathSettings({
           </TabsList>
           <TabsContent value={mode} className="space-y-5 pt-4">
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Year</legend>
-              <p className="text-xs text-muted-foreground">Group by decade. Titles before 1940 use 1940s.</p>
+              <legend className="w-full">
+                <GroupControls
+                  label="Year"
+                  onCheckAll={() => applyMode(mode, { decades: [...DECADES] })}
+                  onUncheckAll={() => applyMode(mode, { decades: [] })}
+                />
+              </legend>
+              <p className="text-xs text-muted-foreground">
+                Decade uses the Wikipedia / Wikidata release year (same source as search and blurbs).
+                Local catalog years are only a fallback. Unchecked decades are left out of Rank and
+                Tourney. Uncheck all decades to deal nothing.
+              </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {DECADES.map((decade) => {
                   const id = `${mode}-decade-${decade}`;
@@ -86,13 +102,9 @@ export function PathSettings({
                         id={id}
                         checked={checked}
                         onCheckedChange={() =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            [mode]: {
-                              ...prev[mode],
-                              decades: toggle(prev[mode].decades, decade) as number[],
-                            },
-                          }))
+                          applyMode(mode, {
+                            decades: toggle(current.decades, decade) as number[],
+                          })
                         }
                       />
                       {decade}s
@@ -103,7 +115,13 @@ export function PathSettings({
             </fieldset>
 
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Genre</legend>
+              <legend className="w-full">
+                <GroupControls
+                  label="Genre"
+                  onCheckAll={() => applyMode(mode, { genres: [...genres] })}
+                  onUncheckAll={() => applyMode(mode, { genres: [] })}
+                />
+              </legend>
               <div className="grid grid-cols-2 gap-2">
                 {genres.map((genre) => {
                   const id = `${mode}-genre-${genre}`;
@@ -113,13 +131,9 @@ export function PathSettings({
                         id={id}
                         checked={current.genres.includes(genre)}
                         onCheckedChange={() =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            [mode]: {
-                              ...prev[mode],
-                              genres: toggle(prev[mode].genres, genre) as string[],
-                            },
-                          }))
+                          applyMode(mode, {
+                            genres: toggle(current.genres, genre) as string[],
+                          })
                         }
                       />
                       {genre}
@@ -130,7 +144,13 @@ export function PathSettings({
             </fieldset>
 
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Obscurity</legend>
+              <legend className="w-full">
+                <GroupControls
+                  label="Obscurity"
+                  onCheckAll={() => applyMode(mode, { obscurity: [...OBSCURITY_LEVELS] })}
+                  onUncheckAll={() => applyMode(mode, { obscurity: [] })}
+                />
+              </legend>
               <p className="text-xs text-muted-foreground">
                 1 is a Hollywood-scale blockbuster. 5 is extremely obscure indie / low exposure.
               </p>
@@ -143,13 +163,9 @@ export function PathSettings({
                         id={id}
                         checked={current.obscurity.includes(level)}
                         onCheckedChange={() =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            [mode]: {
-                              ...prev[mode],
-                              obscurity: toggle(prev[mode].obscurity, level) as number[],
-                            },
-                          }))
+                          applyMode(mode, {
+                            obscurity: toggle(current.obscurity, level) as number[],
+                          })
                         }
                       />
                       {OBSCURITY_COPY[level]}
@@ -165,24 +181,45 @@ export function PathSettings({
           <Button
             type="button"
             variant="ghost"
-            onClick={() =>
-              setDraft((prev) => ({ ...prev, [mode]: defaultFilters(medium) }))
-            }
+            onClick={() => applyMode(mode, defaultFilters(medium))}
           >
             Reset this path
           </Button>
-          <Button
-            type="button"
-            onClick={() => {
-              onSave("rank", draft.rank);
-              onSave("tourney", draft.tourney);
-              onOpenChange(false);
-            }}
-          >
-            Save filters
+          <Button type="button" onClick={() => onOpenChange(false)}>
+            Done
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function GroupControls({
+  label,
+  onCheckAll,
+  onUncheckAll,
+}: {
+  label: string;
+  onCheckAll: () => void;
+  onUncheckAll: () => void;
+}) {
+  return (
+    <span className="flex flex-wrap items-center justify-between gap-2">
+      <span className="text-sm font-medium">{label}</span>
+      <span className="flex gap-1">
+        <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onCheckAll}>
+          Check all
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={onUncheckAll}
+        >
+          Uncheck all
+        </Button>
+      </span>
+    </span>
   );
 }

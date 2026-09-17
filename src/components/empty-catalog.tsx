@@ -8,6 +8,7 @@ type EmptyCatalogProps = {
   medium: Medium;
   playMode: PlayMode;
   leftoverTitle: string | null;
+  filterEmpty?: boolean;
   onHome: () => void;
   onChangeMode: () => void;
   onReshuffle: () => void;
@@ -17,11 +18,35 @@ export function EmptyCatalog({
   medium,
   playMode,
   leftoverTitle,
+  filterEmpty,
   onHome,
   onChangeMode,
   onReshuffle,
 }: EmptyCatalogProps) {
   const noun = medium === "movie" ? "movies" : "games";
+
+  if (filterEmpty) {
+    return (
+      <Card className="border-none bg-card/80 ring-1 ring-white/10">
+        <CardHeader>
+          <CardTitle className="font-heading text-2xl">Nothing matches these filters</CardTitle>
+          <CardDescription>
+            No {noun} in the current stack sit in the decades, genres, and obscurity levels you
+            checked. Open Path settings and include at least one decade — unchecked decades stay
+            out of Rank and Tourney.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button type="button" onClick={onChangeMode} className="h-11">
+            Rank or Tourney
+          </Button>
+          <Button type="button" variant="outline" onClick={onHome} className="h-11">
+            Back to Movies or Games
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (playMode === "tourney" && leftoverTitle) {
     return (

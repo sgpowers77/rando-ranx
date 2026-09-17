@@ -69,4 +69,6 @@ export type StoredSession = {
   skipTourneyScoring: boolean;
   customTitles: CatalogTitle[];
   pathFilters: Partial<Record<PathKey, PathFilters>>;
+  recentlyShown: Record<Medium, string[]>;
+  releaseYears: Record<string, number>;
 };

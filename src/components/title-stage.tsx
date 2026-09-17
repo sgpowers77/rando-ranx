@@ -3,6 +3,7 @@
 import { RatingForm } from "@/components/rating-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { decadeOf } from "@/lib/filters";
 import type { CatalogTitle, Medium } from "@/lib/types";
 import { useState } from "react";
 
@@ -29,7 +30,9 @@ export function TitleStage({ title, onRated, onSkip, onQueue }: TitleStageProps)
         <CardTitle className="font-heading text-3xl leading-tight text-balance sm:text-4xl">
           {title.title}
         </CardTitle>
-        <CardDescription className="text-base text-muted-foreground">{title.year}</CardDescription>
+        <CardDescription className="text-base text-muted-foreground">
+          {title.year} · {decadeOf(title.year)}s
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {mode === "choose" ? (

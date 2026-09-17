@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { decadeOf } from "@/lib/filters";
 import type { CatalogTitle } from "@/lib/types";
 import { useRef, useState } from "react";
 
@@ -52,7 +53,7 @@ export function TourneyStage({
             {pendingWinner.title}
           </CardTitle>
           <CardDescription className="text-base text-muted-foreground">
-            {pendingWinner.year} · Score this {noun}, or skip scoring and log it as the pick.
+            {pendingWinner.year} · {decadeOf(pendingWinner.year)}s · Score this {noun}, or skip scoring and log it as the pick.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -213,7 +214,9 @@ function MatchupCard({
         <CardTitle className="font-heading text-2xl leading-tight text-balance sm:text-3xl">
           {title.title}
         </CardTitle>
-        <CardDescription className="text-base">{title.year}</CardDescription>
+        <CardDescription className="text-base">
+          {title.year} · {decadeOf(title.year)}s
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Button

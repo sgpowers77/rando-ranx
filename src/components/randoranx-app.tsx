@@ -26,6 +26,8 @@ export function RandoRanxApp() {
     tourneyPair,
     leftoverTitle,
     pendingWinner,
+    eligibleCount,
+    remainingVisible,
     chooseMedium,
     choosePlayMode,
     goHome,
@@ -70,7 +72,7 @@ export function RandoRanxApp() {
     />
   );
 
-  const remainingCount = session.medium ? session.remainingIds[session.medium].length : 0;
+  const remainingCount = remainingVisible;
   const ready = status !== "loading";
   const showLanding = ready && !editingEntry && !session.medium;
   const showModePick = ready && !editingEntry && session.medium && !session.playMode;
@@ -209,6 +211,7 @@ export function RandoRanxApp() {
                 medium={session.medium}
                 playMode={session.playMode}
                 leftoverTitle={leftoverTitle?.title ?? null}
+                filterEmpty={eligibleCount === 0}
                 onHome={goHome}
                 onChangeMode={goToModePick}
                 onReshuffle={reshuffleMedium}

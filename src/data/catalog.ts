@@ -51,6 +51,35 @@ export const MOVIES: CatalogTitle[] = [
   movie("movie-tetsuo", "Tetsuo: The Iron Man", 1989, ["Horror", "Sci-Fi"], 5),
   movie("movie-pomegranates", "The Color of Pomegranates", 1969, ["Drama"], 5),
   movie("movie-jeanne-dielman", "Jeanne Dielman, 23, quai du Commerce, 1080 Bruxelles", 1975, ["Drama"], 5),
+  movie("movie-seven-samurai", "Seven Samurai", 1954, ["Action", "Drama"], 3),
+  movie("movie-vertigo", "Vertigo", 1958, ["Thriller", "Romance"], 3),
+  movie("movie-jaws", "Jaws", 1975, ["Thriller", "Adventure"], 1),
+  movie("movie-blade-runner", "Blade Runner", 1982, ["Sci-Fi", "Thriller"], 2),
+  movie("movie-my-neighbor-totoro", "My Neighbor Totoro", 1988, ["Animation", "Adventure"], 2),
+  movie("movie-goodfellas", "Goodfellas", 1990, ["Crime", "Drama"], 2),
+  movie("movie-before-sunrise", "Before Sunrise", 1995, ["Romance", "Drama"], 3),
+  movie("movie-fargo", "Fargo", 1996, ["Crime", "Comedy"], 2),
+  movie("movie-mulholland-drive", "Mulholland Drive", 2001, ["Thriller", "Drama"], 3),
+  movie("movie-city-of-god", "City of God", 2002, ["Crime", "Drama"], 3),
+  movie("movie-eternal-sunshine", "Eternal Sunshine of the Spotless Mind", 2004, ["Romance", "Sci-Fi"], 3),
+  movie("movie-children-of-men", "Children of Men", 2006, ["Sci-Fi", "Thriller"], 3),
+  movie("movie-there-will-be-blood", "There Will Be Blood", 2007, ["Drama"], 3),
+  movie("movie-wall-e", "WALL-E", 2008, ["Animation", "Adventure"], 1),
+  movie("movie-drive", "Drive", 2011, ["Crime", "Thriller"], 3),
+  movie("movie-her", "Her", 2013, ["Romance", "Drama"], 3),
+  movie("movie-mad-max-already", "The Tale of the Princess Kaguya", 2013, ["Animation", "Drama"], 4),
+  movie("movie-ex-machina", "Ex Machina", 2014, ["Sci-Fi", "Thriller"], 3),
+  movie("movie-spotlight", "Spotlight", 2015, ["Drama"], 3),
+  movie("movie-the-witch", "The Witch", 2015, ["Horror", "Drama"], 4),
+  movie("movie-manchester", "Manchester by the Sea", 2016, ["Drama"], 3),
+  movie("movie-call-me-by-your-name", "Call Me by Your Name", 2017, ["Romance", "Drama"], 3),
+  movie("movie-roma", "Roma", 2018, ["Drama"], 3),
+  movie("movie-un-cut-gems", "Uncut Gems", 2019, ["Thriller", "Crime"], 3),
+  movie("movie-nomadland", "Nomadland", 2020, ["Drama"], 3),
+  movie("movie-the-power-of-the-dog", "The Power of the Dog", 2021, ["Drama"], 3),
+  movie("movie-aftersun", "Aftersun", 2022, ["Drama"], 4),
+  movie("movie-anatomy", "Anatomy of a Fall", 2023, ["Thriller", "Drama"], 3),
+  movie("movie-the-zone", "The Zone of Interest", 2023, ["Drama"], 4),
 ];
 
 export const GAMES: CatalogTitle[] = [
@@ -84,6 +113,23 @@ export const GAMES: CatalogTitle[] = [
   game("game-cruelty-squad", "Cruelty Squad", 2021, ["Action", "Indie"], 5),
   game("game-baba", "Baba Is You", 2019, ["Puzzle", "Indie"], 4),
   game("game-uwu", "Umurangi Generation", 2020, ["Indie", "Simulation"], 5),
+  game("game-halo", "Halo: Combat Evolved", 2001, ["Action"], 1),
+  game("game-wow", "World of Warcraft", 2004, ["RPG"], 1),
+  game("game-bioshock", "BioShock", 2007, ["Action", "Adventure"], 2),
+  game("game-left-4-dead-2", "Left 4 Dead 2", 2009, ["Action"], 2),
+  game("game-dark-souls", "Dark Souls", 2011, ["Action", "RPG"], 2),
+  game("game-skyrim", "The Elder Scrolls V: Skyrim", 2011, ["RPG", "Adventure"], 1),
+  game("game-journey", "Journey", 2012, ["Adventure", "Indie"], 3),
+  game("game-the-witness", "The Witness", 2016, ["Puzzle", "Indie"], 4),
+  game("game-overwatch", "Overwatch", 2016, ["Action"], 1),
+  game("game-horizon", "Horizon Zero Dawn", 2017, ["Action", "Adventure"], 2),
+  game("game-into-the-breach", "Into the Breach", 2018, ["Strategy", "Indie"], 4),
+  game("game-sekiro", "Sekiro: Shadows Die Twice", 2019, ["Action", "Adventure"], 2),
+  game("game-death-stranding", "Death Stranding", 2019, ["Adventure", "Action"], 3),
+  game("game-hades-already", "A Short Hike", 2019, ["Adventure", "Indie"], 4),
+  game("game-animal-well", "Animal Well", 2024, ["Puzzle", "Indie"], 4),
+  game("game-balatro", "Balatro", 2024, ["Strategy", "Indie"], 2),
+  game("game-metaphor", "Metaphor: ReFantazio", 2024, ["RPG"], 3),
 ];
 
 export const CATALOG: CatalogTitle[] = [...MOVIES, ...GAMES];
@@ -94,11 +140,21 @@ export function titlesFor(medium: CatalogTitle["medium"]): CatalogTitle[] {
   return medium === "movie" ? MOVIES : GAMES;
 }
 
+export function withReleaseYear(
+  title: CatalogTitle,
+  releaseYears?: Record<string, number>
+): CatalogTitle {
+  const year = releaseYears?.[title.id];
+  return year != null ? { ...title, year } : title;
+}
+
 export function resolveTitle(
   id: string,
-  customTitles: CatalogTitle[] = []
+  customTitles: CatalogTitle[] = [],
+  releaseYears?: Record<string, number>
 ): CatalogTitle | undefined {
-  return customTitles.find((item) => item.id === id) ?? CATALOG_BY_ID.get(id);
+  const found = customTitles.find((item) => item.id === id) ?? CATALOG_BY_ID.get(id);
+  return found ? withReleaseYear(found, releaseYears) : undefined;
 }
 
 export const SEARCH_FALLBACK: CatalogTitle[] = [

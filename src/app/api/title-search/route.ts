@@ -1,8 +1,11 @@
 import { SEARCH_FALLBACK } from "@/data/catalog";
 import type { CatalogTitle, Medium } from "@/lib/types";
+import {
+  extractYearFromWikiText,
+  releaseYearForPage,
+  WIKI_UA,
+} from "@/lib/wiki-lookup";
 import { NextRequest, NextResponse } from "next/server";
-
-const UA = "RandoRanx/1.0 (https://github.com/sgpowers77/rando-ranx; film search)";
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";
@@ -38,7 +41,7 @@ async function searchWikipedia(q: string, medium: Medium): Promise<CatalogTitle[
   api.searchParams.set("utf8", "1");
 
   const searchRes = await fetch(api, {
-    headers: { "User-Agent": UA, Accept: "application/json" },
+    headers: { "User-Agent": WIKI_UA, Accept: "application/json" },
     next: { revalidate: 0 },
   });
   if (!searchRes.ok) throw new Error("Wikipedia search failed");
@@ -51,7 +54,7 @@ async function searchWikipedia(q: string, medium: Medium): Promise<CatalogTitle[
     hits.slice(0, 6).map(async (hit) => {
       const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(hit.title)}`;
       const summaryRes = await fetch(summaryUrl, {
-        headers: { "User-Agent": UA, Accept: "application/json" },
+        headers: { "User-Agent": WIKI_UA, Accept: "application/json" },
       });
       if (!summaryRes.ok) return null;
       const summary = (await summaryRes.json()) as {
@@ -62,7 +65,9 @@ async function searchWikipedia(q: string, medium: Medium): Promise<CatalogTitle[
       };
       const blob = `${summary.description ?? ""} ${summary.extract ?? ""} ${hit.snippet}`;
       if (!looksLikeMedium(blob, medium, hit.title)) return null;
-      const year = extractYear(blob, summary.timestamp);
+      const wikiYear = await releaseYearForPage(hit.title);
+      const year =
+        wikiYear ?? extractYearFromWikiText(blob, summary.timestamp) ?? 2000;
       const title: CatalogTitle = {
         id: `wiki-${medium}-${slug(summary.title ?? hit.title)}`,
         medium,
@@ -85,13 +90,6 @@ function looksLikeMedium(text: string, medium: Medium, title: string): boolean {
     return /film|movie|cinema|directed by|screenplay/.test(blob);
   }
   return /video game|videogame|developer|publisher|platform/.test(blob);
-}
-
-function extractYear(text: string, timestamp?: string): number {
-  const match = text.match(/\b(19|20)\d{2}\b/);
-  if (match) return Number(match[0]);
-  if (timestamp) return Number(timestamp.slice(0, 4));
-  return 2000;
 }
 
 function guessGenres(text: string, medium: Medium): string[] {
