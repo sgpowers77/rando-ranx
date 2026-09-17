@@ -186,7 +186,7 @@ function MatchupCard({
 
   return (
     <Card
-      className="relative h-full border-none bg-card/80 ring-1 ring-white/10"
+      className="relative h-full overflow-visible border-none bg-card/80 ring-1 ring-white/10"
       draggable
       onDragStart={(event) => {
         if ((event.target as HTMLElement).closest("[data-card-chrome]")) {
