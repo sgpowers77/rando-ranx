@@ -39,7 +39,7 @@ export function WtfDropZone({
         onArmed(false);
         onDropId(raw);
       }}
-      className={`fixed bottom-6 left-1/2 z-50 w-[min(20rem,calc(100%-2rem))] -translate-x-1/2 rounded-2xl border-2 border-dashed px-6 py-5 text-center shadow-lg [&>*]:pointer-events-none ${
+      className={`fixed bottom-4 left-1/2 z-50 w-[min(28rem,calc(100%-1rem))] -translate-x-1/2 rounded-2xl border-2 border-dashed px-6 py-8 text-center shadow-lg [&>*]:pointer-events-none ${
         armed
           ? "border-primary bg-primary/20 text-foreground"
           : "border-amber-200/70 bg-background/95 text-amber-100"
