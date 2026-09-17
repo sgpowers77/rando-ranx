@@ -11,6 +11,7 @@ export type CatalogTitle = {
   year: number;
   genres: string[];
   obscurity: 1 | 2 | 3 | 4 | 5;
+  mpaa?: string;
   source?: "catalog" | "search" | "dataset";
   imdbId?: string;
   imageUrl?: string;
@@ -22,6 +23,7 @@ export type PathFilters = {
   decades: number[];
   genres: string[];
   obscurity: number[];
+  mpaa: string[];
 };
 
 export type ResponseKind = "rated" | "skipped" | "queued" | "winner";

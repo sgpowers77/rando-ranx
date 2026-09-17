@@ -63,16 +63,16 @@ export function TourneyStage({
   return (
     <div className="space-y-3">
       {isFinalRound ? (
-        <p className="rounded-xl border border-amber-200/30 bg-amber-200/10 px-4 py-3 text-sm">
+        <p className="hidden rounded-xl border border-amber-200/30 bg-amber-200/10 px-4 py-3 text-sm lg:block">
           Final Round. Vote among logged Contenders until one champion remains. Losers still go to
           Discard. WTF?? and Watch work the same as Tourney.
         </p>
       ) : null}
-      <p className="text-xs text-muted-foreground">
+      <p className="hidden text-xs text-muted-foreground lg:block">
         Select a Contender. Star adds an optional score. Bookmark adds Watch without voting. Drag a
         card onto WTF?? for a Wikipedia blurb — that does not count as a pick.
       </p>
-      <div className="grid items-stretch gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 items-stretch gap-2 lg:gap-3">
         <MatchupCard
           title={left}
           notes={notes[left.id]}
@@ -120,7 +120,7 @@ export function TourneyStage({
           <Shuffle className="size-4" />
           Reshuffle
         </Button>
-        <p className="text-center text-xs text-muted-foreground">
+        <p className="hidden text-center text-xs text-muted-foreground lg:block">
           Skip both titles without picking a winner and deal a new pair. They will not show up again
           right away.
         </p>
@@ -190,41 +190,43 @@ function MatchupCard({
       }}
       onDragEnd={onDragEnd}
     >
-      <CardIconBar>
-        <StarIconButton
-          active={Boolean(notes)}
-          label={`Rate and comment on ${title.title}`}
-          onClick={() => {
-            draggedRef.current = false;
-            setRateOpen(true);
-          }}
-        />
-        <BookmarkIconButton
-          active={watched}
-          label={watched ? `Remove ${title.title} from watchlist` : `Add ${title.title} to watchlist`}
-          onClick={() => {
-            draggedRef.current = false;
-            onToggleWatch();
-          }}
-        />
-      </CardIconBar>
-      <CardHeader className="flex-1 gap-2 pr-20">
-        <TitlePoster catalog={title} size="md" />
-        <p className="text-xs font-medium tracking-widest text-amber-200/80 uppercase">
+      <div className="relative mx-auto w-fit">
+        <TitlePoster catalog={title} size="tourney" />
+        <CardIconBar>
+          <StarIconButton
+            active={Boolean(notes)}
+            label={`Rate and comment on ${title.title}`}
+            onClick={() => {
+              draggedRef.current = false;
+              setRateOpen(true);
+            }}
+          />
+          <BookmarkIconButton
+            active={watched}
+            label={watched ? `Remove ${title.title} from watchlist` : `Add ${title.title} to watchlist`}
+            onClick={() => {
+              draggedRef.current = false;
+              onToggleWatch();
+            }}
+          />
+        </CardIconBar>
+      </div>
+      <CardHeader className="flex-1 gap-1 px-2 pt-2 lg:gap-2 lg:px-4 lg:pr-4">
+        <p className="hidden text-xs font-medium tracking-widest text-amber-200/80 uppercase lg:block">
           {title.medium === "movie" ? "Movie" : "Game"}
         </p>
-        <CardTitle className="font-heading text-2xl leading-tight text-balance sm:text-3xl">
+        <CardTitle className="font-heading line-clamp-2 text-sm leading-tight text-balance lg:text-3xl">
           {title.title}
         </CardTitle>
-        <CardDescription className="text-base">
+        <CardDescription className="text-[11px] lg:text-base">
           {title.year} · {decadeOf(title.year)}s
           {notes ? ` · ${notes.rating}/10 saved` : ""}
         </CardDescription>
       </CardHeader>
-      <CardContent className="mt-auto">
+      <CardContent className="mt-auto px-2 pb-2 lg:px-4 lg:pb-4">
         <Button
           type="button"
-          className="h-12 w-full text-base"
+          className="h-9 w-full text-sm lg:h-12 lg:text-base"
           onClick={() => {
             if (draggedRef.current) {
               draggedRef.current = false;

@@ -5,13 +5,14 @@ import type { CatalogTitle, Medium, PathFilters } from "@/lib/types";
 
 type IndexFile = {
   source?: string;
-  movies?: Array<{
+    movies?: Array<{
     id: string;
     title: string;
     year: number;
     genres: string[];
     obscurity: CatalogTitle["obscurity"];
     imdbId?: string;
+    mpaa?: string;
   }>;
 };
 
@@ -42,6 +43,7 @@ export async function loadMovieCatalog(): Promise<{ titles: CatalogTitle[]; sour
       obscurity: item.obscurity,
       source: "dataset" as const,
       imdbId: item.imdbId,
+      mpaa: item.mpaa,
     }));
     if (movies.length === 0) throw new Error("empty index");
     movieCache = movies;

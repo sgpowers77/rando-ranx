@@ -13,6 +13,13 @@ import { PathSettings } from "@/components/path-settings";
 import { QueueModal } from "@/components/queue-modal";
 import { TitleSearch } from "@/components/title-search";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { defaultFilters, pathKey } from "@/lib/filters";
 import { queuedForMedium } from "@/lib/session";
@@ -60,6 +67,7 @@ export function RandoRanxApp() {
   const [queueOpen, setQueueOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tourneyHelpOpen, setTourneyHelpOpen] = useState(false);
 
   const mediumQueue = session.medium ? queuedForMedium(session, session.medium) : session.userQueue;
   const showQueueIcon = (session.userQueue?.length ?? 0) > 0;
@@ -126,8 +134,10 @@ export function RandoRanxApp() {
         }}
         onOpenPrint={() => setPrintOpen(true)}
         onOpenMobileLog={() => setMobileLogOpen(true)}
+        onOpenTourneyHelp={() => setTourneyHelpOpen(true)}
         resultCount={session.responses.length + session.discards.length}
         showHome={session.medium !== null || editingEntry !== null}
+        showTourneyHelp={Boolean(showTourney)}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -135,7 +145,7 @@ export function RandoRanxApp() {
           {log}
         </aside>
 
-        <main className="no-print mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8 sm:px-6">
+        <main className={`no-print mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 sm:px-6 ${showTourney ? "py-3 lg:py-8" : "py-8"}`}>
           {status === "loading" ? (
             <div className="flex flex-1 flex-col justify-center" role="status" aria-live="polite">
               <p className="text-sm font-medium tracking-wide text-amber-200/80 uppercase">
@@ -242,6 +252,7 @@ export function RandoRanxApp() {
                 onChangeMode={goToModePick}
                 onHome={goHome}
                 onOpenSettings={() => setSettingsOpen(true)}
+                compactMobile
               />
               <TourneyStage
                 key={`${tourneyPair[0].id}-${tourneyPair[1].id}`}
@@ -326,6 +337,32 @@ export function RandoRanxApp() {
         onQueueOnlyChange={setPresentQueuedOnly}
       />
 
+      <Dialog open={tourneyHelpOpen} onOpenChange={setTourneyHelpOpen}>
+        <DialogContent className="sm:max-w-lg" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>{finalRoundActive ? "Final Round" : "Tourney"}</DialogTitle>
+            <DialogDescription>
+              {finalRoundActive
+                ? `${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left. Vote among logged Contenders until one champion remains. Losers still go to Discard.`
+                : `${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left in this stack.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>
+              Select a Contender. Star adds an optional score. Bookmark adds Watch without voting.
+              Drag a card onto WTF?? for a Wikipedia blurb — that does not count as a pick.
+            </p>
+            <p>
+              Reshuffle skips both titles without picking a winner and deals a new pair. They will
+              not show up again right away. Back undoes the last Select, up to three times.
+            </p>
+            <p className="text-muted-foreground">
+              Path settings stay available above the cards. Star and bookmark sit on each poster.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <ResultsLog
         open={printOpen}
         onOpenChange={setPrintOpen}
@@ -358,23 +395,37 @@ function StageMeta({
   onChangeMode,
   onHome,
   onOpenSettings,
+  compactMobile = false,
 }: {
   label: string;
   onChangeMode: () => void;
   onHome: () => void;
   onOpenSettings: () => void;
+  compactMobile?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-      <p>{label}</p>
+      <p className={compactMobile ? "hidden lg:block" : undefined}>{label}</p>
       <div className="flex flex-wrap gap-1">
         <Button type="button" variant="ghost" size="sm" onClick={onOpenSettings}>
           Path settings
         </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={onChangeMode}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={compactMobile ? "hidden lg:inline-flex" : undefined}
+          onClick={onChangeMode}
+        >
           Ranx or Tourney
         </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={onHome}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={compactMobile ? "hidden lg:inline-flex" : undefined}
+          onClick={onHome}
+        >
           Switch catalog
         </Button>
       </div>

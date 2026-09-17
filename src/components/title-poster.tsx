@@ -6,7 +6,7 @@ import type { CatalogTitle, Medium } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
-type PosterSize = "lg" | "md" | "sm";
+type PosterSize = "lg" | "md" | "sm" | "tourney";
 
 type TitlePosterProps = {
   title?: string;
@@ -24,6 +24,8 @@ const frame: Record<PosterSize, string> = {
   lg: "aspect-[2/3] w-full max-w-[18rem] sm:max-w-[20rem]",
   md: "aspect-[2/3] w-full max-w-[16rem] sm:max-w-[18rem]",
   sm: "aspect-[2/3] h-28 w-auto shrink-0",
+  tourney:
+    "aspect-[2/3] h-40 w-auto max-h-40 lg:h-auto lg:max-h-none lg:w-full lg:max-w-[16rem]",
 };
 
 export function TitlePoster(props: TitlePosterProps) {
@@ -78,7 +80,13 @@ export function TitlePoster(props: TitlePosterProps) {
         )}
       </div>
       {showImage && showCredit ? (
-        <figcaption className={cn("mt-1.5 text-muted-foreground", size === "sm" ? "text-[10px]" : "text-xs")}>
+        <figcaption
+          className={cn(
+            "mt-1.5 text-muted-foreground",
+            size === "sm" ? "text-[10px]" : "text-xs",
+            size === "tourney" && "hidden lg:block"
+          )}
+        >
           Image:{" "}
           <a
             href={poster.credit.href}

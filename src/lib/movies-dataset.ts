@@ -153,6 +153,7 @@ function buildIndex(csvText: string): MovieRow[] {
       popularity,
       voteCount,
       imdbId: /^tt\d+$/.test(imdbId) ? imdbId : undefined,
+      mpaa: "Not Rated",
     });
   }
   return index;
@@ -228,6 +229,7 @@ export async function sampleTitlePool(options: {
       obscurity: item.obscurity,
       source: "dataset" as const,
       imdbId: item.imdbId,
+      mpaa: item.mpaa,
     }));
     return { titles: sampled, source: "dataset", available: eligible.length };
   } catch (error) {

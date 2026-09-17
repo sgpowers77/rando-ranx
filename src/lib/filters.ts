@@ -1,4 +1,5 @@
 import type { CatalogTitle, Medium, PathFilters, PathKey, PlayMode } from "@/lib/types";
+import { MPAA_RATINGS, titleMpaa } from "@/lib/mpaa";
 
 export const MOVIE_GENRES = [
   "Action",
@@ -42,6 +43,7 @@ export function defaultFilters(medium: Medium): PathFilters {
     decades: [...DECADES],
     genres: [...(medium === "movie" ? MOVIE_GENRES : GAME_GENRES)],
     obscurity: [...OBSCURITY_LEVELS],
+    mpaa: medium === "movie" ? [...MPAA_RATINGS] : [],
   };
 }
 
@@ -56,15 +58,20 @@ export function matchesFilters(title: CatalogTitle, filters: PathFilters): boole
   const decadeOk = decades.includes(decade) || (decade < 1940 && decades.includes(1940));
   const genreOk = title.genres.some((genre) => genres.includes(genre));
   const obscurityOk = obscurity.includes(title.obscurity);
-  return decadeOk && genreOk && obscurityOk;
+  if (!decadeOk || !genreOk || !obscurityOk) return false;
+  if (title.medium === "movie") {
+    const allowed = filters.mpaa ?? [];
+    if (allowed.length === 0 || !allowed.includes(titleMpaa(title))) return false;
+  }
+  return true;
 }
 
-export function filtersComplete(filters: PathFilters): boolean {
-  return (
-    (filters.decades?.length ?? 0) > 0 &&
-    (filters.genres?.length ?? 0) > 0 &&
-    (filters.obscurity?.length ?? 0) > 0
-  );
+export function filtersComplete(filters: PathFilters, medium: Medium): boolean {
+  if ((filters.decades?.length ?? 0) === 0) return false;
+  if ((filters.genres?.length ?? 0) === 0) return false;
+  if ((filters.obscurity?.length ?? 0) === 0) return false;
+  if (medium === "movie" && (filters.mpaa?.length ?? 0) === 0) return false;
+  return true;
 }
 
 export function filtersActive(filters: PathFilters, medium: Medium): boolean {
@@ -72,6 +79,7 @@ export function filtersActive(filters: PathFilters, medium: Medium): boolean {
   return (
     filters.decades.length !== defaults.decades.length ||
     filters.genres.length !== defaults.genres.length ||
-    filters.obscurity.length !== defaults.obscurity.length
+    filters.obscurity.length !== defaults.obscurity.length ||
+    (medium === "movie" && (filters.mpaa?.length ?? 0) !== defaults.mpaa.length)
   );
 }

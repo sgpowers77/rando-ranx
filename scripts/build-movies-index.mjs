@@ -88,19 +88,52 @@ function obscurityFrom(popularity, voteCount) {
   return 5;
 }
 
+const RATING_Q = {
+  Q18665330: "G",
+  Q18665334: "PG",
+  Q18665339: "PG-13",
+  Q18665344: "R",
+  Q18665349: "NC-17",
+  Q47274658: "NC-17",
+  Q29841078: "PG",
+  Q50321114: "PG",
+  Q29841070: "PG",
+};
+
+async function fetchMpaaByImdb() {
+  const query = `SELECT ?imdb ?rating WHERE {
+    ?film wdt:P345 ?imdb .
+    ?film wdt:P1657 ?rating .
+  }`;
+  try {
+    const url = new URL("https://query.wikidata.org/sparql");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("query", query);
+    const res = await fetch(url, {
+      headers: { Accept: "application/sparql-results+json", "User-Agent": "RandoRanx/1.0 (mpaa index)" },
+    });
+    if (!res.ok) throw new Error(`SPARQL HTTP ${res.status}`);
+    const data = await res.json();
+    const map = new Map();
+    for (const row of data.results?.bindings ?? []) {
+      const imdb = row.imdb?.value;
+      const ratingUri = row.rating?.value ?? "";
+      const qid = ratingUri.split("/").pop();
+      const mpaa = RATING_Q[qid];
+      if (imdb && mpaa) map.set(imdb, mpaa);
+    }
+    console.log(`Wikidata MPA ratings for ${map.size} IMDb ids`);
+    return map;
+  } catch (error) {
+    console.warn(`Could not load Wikidata MPA ratings: ${error instanceof Error ? error.message : error}`);
+    return new Map();
+  }
+}
+
 async function main() {
   await mkdir(path.dirname(outPath), { recursive: true });
   try {
-    const csvInfo = await stat(csvPath);
-    try {
-      const outInfo = await stat(outPath);
-      if (outInfo.isFile() && outInfo.mtimeMs >= csvInfo.mtimeMs && outInfo.size > 100_000) {
-        console.log(`movies-index.json is up to date (${outInfo.size} bytes)`);
-        return;
-      }
-    } catch {
-      // rebuild
-    }
+    await stat(csvPath);
   } catch {
     await writeFile(outPath, JSON.stringify({ source: "missing", movies: [] }));
     console.warn(`No CSV at ${csvPath}; wrote an empty movies-index.json. Rank will use the local fallback.`);
@@ -120,6 +153,7 @@ async function main() {
   const iTitle = idx("title");
   const iVotes = idx("vote_count");
 
+  const mpaaByImdb = await fetchMpaaByImdb();
   const seen = new Set();
   const movies = [];
   for (let r = 1; r < rows.length; r += 1) {
@@ -140,13 +174,15 @@ async function main() {
     const popularity = Number(cols[iPop] ?? 0) || 0;
     const voteCount = Number(cols[iVotes] ?? 0) || 0;
     const imdbId = (cols[iImdb] ?? "").trim();
+    const validImdb = /^tt\d+$/.test(imdbId) ? imdbId : undefined;
     movies.push({
       id,
       title,
       year,
       genres,
       obscurity: obscurityFrom(popularity, voteCount),
-      imdbId: /^tt\d+$/.test(imdbId) ? imdbId : undefined,
+      imdbId: validImdb,
+      mpaa: (validImdb && mpaaByImdb.get(validImdb)) || "Not Rated",
     });
   }
 

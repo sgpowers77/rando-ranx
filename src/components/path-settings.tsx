@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DECADES, defaultFilters, filtersComplete, GAME_GENRES, MOVIE_GENRES, OBSCURITY_LEVELS } from "@/lib/filters";
+import { MPAA_RATINGS } from "@/lib/mpaa";
 import type { Medium, PathFilters, PlayMode } from "@/lib/types";
 import { useState } from "react";
 
@@ -43,9 +44,9 @@ export function PathSettings({
 
   const genres = medium === "movie" ? MOVIE_GENRES : GAME_GENRES;
   const current = draft[mode];
-  const canClose = filtersComplete(draft.rank) && filtersComplete(draft.tourney);
-  const rankMissing = missingGroups(draft.rank);
-  const tourneyMissing = missingGroups(draft.tourney);
+  const canClose = filtersComplete(draft.rank, medium) && filtersComplete(draft.tourney, medium);
+  const rankMissing = missingGroups(draft.rank, medium);
+  const tourneyMissing = missingGroups(draft.tourney, medium);
 
   const applyMode = (playMode: PlayMode, patch: Partial<PathFilters>) => {
     const nextFilters: PathFilters = {
@@ -80,7 +81,8 @@ export function PathSettings({
           <DialogTitle>Path settings</DialogTitle>
           <DialogDescription>
             Filters apply separately to Ranx and Tourney for{" "}
-            {medium === "movie" ? "Movies" : "Games"}. Each of Year, Genre, and Obscurity needs at
+            {medium === "movie" ? "Movies" : "Games"}. Each of Year, Genre, Obscurity
+            {medium === "movie" ? ", and MPAA Rating" : ""} needs at
             least one box checked on both paths. Unchecked boxes drop those titles from the deal
             right away. Done stays off until every group has a selection.
           </DialogDescription>
@@ -187,6 +189,41 @@ export function PathSettings({
                 })}
               </div>
             </fieldset>
+
+            {medium === "movie" ? (
+              <fieldset className="space-y-2">
+                <legend className="w-full">
+                  <GroupControls
+                    label="MPAA Rating"
+                    onCheckAll={() => applyMode(mode, { mpaa: [...MPAA_RATINGS] })}
+                    onUncheckAll={() => applyMode(mode, { mpaa: [] })}
+                  />
+                </legend>
+                <p className="text-xs text-muted-foreground">
+                  Uses Wikidata MPA film ratings when known. Titles without a listed rating count as
+                  Not Rated.
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {MPAA_RATINGS.map((rating) => {
+                    const id = `${mode}-mpaa-${rating}`;
+                    return (
+                      <label key={rating} htmlFor={id} className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          id={id}
+                          checked={(current.mpaa ?? []).includes(rating)}
+                          onCheckedChange={() =>
+                            applyMode(mode, {
+                              mpaa: toggle(current.mpaa ?? [], rating) as string[],
+                            })
+                          }
+                        />
+                        {rating}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            ) : null}
           </TabsContent>
         </Tabs>
 
@@ -220,11 +257,12 @@ export function PathSettings({
   );
 }
 
-function missingGroups(filters: PathFilters): string[] {
+function missingGroups(filters: PathFilters, medium: Medium): string[] {
   const missing: string[] = [];
   if ((filters.decades?.length ?? 0) === 0) missing.push("Year");
   if ((filters.genres?.length ?? 0) === 0) missing.push("Genre");
   if ((filters.obscurity?.length ?? 0) === 0) missing.push("Obscurity");
+  if (medium === "movie" && (filters.mpaa?.length ?? 0) === 0) missing.push("MPAA Rating");
   return missing;
 }
 

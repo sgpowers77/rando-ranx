@@ -1,5 +1,6 @@
 import { resolveTitle, titlesFor, withReleaseYear } from "@/data/catalog";
 import { defaultFilters, matchesFilters, pathKey } from "@/lib/filters";
+import { parseMpaaList } from "@/lib/mpaa";
 import type {
   CatalogTitle,
   DiscardEntry,
@@ -252,6 +253,7 @@ function parsePathFilters(value: unknown): StoredSession["pathFilters"] {
       obscurity: Array.isArray(raw.obscurity)
         ? raw.obscurity.filter((n) => typeof n === "number")
         : [],
+      mpaa: parseMpaaList(raw.mpaa, key.startsWith("movie") ? "movie" : "game"),
     };
   }
   return next;
@@ -607,7 +609,7 @@ export function normalizeSession(session: StoredSession): StoredSession {
     skipTourneyScoring: session.skipTourneyScoring === true,
     customTitles: Array.isArray(session.customTitles) ? session.customTitles : [],
     liveTitles: Array.isArray(session.liveTitles) ? session.liveTitles : [],
-    pathFilters: session.pathFilters ?? {},
+    pathFilters: parsePathFilters(session.pathFilters),
     recentlyShown: {
       movie: parseIdList(session.recentlyShown?.movie),
       game: parseIdList(session.recentlyShown?.game),
