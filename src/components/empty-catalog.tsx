@@ -1,13 +1,15 @@
 "use client";
 
+import { TitlePoster } from "@/components/title-poster";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Medium, PlayMode } from "@/lib/types";
+import type { CatalogTitle, Medium, PlayMode } from "@/lib/types";
 
 type EmptyCatalogProps = {
   medium: Medium;
   playMode: PlayMode;
-  leftoverTitle: string | null;
+  leftoverTitle: CatalogTitle | null;
+  isFinalRound?: boolean;
   filterEmpty?: boolean;
   poolError?: string | null;
   poolSource?: string;
@@ -20,6 +22,7 @@ export function EmptyCatalog({
   medium,
   playMode,
   leftoverTitle,
+  isFinalRound,
   filterEmpty,
   poolError,
   poolSource,
@@ -74,13 +77,45 @@ export function EmptyCatalog({
     );
   }
 
+  if (playMode === "tourney" && leftoverTitle && isFinalRound) {
+    return (
+      <Card className="border-none bg-card/80 ring-1 ring-white/10">
+        <CardHeader className="gap-3">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <TitlePoster catalog={leftoverTitle} size="lg" className="mx-auto sm:mx-0" />
+            <div className="min-w-0 flex-1 space-y-3">
+              <p className="text-xs font-medium tracking-widest text-amber-200/80 uppercase">
+                Champion
+              </p>
+              <CardTitle className="font-heading text-3xl leading-tight text-balance">
+                {leftoverTitle.title}
+              </CardTitle>
+              <CardDescription className="text-base">
+                {leftoverTitle.year} · Final Round champion. Discard still holds every title that
+                lost a vote. Watch tags are unchanged.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2 sm:flex-row">
+          <Button type="button" onClick={onChangeMode} className="h-11">
+            Rank or Tourney
+          </Button>
+          <Button type="button" variant="outline" onClick={onHome} className="h-11">
+            Switch catalog
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (playMode === "tourney" && leftoverTitle) {
     return (
       <Card className="border-none bg-card/80 ring-1 ring-white/10">
         <CardHeader>
           <CardTitle className="font-heading text-2xl">Odd one out</CardTitle>
           <CardDescription>
-            Tourney needs two titles. {leftoverTitle} is the last {noun.slice(0, -1)} left in this
+            Tourney needs two titles. {leftoverTitle.title} is the last {noun.slice(0, -1)} left in this
             stack. Switch to Rank to deal it, or reshuffle leftovers if something was missed.
           </CardDescription>
         </CardHeader>

@@ -75,7 +75,7 @@ export function EntryEditor({ entry, onSave, onCancel }: EntryEditorProps) {
               }}
             />
             <ActionChoice
-              label="Tourney winner (no score)"
+              label="Contender (no score)"
               selected={kind === "winner"}
               onSelect={() => {
                 setKind("winner");

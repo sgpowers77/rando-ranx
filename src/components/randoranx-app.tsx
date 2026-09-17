@@ -46,8 +46,11 @@ export function RandoRanxApp() {
     updateResponse,
     reshuffleMedium,
     skipTourneyMatchup,
+    beginFinalRound,
     clearSession,
     dismissError,
+    finalRoundActive,
+    contenderCount,
   } = useRandoRanx();
   const [printOpen, setPrintOpen] = useState(false);
   const [mobileLogOpen, setMobileLogOpen] = useState(false);
@@ -73,6 +76,14 @@ export function RandoRanxApp() {
       watchTags={session.watchTags}
       selectedId={editingId}
       onSelect={selectEntry}
+      onFinalRound={() => {
+        stopEditing();
+        setMobileLogOpen(false);
+        beginFinalRound();
+      }}
+      canFinalRound={contenderCount >= 2}
+      finalRoundActive={finalRoundActive}
+      contenderCount={contenderCount}
     />
   );
 
@@ -210,7 +221,7 @@ export function RandoRanxApp() {
           {showTourney && tourneyPair ? (
             <div className="flex flex-1 flex-col justify-center gap-4">
               <StageMeta
-                label={`Tourney · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left in this stack`}
+                label={`${finalRoundActive ? "Final Round" : "Tourney"} · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left in this stack`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
                 onOpenSettings={() => setSettingsOpen(true)}
@@ -226,6 +237,7 @@ export function RandoRanxApp() {
                 onSkipScoringChange={setSkipTourneyScoring}
                 onWatchlist={addWatchTag}
                 onReshufflePair={skipTourneyMatchup}
+                isFinalRound={finalRoundActive}
               />
               <TitleSearch medium={tourneyPair[0].medium} onUse={useSearchedTitle} />
             </div>
@@ -236,8 +248,9 @@ export function RandoRanxApp() {
               <EmptyCatalog
                 medium={session.medium}
                 playMode={session.playMode}
-                leftoverTitle={leftoverTitle?.title ?? null}
-                filterEmpty={eligibleCount === 0}
+                leftoverTitle={leftoverTitle}
+                isFinalRound={finalRoundActive}
+                filterEmpty={eligibleCount === 0 && !finalRoundActive}
                 poolError={poolStatus === "error" && eligibleCount === 0 ? poolError : null}
                 poolSource={poolSource}
                 onHome={goHome}

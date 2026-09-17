@@ -1,6 +1,7 @@
 "use client";
 
 import { RatingForm } from "@/components/rating-form";
+import { TitlePoster } from "@/components/title-poster";
 import { WtfModal } from "@/components/wtf-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,7 @@ type TourneyStageProps = {
   onSkipScoringChange: (skip: boolean) => void;
   onWatchlist: (title: CatalogTitle) => void;
   onReshufflePair: () => void;
+  isFinalRound?: boolean;
 };
 
 const DRAG_TYPE = "application/x-randoranx-title";
@@ -35,6 +37,7 @@ export function TourneyStage({
   onSkipScoringChange,
   onWatchlist,
   onReshufflePair,
+  isFinalRound = false,
 }: TourneyStageProps) {
   const [left, right] = pair;
   const medium = left.medium;
@@ -49,15 +52,20 @@ export function TourneyStage({
     return (
       <Card className="border-none bg-card/80 ring-1 ring-white/10">
         <CardHeader className="gap-3">
-          <p className="text-xs font-medium tracking-widest text-amber-200/80 uppercase">
-            Tourney winner
-          </p>
-          <CardTitle className="font-heading text-3xl leading-tight text-balance sm:text-4xl">
-            {pendingWinner.title}
-          </CardTitle>
-          <CardDescription className="text-base text-muted-foreground">
-            {pendingWinner.year} · {decadeOf(pendingWinner.year)}s · Score this {noun}, or skip scoring and log it as the pick.
-          </CardDescription>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <TitlePoster catalog={pendingWinner} size="lg" className="mx-auto sm:mx-0" />
+            <div className="min-w-0 flex-1 space-y-3">
+              <p className="text-xs font-medium tracking-widest text-amber-200/80 uppercase">
+                Contender
+              </p>
+              <CardTitle className="font-heading text-3xl leading-tight text-balance sm:text-4xl">
+                {pendingWinner.title}
+              </CardTitle>
+              <CardDescription className="text-base text-muted-foreground">
+                {pendingWinner.year} · {decadeOf(pendingWinner.year)}s · Score this {noun}, or skip scoring and log it as the pick.
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <RatingForm
@@ -90,7 +98,7 @@ export function TourneyStage({
                 }}
               />
               <Label htmlFor="remember-skip-scoring" className="text-sm leading-snug font-normal">
-                Remember this setting — skip the score for future Tourney winners. You can turn this
+                Remember this setting — skip the score for future Contenders. You can turn this
                 off on the next matchup.
               </Label>
             </div>
@@ -107,6 +115,12 @@ export function TourneyStage({
 
   return (
     <div className="space-y-3">
+      {isFinalRound ? (
+        <p className="rounded-xl border border-amber-200/30 bg-amber-200/10 px-4 py-3 text-sm">
+          Final Round. Vote among logged Contenders until one champion remains. Losers still go to
+          Discard. WTF?? and Watch work the same as Tourney.
+        </p>
+      ) : null}
       {skipScoring ? (
         <div className="rounded-xl border border-border/70 bg-card/60 px-4 py-3 text-sm">
           <p className="font-medium">Winner scoring is skipped</p>
@@ -127,7 +141,7 @@ export function TourneyStage({
       <p className="text-xs text-muted-foreground">
         Drag a card onto WTF?? for a Wikipedia blurb. That does not count as a pick.
       </p>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid items-stretch gap-3 sm:grid-cols-2">
         <MatchupCard
           title={left}
           draggedRef={dragged}
@@ -214,7 +228,7 @@ function MatchupCard({
 }) {
   return (
     <Card
-      className="border-none bg-card/80 ring-1 ring-white/10"
+      className="h-full border-none bg-card/80 ring-1 ring-white/10"
       draggable
       onDragStart={(event) => {
         draggedRef.current = true;
@@ -225,7 +239,8 @@ function MatchupCard({
       }}
       onDragEnd={onDragEnd}
     >
-      <CardHeader className="gap-2">
+      <CardHeader className="flex-1 gap-2">
+        <TitlePoster catalog={title} size="md" />
         <p className="text-xs font-medium tracking-widest text-amber-200/80 uppercase">
           {title.medium === "movie" ? "Movie" : "Game"}
         </p>
@@ -236,7 +251,7 @@ function MatchupCard({
           {title.year} · {decadeOf(title.year)}s
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="mt-auto">
         <Button
           type="button"
           className="h-12 w-full text-base"
@@ -248,7 +263,7 @@ function MatchupCard({
             onSelect();
           }}
         >
-          This one
+          Select
         </Button>
       </CardContent>
     </Card>

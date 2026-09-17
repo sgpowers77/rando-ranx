@@ -1,8 +1,10 @@
 "use client";
 
-import { resultLabel } from "@/lib/labels";
+import { TitlePoster } from "@/components/title-poster";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { resultLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import type { DiscardEntry, SessionResponse, WatchTag } from "@/lib/types";
 
@@ -12,6 +14,10 @@ type SessionLogProps = {
   watchTags: WatchTag[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onFinalRound?: () => void;
+  canFinalRound?: boolean;
+  finalRoundActive?: boolean;
+  contenderCount?: number;
 };
 
 export function SessionLog({
@@ -20,6 +26,10 @@ export function SessionLog({
   watchTags = [],
   selectedId,
   onSelect,
+  onFinalRound,
+  canFinalRound = false,
+  finalRoundActive = false,
+  contenderCount = 0,
 }: SessionLogProps) {
   const newestResults = [...responses].reverse();
   const newestDiscards = [...discards].reverse();
@@ -38,52 +48,76 @@ export function SessionLog({
       </div>
 
       <TabsContent value="results" className="min-h-0 flex-1 overflow-auto p-2">
+        <div className="mb-2 px-1">
+          <Button
+            type="button"
+            className="h-10 w-full"
+            disabled={!canFinalRound || !onFinalRound}
+            onClick={onFinalRound}
+          >
+            {finalRoundActive ? "Restart Final Round" : "Final Round"}
+          </Button>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {canFinalRound
+              ? `Vote among ${contenderCount} logged Contenders until a champion.`
+              : "Log at least two Tourney Contenders, then start a Final Round."}
+          </p>
+        </div>
         <ul aria-label="Session results">
           {newestResults.length === 0 ? (
             <li className="px-3 py-8 text-sm text-muted-foreground">
-              Ranked titles, skips, and the want list land here. Tourney winners show up after you
-              score them.
+              Ranked titles, skips, and the want list land here. Tourney Contenders show up after you
+              pick them.
             </li>
           ) : (
             newestResults.map((entry) => {
               const selected = entry.id === selectedId;
               return (
-                <li key={entry.id}>
+                <li key={entry.id} className="flex items-start gap-2 rounded-lg px-3 py-2.5">
+                  <TitlePoster
+                    id={entry.titleId}
+                    title={entry.title}
+                    year={entry.year}
+                    medium={entry.medium}
+                    size="sm"
+                    showCredit
+                    className="pt-0.5"
+                  />
                   <button
                     type="button"
                     onClick={() => onSelect(entry.id)}
                     aria-current={selected ? "true" : undefined}
                     className={cn(
-                      "w-full rounded-lg px-3 py-2.5 text-left transition-colors",
+                      "min-w-0 flex-1 rounded-lg px-1 py-0.5 text-left transition-colors",
                       selected ? "bg-primary/15 ring-1 ring-primary/40" : "hover:bg-muted/70"
                     )}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-medium leading-snug">{entry.title}</p>
-                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                        {entry.year}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <Badge variant="secondary" className="font-normal">
-                        {resultLabel(entry)}
-                      </Badge>
-                      {watchIds.has(entry.titleId) ? (
-                        <Badge variant="outline" className="font-normal">
-                          Watch
-                        </Badge>
-                      ) : null}
-                      {entry.kind === "rated" && entry.rating != null ? (
-                        <span className="text-xs tabular-nums text-muted-foreground">
-                          {entry.rating}/10
-                        </span>
-                      ) : null}
-                    </div>
-                    {entry.comments ? (
-                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                        {entry.comments}
-                      </p>
-                    ) : null}
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-medium leading-snug">{entry.title}</p>
+                          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                            {entry.year}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          <Badge variant="secondary" className="font-normal">
+                            {resultLabel(entry)}
+                          </Badge>
+                          {watchIds.has(entry.titleId) ? (
+                            <Badge variant="outline" className="font-normal">
+                              Watch
+                            </Badge>
+                          ) : null}
+                          {entry.kind === "rated" && entry.rating != null ? (
+                            <span className="text-xs tabular-nums text-muted-foreground">
+                              {entry.rating}/10
+                            </span>
+                          ) : null}
+                        </div>
+                        {entry.comments ? (
+                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                            {entry.comments}
+                          </p>
+                        ) : null}
                   </button>
                 </li>
               );
@@ -101,23 +135,35 @@ export function SessionLog({
           ) : (
             newestDiscards.map((entry) => (
               <li key={entry.id} className="rounded-lg px-3 py-2.5">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-medium leading-snug">{entry.title}</p>
-                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {entry.year}
-                  </span>
+                <div className="flex items-start gap-2">
+                  <TitlePoster
+                    id={entry.titleId}
+                    title={entry.title}
+                    year={entry.year}
+                    medium={entry.medium}
+                    size="sm"
+                    showCredit
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-medium leading-snug">{entry.title}</p>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {entry.year}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      <Badge variant="outline" className="font-normal">
+                        Discard
+                      </Badge>
+                      {watchIds.has(entry.titleId) ? (
+                        <Badge variant="outline" className="font-normal">
+                          Watch
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">Lost to {entry.lostToTitle}</p>
+                  </div>
                 </div>
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  <Badge variant="outline" className="font-normal">
-                    Discard
-                  </Badge>
-                  {watchIds.has(entry.titleId) ? (
-                    <Badge variant="outline" className="font-normal">
-                      Watch
-                    </Badge>
-                  ) : null}
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">Lost to {entry.lostToTitle}</p>
               </li>
             ))
           )}
@@ -133,14 +179,26 @@ export function SessionLog({
           ) : (
             newestWatch.map((entry) => (
               <li key={entry.titleId} className="rounded-lg px-3 py-2.5">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-medium leading-snug">{entry.title}</p>
-                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {entry.year}
-                  </span>
-                </div>
-                <div className="mt-1.5">
-                  <Badge className="font-normal">Watch</Badge>
+                <div className="flex items-start gap-2">
+                  <TitlePoster
+                    id={entry.titleId}
+                    title={entry.title}
+                    year={entry.year}
+                    medium={entry.medium}
+                    size="sm"
+                    showCredit
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-medium leading-snug">{entry.title}</p>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {entry.year}
+                      </span>
+                    </div>
+                    <div className="mt-1.5">
+                      <Badge className="font-normal">Watch</Badge>
+                    </div>
+                  </div>
                 </div>
               </li>
             ))

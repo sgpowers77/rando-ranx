@@ -13,6 +13,9 @@ export type CatalogTitle = {
   obscurity: 1 | 2 | 3 | 4 | 5;
   source?: "catalog" | "search" | "dataset";
   imdbId?: string;
+  imageUrl?: string;
+  imageCreditLabel?: string;
+  imageCreditHref?: string;
 };
 
 export type PathFilters = {
@@ -33,6 +36,7 @@ export type SessionResponse = {
   rating?: number;
   comments?: string;
   recordedAt: string;
+  origin?: "rank" | "tourney" | "final";
 };
 
 export type DiscardEntry = {
@@ -58,6 +62,11 @@ export type WatchTag = {
   taggedAt: string;
 };
 
+export type FinalRound = {
+  medium: Medium;
+  remainingIds: string[];
+};
+
 export type StoredSession = {
   version: 1;
   medium: Medium | null;
@@ -73,4 +82,5 @@ export type StoredSession = {
   recentlyShown: Record<Medium, string[]>;
   releaseYears: Record<string, number>;
   liveTitles: CatalogTitle[];
+  finalRound: FinalRound | null;
 };

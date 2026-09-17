@@ -1,5 +1,6 @@
 "use client";
 
+import { TitlePoster } from "@/components/title-poster";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -81,6 +82,7 @@ function WtfBody({
           A short Wikipedia summary. This does not pick a winner or discard the card.
         </DialogDescription>
       </DialogHeader>
+      <TitlePoster catalog={title} size="md" className="mx-auto w-40" />
       {!blurb && !failed ? <p className="text-sm text-muted-foreground">Looking it up…</p> : null}
       {failed ? (
         <p className="text-sm text-destructive" role="alert">

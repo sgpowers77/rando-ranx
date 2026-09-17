@@ -1,6 +1,7 @@
 "use client";
 
 import { RatingForm } from "@/components/rating-form";
+import { TitlePoster } from "@/components/title-poster";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { decadeOf } from "@/lib/filters";
@@ -24,15 +25,20 @@ export function TitleStage({ title, onRated, onSkip, onQueue }: TitleStageProps)
   return (
     <Card className="border-none bg-card/80 ring-1 ring-white/10">
       <CardHeader className="gap-3">
-        <p className="text-xs font-medium tracking-widest text-amber-200/80 uppercase">
-          {medium === "movie" ? "Movie" : "Game"}
-        </p>
-        <CardTitle className="font-heading text-3xl leading-tight text-balance sm:text-4xl">
-          {title.title}
-        </CardTitle>
-        <CardDescription className="text-base text-muted-foreground">
-          {title.year} · {decadeOf(title.year)}s
-        </CardDescription>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <TitlePoster catalog={title} size="lg" className="mx-auto sm:mx-0" />
+          <div className="min-w-0 flex-1 space-y-3">
+            <p className="text-xs font-medium tracking-widest text-amber-200/80 uppercase">
+              {medium === "movie" ? "Movie" : "Game"}
+            </p>
+            <CardTitle className="font-heading text-3xl leading-tight text-balance sm:text-4xl">
+              {title.title}
+            </CardTitle>
+            <CardDescription className="text-base text-muted-foreground">
+              {title.year} · {decadeOf(title.year)}s
+            </CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {mode === "choose" ? (

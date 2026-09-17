@@ -1,5 +1,6 @@
 "use client";
 
+import { TitlePoster } from "@/components/title-poster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { searchWikipediaClient } from "@/lib/wiki-client";
@@ -77,12 +78,15 @@ export function TitleSearch({ medium, onUse }: TitleSearchProps) {
               key={item.id}
               className="flex flex-col gap-2 rounded-lg bg-background/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div>
-                <p className="font-medium">
-                  {item.title}{" "}
-                  <span className="text-sm font-normal text-muted-foreground">{item.year}</span>
-                </p>
-                <p className="text-xs text-muted-foreground">{item.genres.join(" · ")}</p>
+              <div className="flex min-w-0 items-start gap-3">
+                <TitlePoster catalog={item} size="sm" showCredit />
+                <div className="min-w-0">
+                  <p className="font-medium">
+                    {item.title}{" "}
+                    <span className="text-sm font-normal text-muted-foreground">{item.year}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">{item.genres.join(" · ")}</p>
+                </div>
               </div>
               <div className="flex gap-2">
                 <Button type="button" size="sm" onClick={() => onUse(item, "rank")}>

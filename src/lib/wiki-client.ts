@@ -96,10 +96,16 @@ export async function searchWikipediaClient(
           description?: string;
           extract?: string;
           timestamp?: string;
+          thumbnail?: { source?: string };
+          content_urls?: { desktop?: { page?: string } };
         };
         const blob = `${summary.description ?? ""} ${summary.extract ?? ""} ${hit.snippet}`;
         if (!looksLikeMedium(blob, medium, hit.title)) return null;
         const year = extractYearFromWikiText(blob, summary.timestamp) ?? 2000;
+        const article =
+          summary.content_urls?.desktop?.page ??
+          `https://en.wikipedia.org/wiki/${encodeURIComponent((summary.title ?? hit.title).replaceAll(" ", "_"))}`;
+        const imageUrl = summary.thumbnail?.source;
         const title: CatalogTitle = {
           id: `wiki-${medium}-${slug(summary.title ?? hit.title)}`,
           medium,
@@ -108,6 +114,9 @@ export async function searchWikipediaClient(
           genres: guessGenres(blob, medium),
           obscurity: 3,
           source: "search",
+          imageUrl,
+          imageCreditLabel: imageUrl?.includes("/commons/") ? "Wikimedia Commons" : "Wikipedia",
+          imageCreditHref: article,
         };
         return title;
       })

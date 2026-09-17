@@ -3,6 +3,7 @@ import { defaultFilters, matchesFilters, pathKey } from "@/lib/filters";
 import type {
   CatalogTitle,
   DiscardEntry,
+  FinalRound,
   Medium,
   PathFilters,
   PathKey,
@@ -28,6 +29,7 @@ export const EMPTY_SESSION: StoredSession = {
   recentlyShown: { movie: [], game: [] },
   releaseYears: {},
   liveTitles: [],
+  finalRound: null,
 };
 
 export function shuffleIds(ids: string[]): string[] {
@@ -70,6 +72,17 @@ export function rememberShown(session: StoredSession, medium: Medium, ids: strin
 }
 
 export function skipTourneyPair(session: StoredSession): StoredSession {
+  if (session.finalRound) {
+    const ids = session.finalRound.remainingIds;
+    if (ids.length < 2) return session;
+    const pair = ids.slice(0, 2);
+    const rest = ids.slice(2);
+    return {
+      ...session,
+      pendingTourney: null,
+      finalRound: { ...session.finalRound, remainingIds: shuffleIds([...rest, ...pair]) },
+    };
+  }
   if (!session.medium || session.playMode !== "tourney") return session;
   const pairIds = session.remainingIds[session.medium].slice(0, 2);
   if (pairIds.length === 0) return session;
@@ -240,7 +253,13 @@ export function parseSession(raw: string): StoredSession {
           entry.kind === "skipped" ||
           entry.kind === "queued" ||
           entry.kind === "winner")
-    ),
+    ).map((entry) => ({
+      ...entry,
+      origin:
+        entry.origin === "rank" || entry.origin === "tourney" || entry.origin === "final"
+          ? entry.origin
+          : undefined,
+    })),
     discards: parseDiscards(parsed.discards),
     watchTags: parseWatchTags(parsed.watchTags),
     pendingTourney:
@@ -256,7 +275,16 @@ export function parseSession(raw: string): StoredSession {
       game: parseIdList(parsed.recentlyShown?.game),
     },
     releaseYears: parseReleaseYears(parsed.releaseYears),
+    finalRound: parseFinalRound(parsed.finalRound),
   };
+}
+
+function parseFinalRound(value: unknown): FinalRound | null {
+  if (!value || typeof value !== "object") return null;
+  const round = value as FinalRound;
+  if (round.medium !== "movie" && round.medium !== "game") return null;
+  if (!Array.isArray(round.remainingIds)) return null;
+  return { medium: round.medium, remainingIds: round.remainingIds.filter((id) => typeof id === "string") };
 }
 
 function parseReleaseYears(value: unknown): Record<string, number> {
@@ -291,6 +319,7 @@ export function applyTourneyOutcome(
 
   const now = new Date().toISOString();
   const scored = extras?.rating != null;
+  const origin: SessionResponse["origin"] = prev.finalRound ? "final" : "tourney";
   const response: SessionResponse = {
     id: `${winner.id}-${Date.now()}`,
     titleId: winner.id,
@@ -301,7 +330,33 @@ export function applyTourneyOutcome(
     rating: scored ? extras.rating : undefined,
     comments: extras?.comments?.trim() ? extras.comments.trim() : undefined,
     recordedAt: now,
+    origin,
   };
+
+  if (prev.finalRound) {
+    const remaining = prev.finalRound.remainingIds.filter((id) => id !== winnerId && id !== loserId);
+    return {
+      ...prev,
+      pendingTourney: null,
+      finalRound: {
+        ...prev.finalRound,
+        remainingIds: remaining.length === 0 ? [winnerId] : [...remaining, winnerId],
+      },
+      responses: [...prev.responses, response],
+      discards: [
+        ...prev.discards,
+        {
+          id: `${loser.id}-${Date.now()}-discard`,
+          titleId: loser.id,
+          medium: loser.medium,
+          title: loser.title,
+          year: loser.year,
+          lostToTitle: winner.title,
+          recordedAt: now,
+        },
+      ],
+    };
+  }
 
   const remaining = prev.remainingIds[medium].filter((id) => {
     if (id === winnerId || id === loserId) return false;
@@ -334,6 +389,47 @@ export function applyTourneyOutcome(
         recordedAt: now,
       },
     ],
+  };
+}
+
+export function tourneyContenderIds(session: StoredSession, medium: Medium): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const entry of session.responses) {
+    if (entry.medium !== medium) continue;
+    const fromTourney =
+      entry.origin === "tourney" ||
+      entry.origin === "final" ||
+      entry.kind === "winner" ||
+      (entry.kind === "rated" &&
+        session.discards.some(
+          (discard) => discard.medium === medium && discard.lostToTitle === entry.title
+        ));
+    if (!fromTourney) continue;
+    if (seen.has(entry.titleId)) continue;
+    seen.add(entry.titleId);
+    ids.push(entry.titleId);
+  }
+  return ids;
+}
+
+export function startFinalRound(session: StoredSession): StoredSession {
+  const medium =
+    session.medium ??
+    (tourneyContenderIds(session, "movie").length >= 2
+      ? "movie"
+      : tourneyContenderIds(session, "game").length >= 2
+        ? "game"
+        : null);
+  if (!medium) return session;
+  const ids = shuffleIds(tourneyContenderIds(session, medium));
+  if (ids.length < 2) return session;
+  return {
+    ...session,
+    medium,
+    playMode: "tourney",
+    pendingTourney: null,
+    finalRound: { medium, remainingIds: ids },
   };
 }
 
@@ -399,6 +495,14 @@ export function normalizeSession(session: StoredSession): StoredSession {
       game: parseIdList(session.recentlyShown?.game),
     },
     releaseYears: parseReleaseYears(session.releaseYears),
+    finalRound: session.finalRound
+      ? {
+          medium: session.finalRound.medium,
+          remainingIds: Array.isArray(session.finalRound.remainingIds)
+            ? session.finalRound.remainingIds
+            : [],
+        }
+      : null,
   };
 }
 

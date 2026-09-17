@@ -15,7 +15,9 @@ import {
   mergeLiveTitles,
   rememberShown,
   skipTourneyPair,
+  startFinalRound,
   subscribeSession,
+  tourneyContenderIds,
   usedTitleIds,
   withDealtQueue,
   writeSession,
@@ -53,6 +55,11 @@ export function useRandoRanx() {
 
   const visibleQueue = useMemo(() => {
     if (!session.medium || !session.playMode) return [];
+    if (session.finalRound) {
+      return session.finalRound.remainingIds
+        .map((id) => titleLookup(session, id))
+        .filter((title): title is CatalogTitle => title != null);
+    }
     const filters = filtersFor(session, session.medium, session.playMode);
     return session.remainingIds[session.medium]
       .map((id) => titleLookup(session, id))
@@ -109,7 +116,8 @@ export function useRandoRanx() {
       persist((prev) => {
         if (!prev.medium || !prev.playMode) return prev;
         const liveTitles = mergeLiveTitles(prev.liveTitles ?? [], titles);
-        const next: StoredSession = { ...prev, liveTitles, pendingTourney: null };
+        const next: StoredSession = { ...prev, liveTitles, pendingTourney: prev.finalRound ? prev.pendingTourney : null };
+        if (prev.finalRound) return next;
         if (
           opts?.silent &&
           prev.playMode === "tourney" &&
@@ -153,6 +161,7 @@ export function useRandoRanx() {
         medium,
         playMode: null,
         pendingTourney: null,
+        finalRound: null,
       }));
       setPoolStatus("idle");
       setPoolError(null);
@@ -168,6 +177,7 @@ export function useRandoRanx() {
           ...prev,
           playMode,
           pendingTourney: null,
+          finalRound: null,
           remainingIds: { ...prev.remainingIds, [prev.medium]: [] },
         };
       });
@@ -177,12 +187,12 @@ export function useRandoRanx() {
   );
 
   const goHome = useCallback(() => {
-    persist((prev) => ({ ...prev, medium: null, playMode: null, pendingTourney: null }));
+    persist((prev) => ({ ...prev, medium: null, playMode: null, pendingTourney: null, finalRound: null }));
     setPoolStatus("idle");
   }, [persist]);
 
   const goToModePick = useCallback(() => {
-    persist((prev) => ({ ...prev, playMode: null, pendingTourney: null }));
+    persist((prev) => ({ ...prev, playMode: null, pendingTourney: null, finalRound: null }));
   }, [persist]);
 
   const recordAndAdvance = useCallback(
@@ -208,6 +218,7 @@ export function useRandoRanx() {
           rating: extras?.rating,
           comments: extras?.comments?.trim() ? extras.comments.trim() : undefined,
           recordedAt: new Date().toISOString(),
+          origin: "rank",
         };
 
         const rest = matching.slice(1);
@@ -288,7 +299,7 @@ export function useRandoRanx() {
         const customTitles = prev.customTitles.some((item) => item.id === title.id)
           ? prev.customTitles
           : [...prev.customTitles, title];
-        const withTitle: StoredSession = { ...prev, customTitles, playMode, pendingTourney: null };
+        const withTitle: StoredSession = { ...prev, customTitles, playMode, pendingTourney: null, finalRound: null };
         return withDealtQueue(withTitle, prev.medium, playMode, title.id);
       });
     },
@@ -318,6 +329,10 @@ export function useRandoRanx() {
     persist((prev) => skipTourneyPair(prev));
     void refreshPool({ silent: true });
   }, [persist, refreshPool]);
+
+  const beginFinalRound = useCallback(() => {
+    persist((prev) => startFinalRound(prev));
+  }, [persist]);
 
   const reshuffleMedium = useCallback(() => {
     void refreshPool();
@@ -361,6 +376,10 @@ export function useRandoRanx() {
     poolStatus,
     poolError,
     poolSource,
+    finalRoundActive: Boolean(session.finalRound),
+    contenderCount: session.medium
+      ? tourneyContenderIds(session, session.medium).length
+      : Math.max(tourneyContenderIds(session, "movie").length, tourneyContenderIds(session, "game").length),
     chooseMedium,
     choosePlayMode,
     goHome,
@@ -376,6 +395,7 @@ export function useRandoRanx() {
     updateResponse,
     reshuffleMedium,
     skipTourneyMatchup,
+    beginFinalRound,
     clearSession,
     dismissError: dismissHydrateError,
   };
