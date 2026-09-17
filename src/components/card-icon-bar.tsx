@@ -7,7 +7,7 @@ export function CardIconBar({ children }: { children: React.ReactNode }) {
   return (
     <div
       data-card-chrome
-      className="absolute top-2 right-2 z-10 flex items-center gap-0.5"
+      className="absolute top-2 right-2 z-10 flex items-center gap-0.5 rounded-lg bg-background/90 p-0.5 ring-1 ring-white/15"
     >
       {children}
     </div>
