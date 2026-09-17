@@ -3,11 +3,21 @@
 import { Button } from "@/components/ui/button";
 import { Bookmark, Star } from "lucide-react";
 
-export function CardIconBar({ children }: { children: React.ReactNode }) {
+export function CardIconBar({
+  children,
+  placement = "overlay",
+}: {
+  children: React.ReactNode;
+  placement?: "overlay" | "inline";
+}) {
   return (
     <div
       data-card-chrome
-      className="absolute top-2 right-2 z-10 flex items-center gap-0.5 rounded-lg bg-background/90 p-0.5 ring-1 ring-white/15"
+      className={
+        placement === "inline"
+          ? "relative z-10 ml-auto flex shrink-0 items-center gap-0.5 rounded-lg bg-background/90 p-0.5 ring-1 ring-white/15"
+          : "absolute top-2 right-2 z-10 flex items-center gap-0.5 rounded-lg bg-background/90 p-0.5 ring-1 ring-white/15"
+      }
     >
       {children}
     </div>
@@ -29,6 +39,7 @@ export function StarIconButton({
       variant="ghost"
       size="icon-sm"
       aria-label={label}
+      title="Rate"
       aria-pressed={active}
       draggable={false}
       onPointerDown={(event) => event.stopPropagation()}
@@ -54,9 +65,10 @@ export function BookmarkIconButton({
   return (
     <Button
       type="button"
-      variant="ghost"
+      variant="outline"
       size="icon-sm"
       aria-label={label}
+      title="Watch"
       aria-pressed={active}
       draggable={false}
       onPointerDown={(event) => event.stopPropagation()}

@@ -26,24 +26,26 @@ export function TitleStage({ title, watched = false, onToggleWatch, onRated, onS
   const wantLabel = medium === "movie" ? "Want to See It" : "Want to Play It";
 
   return (
-    <Card className="overflow-visible border-none bg-card/80 ring-1 ring-white/10">
+    <Card className="relative border-none bg-card/80 ring-1 ring-white/10">
       <CardHeader className="gap-3">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <TitlePoster catalog={title} size="lg" className="mx-auto sm:mx-0" />
-          <div className="relative min-w-0 flex-1 space-y-3">
-            {onToggleWatch ? (
-              <CardIconBar>
-                <BookmarkIconButton
-                  active={watched}
-                  label={watched ? `Remove ${title.title} from watchlist` : `Add ${title.title} to watchlist`}
-                  onClick={onToggleWatch}
-                />
-              </CardIconBar>
-            ) : null}
-            <p className="pr-12 text-xs font-medium tracking-widest text-amber-200/80 uppercase">
-              {medium === "movie" ? "Movie" : "Game"}
-            </p>
-            <CardTitle className="font-heading pr-12 text-3xl leading-tight text-balance sm:text-4xl">
+          <TitlePoster catalog={title} size="lg" className="mx-auto w-48 shrink-0 sm:mx-0" />
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-xs font-medium tracking-widest text-amber-200/80 uppercase">
+                {medium === "movie" ? "Movie" : "Game"}
+              </p>
+              {onToggleWatch ? (
+                <CardIconBar placement="inline">
+                  <BookmarkIconButton
+                    active={watched}
+                    label={watched ? `Remove ${title.title} from watchlist` : `Add ${title.title} to watchlist`}
+                    onClick={onToggleWatch}
+                  />
+                </CardIconBar>
+              ) : null}
+            </div>
+            <CardTitle className="font-heading text-3xl leading-tight text-balance sm:text-4xl">
               {title.title}
             </CardTitle>
             <CardDescription className="text-base text-muted-foreground">
