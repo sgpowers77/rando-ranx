@@ -203,7 +203,15 @@ export function PathSettings({
           >
             Reset this path
           </Button>
-          <Button type="button" disabled={!canClose} onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            disabled={!canClose}
+            aria-disabled={!canClose}
+            onClick={() => {
+              if (!canClose) return;
+              onOpenChange(false);
+            }}
+          >
             Done
           </Button>
         </DialogFooter>
