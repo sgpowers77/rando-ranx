@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
     unoptimized: githubPages,
   },
   basePath: basePath || undefined,
+  allowedDevOrigins: ["127.0.0.1", "localhost", "0.0.0.0"],
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
