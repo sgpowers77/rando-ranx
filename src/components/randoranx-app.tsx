@@ -4,9 +4,11 @@ import { AppHeader } from "@/components/app-header";
 import { EmptyCatalog } from "@/components/empty-catalog";
 import { EntryEditor } from "@/components/entry-editor";
 import { Landing } from "@/components/landing";
+import { ModePicker } from "@/components/mode-picker";
 import { ResultsLog, ResultsTable } from "@/components/results-log";
 import { SessionLog } from "@/components/session-log";
 import { TitleStage } from "@/components/title-stage";
+import { TourneyStage } from "@/components/tourney-stage";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useRandoRanx } from "@/hooks/use-randoranx";
@@ -18,9 +20,17 @@ export function RandoRanxApp() {
     status,
     errorMessage,
     currentTitle,
+    tourneyPair,
+    leftoverTitle,
+    pendingWinner,
     chooseMedium,
+    choosePlayMode,
     goHome,
+    goToModePick,
     recordAndAdvance,
+    pickTourneyWinner,
+    cancelTourneyPick,
+    completeTourneyRound,
     updateResponse,
     reshuffleMedium,
     clearSession,
@@ -45,10 +55,26 @@ export function RandoRanxApp() {
   const log = (
     <SessionLog
       responses={session.responses}
+      discards={session.discards}
       selectedId={editingId}
       onSelect={selectEntry}
     />
   );
+
+  const remainingCount = session.medium ? session.remainingIds[session.medium].length : 0;
+  const ready = status !== "loading";
+  const showLanding = ready && !editingEntry && !session.medium;
+  const showModePick = ready && !editingEntry && session.medium && !session.playMode;
+  const showRank =
+    ready && !editingEntry && session.playMode === "rank" && Boolean(currentTitle);
+  const showTourney =
+    ready && !editingEntry && session.playMode === "tourney" && Boolean(tourneyPair);
+  const showEmpty =
+    ready &&
+    !editingEntry &&
+    session.playMode &&
+    ((session.playMode === "rank" && !currentTitle) ||
+      (session.playMode === "tourney" && !tourneyPair));
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
@@ -59,7 +85,7 @@ export function RandoRanxApp() {
         }}
         onOpenPrint={() => setPrintOpen(true)}
         onOpenMobileLog={() => setMobileLogOpen(true)}
-        resultCount={session.responses.length}
+        resultCount={session.responses.length + session.discards.length}
         showHome={session.medium !== null || editingEntry !== null}
       />
 
@@ -68,7 +94,7 @@ export function RandoRanxApp() {
           {log}
         </aside>
 
-        <main className="no-print mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-8 sm:px-6">
+        <main className="no-print mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8 sm:px-6">
           {status === "loading" ? (
             <div className="flex flex-1 flex-col justify-center" role="status" aria-live="polite">
               <p className="text-sm font-medium tracking-wide text-amber-200/80 uppercase">
@@ -94,7 +120,7 @@ export function RandoRanxApp() {
             </div>
           ) : null}
 
-          {status !== "loading" && editingEntry ? (
+          {ready && editingEntry ? (
             <div className="flex flex-1 flex-col justify-center">
               <EntryEditor
                 key={editingEntry.id}
@@ -105,21 +131,19 @@ export function RandoRanxApp() {
             </div>
           ) : null}
 
-          {status !== "loading" && !editingEntry && !session.medium ? (
-            <Landing onChoose={chooseMedium} />
+          {showLanding ? <Landing onChoose={chooseMedium} /> : null}
+
+          {showModePick && session.medium ? (
+            <ModePicker medium={session.medium} onChoose={choosePlayMode} onBack={goHome} />
           ) : null}
 
-          {status !== "loading" && !editingEntry && session.medium && currentTitle ? (
-            <div className="flex flex-1 flex-col justify-center gap-4">
-              <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
-                <p>
-                  {session.medium === "movie" ? "Movie stack" : "Game stack"} ·{" "}
-                  {session.remainingIds[session.medium].length} left including this one
-                </p>
-                <Button type="button" variant="ghost" size="sm" onClick={goHome}>
-                  Switch catalog
-                </Button>
-              </div>
+          {showRank && currentTitle ? (
+            <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-4">
+              <StageMeta
+                label={`Rank · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left including this one`}
+                onChangeMode={goToModePick}
+                onHome={goHome}
+              />
               <TitleStage
                 key={currentTitle.id}
                 title={currentTitle}
@@ -130,11 +154,32 @@ export function RandoRanxApp() {
             </div>
           ) : null}
 
-          {status !== "loading" && !editingEntry && session.medium && !currentTitle ? (
-            <div className="flex flex-1 flex-col justify-center">
+          {showTourney && tourneyPair ? (
+            <div className="flex flex-1 flex-col justify-center gap-4">
+              <StageMeta
+                label={`Tourney · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left in this stack`}
+                onChangeMode={goToModePick}
+                onHome={goHome}
+              />
+              <TourneyStage
+                key={`${tourneyPair[0].id}-${tourneyPair[1].id}-${pendingWinner?.id ?? "open"}`}
+                pair={tourneyPair}
+                pendingWinner={pendingWinner}
+                onPick={pickTourneyWinner}
+                onCancelPick={cancelTourneyPick}
+                onComplete={completeTourneyRound}
+              />
+            </div>
+          ) : null}
+
+          {showEmpty && session.medium && session.playMode ? (
+            <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center">
               <EmptyCatalog
                 medium={session.medium}
+                playMode={session.playMode}
+                leftoverTitle={leftoverTitle?.title ?? null}
                 onHome={goHome}
+                onChangeMode={goToModePick}
                 onReshuffle={reshuffleMedium}
               />
             </div>
@@ -155,6 +200,7 @@ export function RandoRanxApp() {
         open={printOpen}
         onOpenChange={setPrintOpen}
         responses={session.responses}
+        discards={session.discards}
         onClear={() => {
           clearSession();
           setPrintOpen(false);
@@ -162,14 +208,39 @@ export function RandoRanxApp() {
         }}
       />
 
-      <section className="print-only hidden print:block p-6 text-black">
+      <section className="print-only hidden p-6 text-black print:block">
         <h1 className="mb-1 text-2xl font-semibold">RandoRanx results</h1>
         <p className="mb-6 text-sm">Session log printed from this browser.</p>
         <ResultsTable
           responses={session.responses}
-          caption="Rated titles, skips, and the want-to-see / want-to-play queue"
+          discards={session.discards}
+          caption="Rated titles, skips, the want list, and Tourney discards"
         />
       </section>
+    </div>
+  );
+}
+
+function StageMeta({
+  label,
+  onChangeMode,
+  onHome,
+}: {
+  label: string;
+  onChangeMode: () => void;
+  onHome: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+      <p>{label}</p>
+      <div className="flex gap-1">
+        <Button type="button" variant="ghost" size="sm" onClick={onChangeMode}>
+          Rank or Tourney
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onHome}>
+          Switch catalog
+        </Button>
+      </div>
     </div>
   );
 }

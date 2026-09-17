@@ -17,13 +17,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { SessionResponse } from "@/lib/types";
+import type { DiscardEntry, SessionResponse } from "@/lib/types";
 import { Printer } from "lucide-react";
 
 type ResultsLogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   responses: SessionResponse[];
+  discards: DiscardEntry[];
   onClear: () => void;
 };
 
@@ -39,13 +40,16 @@ export function resultLabel(entry: SessionResponse): string {
 
 export function ResultsTable({
   responses,
+  discards = [],
   id,
   caption,
 }: {
   responses: SessionResponse[];
+  discards?: DiscardEntry[];
   id?: string;
   caption?: string;
 }) {
+  const empty = responses.length === 0 && discards.length === 0;
   return (
     <Table id={id} className="print:text-black">
       {caption ? <caption className="mb-3 text-left text-base font-medium">{caption}</caption> : null}
@@ -60,35 +64,48 @@ export function ResultsTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {responses.length === 0 ? (
+        {empty ? (
           <TableRow>
             <TableCell colSpan={6} className="py-8 text-muted-foreground">
-              No answers yet. Pick Movies or Games and start ranking.
+              No answers yet. Pick Movies or Games, then Rank or Tourney.
             </TableCell>
           </TableRow>
         ) : (
-          responses.map((entry) => (
-            <TableRow key={entry.id}>
-              <TableCell className="font-medium">{entry.title}</TableCell>
-              <TableCell>{entry.year}</TableCell>
-              <TableCell>{entry.medium === "movie" ? "Movies" : "Games"}</TableCell>
-              <TableCell>{resultLabel(entry)}</TableCell>
-              <TableCell>{entry.kind === "rated" ? entry.rating : "—"}</TableCell>
-              <TableCell className="max-w-xs whitespace-pre-wrap">
-                {entry.comments?.trim() ? entry.comments : "—"}
-              </TableCell>
-            </TableRow>
-          ))
+          <>
+            {responses.map((entry) => (
+              <TableRow key={entry.id}>
+                <TableCell className="font-medium">{entry.title}</TableCell>
+                <TableCell>{entry.year}</TableCell>
+                <TableCell>{entry.medium === "movie" ? "Movies" : "Games"}</TableCell>
+                <TableCell>{resultLabel(entry)}</TableCell>
+                <TableCell>{entry.kind === "rated" ? entry.rating : "—"}</TableCell>
+                <TableCell className="max-w-xs whitespace-pre-wrap">
+                  {entry.comments?.trim() ? entry.comments : "—"}
+                </TableCell>
+              </TableRow>
+            ))}
+            {discards.map((entry) => (
+              <TableRow key={entry.id}>
+                <TableCell className="font-medium">{entry.title}</TableCell>
+                <TableCell>{entry.year}</TableCell>
+                <TableCell>{entry.medium === "movie" ? "Movies" : "Games"}</TableCell>
+                <TableCell>Discarded vs {entry.lostToTitle}</TableCell>
+                <TableCell>—</TableCell>
+                <TableCell>—</TableCell>
+              </TableRow>
+            ))}
+          </>
         )}
       </TableBody>
     </Table>
   );
 }
 
-export function ResultsLog({ open, onOpenChange, responses, onClear }: ResultsLogProps) {
+export function ResultsLog({ open, onOpenChange, responses, discards, onClear }: ResultsLogProps) {
   const rated = responses.filter((entry) => entry.kind === "rated").length;
   const skipped = responses.filter((entry) => entry.kind === "skipped").length;
   const queued = responses.filter((entry) => entry.kind === "queued").length;
+  const hasAnything = responses.length + discards.length > 0;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -100,20 +117,20 @@ export function ResultsLog({ open, onOpenChange, responses, onClear }: ResultsLo
         <SheetHeader className="border-b">
           <SheetTitle>Printable table</SheetTitle>
           <SheetDescription>
-            {responses.length === 0
-              ? "This table fills as you rank, skip, or queue titles. Print it whenever you want a paper copy."
-              : `${rated} rated · ${skipped} skipped · ${queued} on the want list`}
+            {!hasAnything
+              ? "This table fills as you rank, skip, queue, or discard titles. Print it whenever you want a paper copy."
+              : `${rated} rated · ${skipped} skipped · ${queued} on the want list · ${discards.length} discarded`}
           </SheetDescription>
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-auto px-4 py-4">
-          <ResultsTable responses={responses} />
+          <ResultsTable responses={responses} discards={discards} />
         </div>
         <SheetFooter className="border-t sm:flex-row sm:justify-between">
           <Button
             type="button"
             variant="ghost"
             onClick={onClear}
-            disabled={responses.length === 0}
+            disabled={!hasAnything}
           >
             Clear session
           </Button>

@@ -1,19 +1,17 @@
 # RandoRanx
 
-Shuffle a real movie or game title, then rank it, skip it, or park it on a want list. Every answer lands in a printable table.
+Shuffle real movie or game titles. Rank them one at a time, or run a Tourney and score the winner.
 
 ## What it does
 
 1. Choose **Movies** or **Games**.
-2. RandoRanx deals one title and year from a static catalog.
-3. Movies: **Seen It**, **Haven't Seen It**, **Want to See It**.
-4. Games: **Played It**, **Haven't Played It**, **Want to Play It**.
-5. Seen / played opens a 1–10 scale and an optional comments field. **Next** saves that rating and deals the next title.
-6. Haven't skips immediately.
-7. Want saves the title to the queue, then deals the next title.
-8. The left-hand **session log** lists every answer. Select an entry to change the action, rating, or comments, then **Save**.
-9. On smaller screens, open the same log from the list icon in the header.
-10. The printer icon (top right) opens a printable table of rated titles, skips, and the want-to-see / want-to-play queue.
+2. Choose **Rank** or **Tourney**.
+3. **Rank** deals one title. Movies: Seen It / Haven't Seen It / Want to See It. Games: Played It / Haven't Played It / Want to Play It.
+4. Seen / played opens a 1–10 scale and optional comments. **Next** saves and deals the next title. Haven't skips. Want parks the title on your list.
+5. **Tourney** deals two titles. Pick one. Score the winner 1–10 with optional comments, then the next pair. The unselected title goes to **Discard** with no score.
+6. The left-hand log has **Results** and **Discard** tabs. Select a Results row to change action, rating, or comments. Discard is listed, not scored.
+7. On smaller screens, open the same log (including Discard) from the list icon in the header.
+8. The printer icon opens a printable table of results and discards.
 
 Answers stay in this browser via `localStorage`. There is no account and no database.
 
