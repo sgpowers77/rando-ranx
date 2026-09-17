@@ -11,7 +11,9 @@ Shuffle a real movie or game title, then rank it, skip it, or park it on a want 
 5. Seen / played opens a 1–10 scale and an optional comments field. **Next** saves that rating and deals the next title.
 6. Haven't skips immediately.
 7. Want saves the title to the queue, then deals the next title.
-8. The printer icon (top right) opens a log of rated titles, skips, and the want-to-see / want-to-play queue. Use **Print table** for a paper copy.
+8. The left-hand **session log** lists every answer. Select an entry to change the action, rating, or comments, then **Save**.
+9. On smaller screens, open the same log from the list icon in the header.
+10. The printer icon (top right) opens a printable table of rated titles, skips, and the want-to-see / want-to-play queue.
 
 Answers stay in this browser via `localStorage`. There is no account and no database.
 

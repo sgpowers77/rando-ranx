@@ -18,7 +18,8 @@ export function Landing({ onChoose }: LandingProps) {
       </h1>
       <p className="mt-4 max-w-lg text-base text-muted-foreground sm:text-lg">
         RandoRanx deals you a real title and year. Mark it as seen or played, skip it, or park it
-        on your want list. Your answers live in a printable log in the top-right corner.
+        on your want list. The left-hand log keeps every answer; select a row to change it. Print
+        from the icon in the top-right corner.
       </p>
       <div className="mt-10 grid gap-3 sm:grid-cols-2">
         <Button

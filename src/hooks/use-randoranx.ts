@@ -106,6 +106,25 @@ export function useRandoRanx() {
     });
   }, [persist]);
 
+  const updateResponse = useCallback(
+    (id: string, kind: SessionResponse["kind"], extras?: { rating?: number; comments?: string }) => {
+      persist((prev) => ({
+        ...prev,
+        responses: prev.responses.map((entry) => {
+          if (entry.id !== id) return entry;
+          const comments = extras?.comments?.trim() ? extras.comments.trim() : undefined;
+          return {
+            ...entry,
+            kind,
+            rating: kind === "rated" ? extras?.rating : undefined,
+            comments,
+          };
+        }),
+      }));
+    },
+    [persist]
+  );
+
   const clearSession = useCallback(() => {
     clearStoredSession();
   }, []);
@@ -118,6 +137,7 @@ export function useRandoRanx() {
     chooseMedium,
     goHome,
     recordAndAdvance,
+    updateResponse,
     reshuffleMedium,
     clearSession,
     dismissError: dismissHydrateError,

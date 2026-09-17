@@ -8,11 +8,23 @@ type RatingFormProps = {
   medium: "movie" | "game";
   onSubmit: (rating: number, comments: string) => void;
   onCancel: () => void;
+  initialRating?: number;
+  initialComments?: string;
+  submitLabel?: string;
+  cancelLabel?: string;
 };
 
-export function RatingForm({ medium, onSubmit, onCancel }: RatingFormProps) {
-  const [rating, setRating] = useState<number | null>(null);
-  const [comments, setComments] = useState("");
+export function RatingForm({
+  medium,
+  onSubmit,
+  onCancel,
+  initialRating,
+  initialComments = "",
+  submitLabel = "Next",
+  cancelLabel = "Back to choices",
+}: RatingFormProps) {
+  const [rating, setRating] = useState<number | null>(initialRating ?? null);
+  const [comments, setComments] = useState(initialComments);
 
   const verb = medium === "movie" ? "this movie" : "this game";
 
@@ -63,10 +75,10 @@ export function RatingForm({ medium, onSubmit, onCancel }: RatingFormProps) {
       </div>
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button type="button" variant="ghost" onClick={onCancel}>
-          Back to choices
+          {cancelLabel}
         </Button>
         <Button type="submit" disabled={rating == null} className="sm:min-w-28">
-          Next
+          {submitLabel}
         </Button>
       </div>
     </form>

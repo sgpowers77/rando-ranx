@@ -98,7 +98,7 @@ export function ResultsLog({ open, onOpenChange, responses, onClear }: ResultsLo
         showCloseButton
       >
         <SheetHeader className="border-b">
-          <SheetTitle>Results log</SheetTitle>
+          <SheetTitle>Printable table</SheetTitle>
           <SheetDescription>
             {responses.length === 0
               ? "This table fills as you rank, skip, or queue titles. Print it whenever you want a paper copy."
