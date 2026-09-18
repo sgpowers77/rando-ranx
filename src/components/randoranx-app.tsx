@@ -10,11 +10,11 @@ import { SessionLog } from "@/components/session-log";
 import { TitleStage } from "@/components/title-stage";
 import { TourneyStage } from "@/components/tourney-stage";
 import { PathSettings } from "@/components/path-settings";
-import { FilterToolbar } from "@/components/filter-toolbar";
 import { QueueModal } from "@/components/queue-modal";
 import { TitleSearch } from "@/components/title-search";
 import { AppSettingsMenu } from "@/components/app-settings";
 import { Button } from "@/components/ui/button";
+import { SlidersHorizontal } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -72,9 +72,6 @@ export function RandoRanxApp() {
   const [tourneyHelpOpen, setTourneyHelpOpen] = useState(false);
 
   const logs = logsForMedium(session, session.medium);
-  const randomizeOn = session.medium
-    ? session.randomizeFilters?.[session.medium] === true
-    : false;
   const movieLogs = logsForMedium(session, "movie");
   const movieQueue = queuedForMedium(session, "movie");
   const mediumQueue = logs.userQueue;
@@ -212,13 +209,13 @@ export function RandoRanxApp() {
             <ModePicker
               medium={session.medium}
               filters={session.pathFilters[session.medium] ?? defaultFilters(session.medium)}
-              randomizeOn={session.randomizeFilters?.[session.medium] === true}
+              fullRando={session.randomizeFilters?.[session.medium] === true}
               onChoose={choosePlayMode}
               onSaveFilters={(next) => {
                 if (!session.medium) return;
                 savePathFilters(session.medium, next);
               }}
-              onRandomizeChange={(on) => {
+              onFullRandoChange={(on) => {
                 if (!session.medium) return;
                 setRandomizeFilters(session.medium, on);
               }}
@@ -249,12 +246,6 @@ export function RandoRanxApp() {
                 label={`Ranx · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} in this deal${poolSource === "dataset" ? " · Movies Dataset" : ""}`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
-                onOpenSettings={() => setFiltersOpen(true)}
-                randomizeOn={randomizeOn}
-                onRandomizeChange={(on) => {
-                  if (!session.medium) return;
-                  setRandomizeFilters(session.medium, on);
-                }}
               />
               <TitleStage
                 key={currentTitle.id}
@@ -282,12 +273,6 @@ export function RandoRanxApp() {
                 label={`${finalRoundActive ? "Final Round" : "Tourney"} · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left in this stack`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
-                onOpenSettings={() => setFiltersOpen(true)}
-                randomizeOn={randomizeOn}
-                onRandomizeChange={(on) => {
-                  if (!session.medium) return;
-                  setRandomizeFilters(session.medium, on);
-                }}
                 compactMobile
               />
               <TourneyStage
@@ -317,11 +302,7 @@ export function RandoRanxApp() {
                 onChangeMode={goToModePick}
                 onHome={goHome}
                 onOpenSettings={() => setFiltersOpen(true)}
-                randomizeOn={randomizeOn}
-                onRandomizeChange={(on) => {
-                  if (!session.medium) return;
-                  setRandomizeFilters(session.medium, on);
-                }}
+                showFilters
               />
               <EmptyCatalog
                 medium={session.medium}
@@ -401,7 +382,8 @@ export function RandoRanxApp() {
               Undo undoes the last Select, up to three times.
             </p>
             <p className="text-muted-foreground">
-              Filters stay available above the cards. Star and bookmark sit on each poster.
+              Star and bookmark sit on each poster. Change the filter mix from Choose an Experience
+              (presets, Filters, or Full Rando) before a deal starts.
             </p>
           </div>
         </DialogContent>
@@ -438,27 +420,26 @@ function StageMeta({
   onChangeMode,
   onHome,
   onOpenSettings,
-  randomizeOn,
-  onRandomizeChange,
+  showFilters = false,
   compactMobile = false,
 }: {
   label: string;
   onChangeMode: () => void;
   onHome: () => void;
-  onOpenSettings: () => void;
-  randomizeOn: boolean;
-  onRandomizeChange: (on: boolean) => void;
+  onOpenSettings?: () => void;
+  showFilters?: boolean;
   compactMobile?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
       <p className={compactMobile ? "hidden lg:block" : undefined}>{label}</p>
       <div className="flex flex-wrap items-center gap-1">
-        <FilterToolbar
-          randomizeOn={randomizeOn}
-          onOpenFilters={onOpenSettings}
-          onRandomizeChange={onRandomizeChange}
-        />
+        {showFilters && onOpenSettings ? (
+          <Button type="button" variant="ghost" size="sm" className="gap-1.5" aria-label="Filters" onClick={onOpenSettings}>
+            <SlidersHorizontal className="size-4" />
+            Filters
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="ghost"

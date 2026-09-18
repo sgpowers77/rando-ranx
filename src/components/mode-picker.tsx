@@ -1,11 +1,10 @@
 "use client";
 
 import { PathSettings } from "@/components/path-settings";
-import { FilterToolbar } from "@/components/filter-toolbar";
-import { TourneyExperienceModal } from "@/components/tourney-experience-modal";
+import { ExperienceModal } from "@/components/experience-modal";
 import { Button } from "@/components/ui/button";
 import { defaultFilters } from "@/lib/filters";
-import { setTourneyExperienceHidden, tourneyExperienceHidden } from "@/lib/tourney-experience";
+import { setExperienceHidden, experienceHidden } from "@/lib/tourney-experience";
 import type { Medium, PathFilters, PlayMode } from "@/lib/types";
 import { Dices, ListOrdered } from "lucide-react";
 import { useState } from "react";
@@ -13,28 +12,34 @@ import { useState } from "react";
 type ModePickerProps = {
   medium: Medium;
   filters: PathFilters;
-  randomizeOn: boolean;
+  fullRando: boolean;
   onChoose: (mode: PlayMode) => void;
   onSaveFilters: (filters: PathFilters) => void;
-  onRandomizeChange: (on: boolean) => void;
+  onFullRandoChange: (on: boolean) => void;
   onBack: () => void;
 };
 
 export function ModePicker({
   medium,
   filters,
-  randomizeOn,
+  fullRando,
   onChoose,
   onSaveFilters,
-  onRandomizeChange,
+  onFullRandoChange,
   onBack,
 }: ModePickerProps) {
   const catalog = medium === "movie" ? "movies" : "games";
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [experienceOpen, setExperienceOpen] = useState(false);
+  const [pendingMode, setPendingMode] = useState<PlayMode | null>(null);
 
-  const startTourney = () => {
-    onChoose("tourney");
+  const beginMode = (mode: PlayMode) => {
+    if (experienceHidden()) {
+      onChoose(mode);
+      return;
+    }
+    setPendingMode(mode);
+    setExperienceOpen(true);
   };
 
   return (
@@ -52,33 +57,20 @@ export function ModePicker({
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Button
-          type="button"
-          onClick={() => {
-            if (tourneyExperienceHidden()) startTourney();
-            else setExperienceOpen(true);
-          }}
-          className="h-14 w-full gap-2 text-base"
-        >
+        <Button type="button" onClick={() => beginMode("tourney")} className="h-14 w-full gap-2 text-base">
           <Dices className="size-5" />
           Tourney
         </Button>
         <Button
           type="button"
           variant="outline"
-          onClick={() => onChoose("rank")}
+          onClick={() => beginMode("rank")}
           className="h-14 w-full gap-2 text-base"
         >
           <ListOrdered className="size-5" />
           Ranx
         </Button>
       </div>
-      <FilterToolbar
-        filtersVariant="outline"
-        randomizeOn={randomizeOn}
-        onOpenFilters={() => setSettingsOpen(true)}
-        onRandomizeChange={onRandomizeChange}
-      />
       <Button type="button" variant="ghost" className="self-start" onClick={onBack}>
         Back to Movies or Games
       </Button>
@@ -89,16 +81,23 @@ export function ModePicker({
         filters={filters ?? defaultFilters(medium)}
         onSave={onSaveFilters}
       />
-      <TourneyExperienceModal
+      <ExperienceModal
         open={experienceOpen}
         medium={medium}
-        onOpenChange={setExperienceOpen}
+        fullRando={fullRando}
+        onOpenChange={(open) => {
+          setExperienceOpen(open);
+          if (!open) setPendingMode(null);
+        }}
         onOpenFilters={() => setSettingsOpen(true)}
         onApplyFilters={onSaveFilters}
+        onFullRandoChange={onFullRandoChange}
         onContinue={(hideNextTime) => {
-          setTourneyExperienceHidden(hideNextTime);
+          setExperienceHidden(hideNextTime);
+          const mode = pendingMode;
           setExperienceOpen(false);
-          startTourney();
+          setPendingMode(null);
+          if (mode) onChoose(mode);
         }}
       />
     </section>
