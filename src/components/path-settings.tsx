@@ -23,7 +23,7 @@ import {
 import { MPAA_RATINGS } from "@/lib/mpaa";
 import { GAME_OBSCURITY_COPY, MOVIE_OBSCURITY_COPY } from "@/lib/obscurity";
 import type { Medium, PathFilters, StackSize } from "@/lib/types";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type PathSettingsProps = {
   open: boolean;
@@ -41,6 +41,14 @@ export function PathSettings({
   onSave,
 }: PathSettingsProps) {
   const [draft, setDraft] = useState<PathFilters>(() => sanitizeFilters(filters, medium));
+  const wasOpen = useRef(false);
+
+  useEffect(() => {
+    if (open && !wasOpen.current) {
+      setDraft(sanitizeFilters(filters, medium));
+    }
+    wasOpen.current = open;
+  }, [open, filters, medium]);
 
   const genres = medium === "movie" ? MOVIE_GENRES : GAME_GENRES;
   const decades = decadesFor(medium);
