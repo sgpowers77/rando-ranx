@@ -20,6 +20,7 @@ import {
   STACK_SIZES,
   sanitizeFilters,
 } from "@/lib/filters";
+import { downloadFiltersCsv } from "@/lib/csv";
 import { MPAA_RATINGS } from "@/lib/mpaa";
 import { GAME_OBSCURITY_COPY, MOVIE_OBSCURITY_COPY } from "@/lib/obscurity";
 import type { Medium, PathFilters, StackSize } from "@/lib/types";
@@ -84,7 +85,19 @@ export function PathSettings({
         onOpenChange(false);
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={canClose}>
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
+        showCloseButton={canClose}
+        after={
+          <button
+            type="button"
+            className="text-sm text-white underline underline-offset-4 drop-shadow-md hover:text-white/80"
+            onClick={() => downloadFiltersCsv(medium, draft)}
+          >
+            Download Filters
+          </button>
+        }
+      >
         <DialogHeader>
           <DialogTitle>Filters</DialogTitle>
           <DialogDescription>

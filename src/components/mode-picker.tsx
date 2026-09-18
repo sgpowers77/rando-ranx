@@ -2,8 +2,10 @@
 
 import { PathSettings } from "@/components/path-settings";
 import { FilterToolbar } from "@/components/filter-toolbar";
+import { TourneyExperienceModal } from "@/components/tourney-experience-modal";
 import { Button } from "@/components/ui/button";
 import { defaultFilters } from "@/lib/filters";
+import { setTourneyExperienceHidden, tourneyExperienceHidden } from "@/lib/tourney-experience";
 import type { Medium, PathFilters, PlayMode } from "@/lib/types";
 import { Dices, ListOrdered } from "lucide-react";
 import { useState } from "react";
@@ -29,6 +31,11 @@ export function ModePicker({
 }: ModePickerProps) {
   const catalog = medium === "movie" ? "movies" : "games";
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [experienceOpen, setExperienceOpen] = useState(false);
+
+  const startTourney = () => {
+    onChoose("tourney");
+  };
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-8 px-4 py-10 sm:px-6">
@@ -45,7 +52,14 @@ export function ModePicker({
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Button type="button" onClick={() => onChoose("tourney")} className="h-14 w-full gap-2 text-base">
+        <Button
+          type="button"
+          onClick={() => {
+            if (tourneyExperienceHidden()) startTourney();
+            else setExperienceOpen(true);
+          }}
+          className="h-14 w-full gap-2 text-base"
+        >
           <Dices className="size-5" />
           Tourney
         </Button>
@@ -74,6 +88,18 @@ export function ModePicker({
         medium={medium}
         filters={filters ?? defaultFilters(medium)}
         onSave={onSaveFilters}
+      />
+      <TourneyExperienceModal
+        open={experienceOpen}
+        medium={medium}
+        onOpenChange={setExperienceOpen}
+        onOpenFilters={() => setSettingsOpen(true)}
+        onApplyFilters={onSaveFilters}
+        onContinue={(hideNextTime) => {
+          setTourneyExperienceHidden(hideNextTime);
+          setExperienceOpen(false);
+          startTourney();
+        }}
       />
     </section>
   );
