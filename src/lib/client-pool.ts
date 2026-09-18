@@ -1,5 +1,4 @@
 import { SEARCH_FALLBACK, titlesFor } from "@/data/catalog";
-import { withDirectors } from "@/lib/director";
 import { matchesFilters, stackSizeOf } from "@/lib/filters";
 import { publicUrl } from "@/lib/public-url";
 import type { CatalogTitle, Medium, PathFilters } from "@/lib/types";
@@ -89,7 +88,7 @@ export async function sampleClientPool(options: {
   );
   const sampled = shuffle(eligible).slice(0, take);
   return {
-    titles: await withDirectors(sampled),
+    titles: sampled,
     source: loaded.source,
     available: eligible.length,
   };
