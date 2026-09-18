@@ -129,7 +129,7 @@ export function RandoRanxApp() {
       (session.playMode === "tourney" && !tourneyPair));
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <AppHeader
         onHome={() => {
           stopEditing();
@@ -154,12 +154,12 @@ export function RandoRanxApp() {
         showTourneyHelp={Boolean(showTourney)}
       />
 
-      <div className="flex min-h-0 flex-1">
-        <aside className="no-print hidden w-80 shrink-0 border-r border-border/70 bg-card/40 lg:flex lg:flex-col">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <aside className="no-print hidden h-full min-h-0 w-80 shrink-0 overflow-hidden border-r border-border/70 bg-card/40 lg:flex lg:flex-col">
           {log}
         </aside>
 
-        <main className={`no-print mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 sm:px-6 ${showTourney ? "py-3 lg:py-8" : "py-8"}`}>
+        <main className={`no-print mx-auto flex h-full min-h-0 w-full max-w-3xl flex-1 flex-col overflow-y-auto px-4 sm:px-6 ${showTourney ? "py-3 lg:py-8" : "py-8"}`}>
           {status === "loading" ? (
             <div className="flex flex-1 flex-col justify-center" role="status" aria-live="polite">
               <p className="text-sm font-medium tracking-wide text-primary uppercase">
@@ -310,7 +310,7 @@ export function RandoRanxApp() {
       </div>
 
       <Sheet open={mobileLogOpen} onOpenChange={setMobileLogOpen}>
-        <SheetContent side="left" className="w-full gap-0 p-0 sm:max-w-sm" showCloseButton>
+        <SheetContent side="left" className="flex h-dvh max-h-dvh w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-sm" showCloseButton>
           <SheetHeader className="sr-only">
             <SheetTitle>Session log</SheetTitle>
           </SheetHeader>

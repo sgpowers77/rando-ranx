@@ -48,8 +48,8 @@ export function SessionLog({
   const watchIds = new Set(watchTags.map((tag) => tag.titleId));
 
   return (
-    <Tabs key={hideDiscard ? "ranx" : "all"} defaultValue="results" className="flex h-full min-h-0 flex-col gap-0">
-      <div className="border-b px-3 py-3">
+    <Tabs key={hideDiscard ? "ranx" : "all"} defaultValue="results" className="flex h-full min-h-0 flex-col gap-0 overflow-hidden">
+      <div className="shrink-0 border-b px-3 py-3">
         <div className="flex items-center justify-between gap-2">
           <p className="font-heading text-sm font-medium">
             {medium === "game" ? "Games log" : medium === "movie" ? "Movies log" : "Session log"}
@@ -73,7 +73,7 @@ export function SessionLog({
         </TabsList>
       </div>
 
-      <TabsContent value="results" className="min-h-0 flex-1 overflow-auto p-2">
+      <TabsContent value="results" className="min-h-0 flex-1 overflow-y-auto p-2">
         <div className="mb-2 px-1">
           <Button
             type="button"
@@ -156,7 +156,7 @@ export function SessionLog({
       </TabsContent>
 
       {hideDiscard ? null : (
-      <TabsContent value="discard" className="min-h-0 flex-1 overflow-auto p-2">
+      <TabsContent value="discard" className="min-h-0 flex-1 overflow-y-auto p-2">
         <ul aria-label="Discarded titles">
           {newestDiscards.length === 0 ? (
             <li className="px-3 py-8 text-sm text-muted-foreground">
@@ -203,7 +203,7 @@ export function SessionLog({
       </TabsContent>
       )}
 
-      <TabsContent value="watch" className="min-h-0 flex-1 overflow-auto p-2">
+      <TabsContent value="watch" className="min-h-0 flex-1 overflow-y-auto p-2">
         <ul aria-label="Watch tags">
           {newestWatch.length === 0 ? (
             <li className="px-3 py-8 text-sm text-muted-foreground">

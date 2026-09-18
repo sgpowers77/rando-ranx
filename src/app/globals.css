@@ -220,6 +220,9 @@ html[data-palette="daylight"] {
 @media print {
   html,
   body {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
     background: white !important;
     color: black !important;
   }
