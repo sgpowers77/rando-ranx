@@ -108,4 +108,5 @@ export type StoredSession = {
   liveTitles: CatalogTitle[];
   finalRounds: Record<Medium, FinalRound | null>;
   tourneyUndos: Record<Medium, TourneyUndoFrame[]>;
+  randomizeFilters: Record<Medium, boolean>;
 };

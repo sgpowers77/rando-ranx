@@ -2,7 +2,7 @@
 
 import { resolveTitle } from "@/data/catalog";
 import { loadMovieCatalog, sampleClientPool } from "@/lib/client-pool";
-import { matchesFilters, stackSizeOf } from "@/lib/filters";
+import { matchesFilters, randomizeFilters, stackSizeOf } from "@/lib/filters";
 import { preloadPosterStack } from "@/lib/poster";
 import {
   applyTourneyOutcome,
@@ -325,9 +325,37 @@ export function useRandoRanx() {
       persist((prev) => ({
         ...prev,
         pathFilters: { ...prev.pathFilters, [medium]: filters },
+        randomizeFilters: {
+          movie: prev.randomizeFilters?.movie === true,
+          game: prev.randomizeFilters?.game === true,
+          [medium]: false,
+        },
       }));
       const snap = getSessionSnapshot();
       if (snap.medium === medium && snap.playMode) {
+        void refreshPool();
+      }
+    },
+    [persist, refreshPool]
+  );
+
+  const setRandomizeFilters = useCallback(
+    (medium: Medium, on: boolean) => {
+      persist((prev) => {
+        const flags = {
+          movie: prev.randomizeFilters?.movie === true,
+          game: prev.randomizeFilters?.game === true,
+          [medium]: on,
+        };
+        if (!on) return { ...prev, randomizeFilters: flags };
+        return {
+          ...prev,
+          randomizeFilters: flags,
+          pathFilters: { ...prev.pathFilters, [medium]: randomizeFilters(medium) },
+        };
+      });
+      const snap = getSessionSnapshot();
+      if (on && snap.medium === medium && snap.playMode) {
         void refreshPool();
       }
     },
@@ -506,6 +534,7 @@ export function useRandoRanx() {
     completeTourneyRound,
     setSkipTourneyScoring,
     savePathFilters,
+    setRandomizeFilters,
     queueSearchedTitles,
     removeFromUserQueue,
     setPresentQueuedOnly,

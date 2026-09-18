@@ -105,6 +105,29 @@ export function filtersComplete(filters: PathFilters, medium: Medium): boolean {
   return true;
 }
 
+function shufflePick<T>(items: readonly T[]): T[] {
+  const pool = [...items];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const count = 1 + Math.floor(Math.random() * pool.length);
+  return pool.slice(0, count);
+}
+
+/** Random non-empty selection for every required Filters group (Done-lock safe). */
+export function randomizeFilters(medium: Medium): PathFilters {
+  const next: PathFilters = {
+    decades: shufflePick(decadesFor(medium)),
+    genres: shufflePick(medium === "movie" ? MOVIE_GENRES : GAME_GENRES),
+    obscurity: shufflePick([...OBSCURITY_LEVELS]),
+    stackSize: STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] as StackSize,
+    mpaa: medium === "movie" ? shufflePick([...MPAA_RATINGS]) : [],
+    includeForeign: medium === "movie" ? Math.random() < 0.5 : true,
+  };
+  return sanitizeFilters(next, medium);
+}
+
 export function filtersActive(filters: PathFilters, medium: Medium): boolean {
   const defaults = defaultFilters(medium);
   return (

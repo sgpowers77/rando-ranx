@@ -10,11 +10,11 @@ import { SessionLog } from "@/components/session-log";
 import { TitleStage } from "@/components/title-stage";
 import { TourneyStage } from "@/components/tourney-stage";
 import { PathSettings } from "@/components/path-settings";
+import { FilterToolbar } from "@/components/filter-toolbar";
 import { QueueModal } from "@/components/queue-modal";
 import { TitleSearch } from "@/components/title-search";
 import { AppSettingsMenu } from "@/components/app-settings";
 import { Button } from "@/components/ui/button";
-import { SlidersHorizontal } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +48,7 @@ export function RandoRanxApp() {
     recordAndAdvance,
     pickTourneyWinner,
     savePathFilters,
+    setRandomizeFilters,
     queueSearchedTitles,
     removeFromUserQueue,
     setPresentQueuedOnly,
@@ -71,6 +72,9 @@ export function RandoRanxApp() {
   const [tourneyHelpOpen, setTourneyHelpOpen] = useState(false);
 
   const logs = logsForMedium(session, session.medium);
+  const randomizeOn = session.medium
+    ? session.randomizeFilters?.[session.medium] === true
+    : false;
   const movieLogs = logsForMedium(session, "movie");
   const movieQueue = queuedForMedium(session, "movie");
   const mediumQueue = logs.userQueue;
@@ -208,10 +212,15 @@ export function RandoRanxApp() {
             <ModePicker
               medium={session.medium}
               filters={session.pathFilters[session.medium] ?? defaultFilters(session.medium)}
+              randomizeOn={session.randomizeFilters?.[session.medium] === true}
               onChoose={choosePlayMode}
               onSaveFilters={(next) => {
                 if (!session.medium) return;
                 savePathFilters(session.medium, next);
+              }}
+              onRandomizeChange={(on) => {
+                if (!session.medium) return;
+                setRandomizeFilters(session.medium, on);
               }}
               onBack={goHome}
             />
@@ -241,6 +250,11 @@ export function RandoRanxApp() {
                 onChangeMode={goToModePick}
                 onHome={goHome}
                 onOpenSettings={() => setFiltersOpen(true)}
+                randomizeOn={randomizeOn}
+                onRandomizeChange={(on) => {
+                  if (!session.medium) return;
+                  setRandomizeFilters(session.medium, on);
+                }}
               />
               <TitleStage
                 key={currentTitle.id}
@@ -269,6 +283,11 @@ export function RandoRanxApp() {
                 onChangeMode={goToModePick}
                 onHome={goHome}
                 onOpenSettings={() => setFiltersOpen(true)}
+                randomizeOn={randomizeOn}
+                onRandomizeChange={(on) => {
+                  if (!session.medium) return;
+                  setRandomizeFilters(session.medium, on);
+                }}
                 compactMobile
               />
               <TourneyStage
@@ -292,7 +311,18 @@ export function RandoRanxApp() {
           ) : null}
 
           {showEmpty && session.medium && session.playMode ? (
-            <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center">
+            <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-4">
+              <StageMeta
+                label={`${session.playMode === "tourney" ? (finalRoundActive ? "Final Round" : "Tourney") : "Ranx"} · ${session.medium === "movie" ? "Movies" : "Games"}`}
+                onChangeMode={goToModePick}
+                onHome={goHome}
+                onOpenSettings={() => setFiltersOpen(true)}
+                randomizeOn={randomizeOn}
+                onRandomizeChange={(on) => {
+                  if (!session.medium) return;
+                  setRandomizeFilters(session.medium, on);
+                }}
+              />
               <EmptyCatalog
                 medium={session.medium}
                 playMode={session.playMode}
@@ -408,22 +438,27 @@ function StageMeta({
   onChangeMode,
   onHome,
   onOpenSettings,
+  randomizeOn,
+  onRandomizeChange,
   compactMobile = false,
 }: {
   label: string;
   onChangeMode: () => void;
   onHome: () => void;
   onOpenSettings: () => void;
+  randomizeOn: boolean;
+  onRandomizeChange: (on: boolean) => void;
   compactMobile?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
       <p className={compactMobile ? "hidden lg:block" : undefined}>{label}</p>
-      <div className="flex flex-wrap gap-1">
-        <Button type="button" variant="ghost" size="sm" className="gap-1.5" aria-label="Filters" onClick={onOpenSettings}>
-          <SlidersHorizontal className="size-4" />
-          Filters
-        </Button>
+      <div className="flex flex-wrap items-center gap-1">
+        <FilterToolbar
+          randomizeOn={randomizeOn}
+          onOpenFilters={onOpenSettings}
+          onRandomizeChange={onRandomizeChange}
+        />
         <Button
           type="button"
           variant="ghost"

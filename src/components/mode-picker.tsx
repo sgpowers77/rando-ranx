@@ -1,25 +1,30 @@
 "use client";
 
 import { PathSettings } from "@/components/path-settings";
+import { FilterToolbar } from "@/components/filter-toolbar";
 import { Button } from "@/components/ui/button";
 import { defaultFilters } from "@/lib/filters";
 import type { Medium, PathFilters, PlayMode } from "@/lib/types";
-import { Dices, ListOrdered, SlidersHorizontal } from "lucide-react";
+import { Dices, ListOrdered } from "lucide-react";
 import { useState } from "react";
 
 type ModePickerProps = {
   medium: Medium;
   filters: PathFilters;
+  randomizeOn: boolean;
   onChoose: (mode: PlayMode) => void;
   onSaveFilters: (filters: PathFilters) => void;
+  onRandomizeChange: (on: boolean) => void;
   onBack: () => void;
 };
 
 export function ModePicker({
   medium,
   filters,
+  randomizeOn,
   onChoose,
   onSaveFilters,
+  onRandomizeChange,
   onBack,
 }: ModePickerProps) {
   const catalog = medium === "movie" ? "movies" : "games";
@@ -54,16 +59,12 @@ export function ModePicker({
           Ranx
         </Button>
       </div>
-      <Button
-        type="button"
-        variant="outline"
-        className="self-start gap-2"
-        aria-label="Filters"
-        onClick={() => setSettingsOpen(true)}
-      >
-        <SlidersHorizontal className="size-4" />
-        Filters
-      </Button>
+      <FilterToolbar
+        filtersVariant="outline"
+        randomizeOn={randomizeOn}
+        onOpenFilters={() => setSettingsOpen(true)}
+        onRandomizeChange={onRandomizeChange}
+      />
       <Button type="button" variant="ghost" className="self-start" onClick={onBack}>
         Back to Movies or Games
       </Button>

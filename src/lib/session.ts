@@ -37,6 +37,7 @@ export const EMPTY_SESSION: StoredSession = {
   liveTitles: [],
   finalRounds: { movie: null, game: null },
   tourneyUndos: { movie: [], game: [] },
+  randomizeFilters: { movie: false, game: false },
 };
 
 export function logsForMedium(session: StoredSession, medium: Medium | null) {
@@ -327,6 +328,14 @@ function parseCustomTitles(value: unknown): CatalogTitle[] {
   }));
 }
 
+function parseRandomizeFlags(value: unknown): Record<Medium, boolean> {
+  const data = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  return {
+    movie: data.movie === true,
+    game: data.game === true,
+  };
+}
+
 function parseOnePathFilters(raw: unknown, medium: Medium): PathFilters | null {
   if (!raw || typeof raw !== "object") return null;
   const data = raw as PathFilters;
@@ -426,6 +435,7 @@ export function parseSession(raw: string): StoredSession {
     releaseYears: parseReleaseYears(parsed.releaseYears),
     finalRounds: parseFinalRounds(parsed),
     tourneyUndos: parseTourneyUndos(parsed),
+    randomizeFilters: parseRandomizeFlags(parsed.randomizeFilters),
   };
 }
 
@@ -761,6 +771,7 @@ export function normalizeSession(session: StoredSession): StoredSession {
     releaseYears: parseReleaseYears(session.releaseYears),
     finalRounds: parseFinalRounds(session),
     tourneyUndos: parseTourneyUndos(session),
+    randomizeFilters: parseRandomizeFlags(session.randomizeFilters),
   };
 }
 
