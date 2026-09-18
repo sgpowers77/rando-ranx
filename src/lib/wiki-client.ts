@@ -1,4 +1,5 @@
 import { localSearchFallback } from "@/lib/client-pool";
+import { directorFromExtract } from "@/lib/director";
 import { isCinemaWikiPage } from "@/lib/poster";
 import type { CatalogTitle, Medium } from "@/lib/types";
 
@@ -114,6 +115,8 @@ export async function searchWikipediaClient(
           obscurity: 3,
           source: "search",
         };
+        const directed = directorFromExtract(blob);
+        if (directed) title.director = directed;
         return title;
       })
     );

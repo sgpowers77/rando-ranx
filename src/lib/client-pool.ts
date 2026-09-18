@@ -1,4 +1,5 @@
 import { SEARCH_FALLBACK, titlesFor } from "@/data/catalog";
+import { withDirectors } from "@/lib/director";
 import { matchesFilters, stackSizeOf } from "@/lib/filters";
 import { publicUrl } from "@/lib/public-url";
 import type { CatalogTitle, Medium, PathFilters } from "@/lib/types";
@@ -16,6 +17,7 @@ type IndexFile = {
     en?: boolean;
     englishDialogue?: boolean;
     originalLanguage?: string;
+    director?: string;
   }>;
 };
 
@@ -49,6 +51,7 @@ export async function loadMovieCatalog(): Promise<{ titles: CatalogTitle[]; sour
       mpaa: item.mpaa,
       originalLanguage: item.originalLanguage,
       englishDialogue: item.en ?? item.englishDialogue,
+      director: item.director?.trim() || undefined,
     }));
     if (movies.length === 0) throw new Error("empty index");
     movieCache = movies;
@@ -79,8 +82,9 @@ export async function sampleClientPool(options: {
   const eligible = loaded.titles.filter(
     (item) => !exclude.has(item.id) && matchesFilters(item, options.filters)
   );
+  const sampled = shuffle(eligible).slice(0, limit);
   return {
-    titles: shuffle(eligible).slice(0, limit),
+    titles: await withDirectors(sampled),
     source: loaded.source,
     available: eligible.length,
   };

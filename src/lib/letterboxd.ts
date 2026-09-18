@@ -1,5 +1,6 @@
 import { resolveTitle } from "@/data/catalog";
 import { csvCell } from "@/lib/csv";
+import { cachedDirector } from "@/lib/director";
 import type { CatalogTitle, SessionResponse, WatchTag } from "@/lib/types";
 
 /** Official Letterboxd import headers: https://letterboxd.com/about/importing-data/ */
@@ -72,10 +73,12 @@ export function letterboxdRows(input: LetterboxdExportInput): Record<(typeof LET
   for (const entry of input.responses) {
     if (entry.medium !== "movie") continue;
     const catalog = lookup(entry.titleId);
+    const director = catalog?.director?.trim() || (catalog ? cachedDirector(catalog) : undefined);
     const base = {
       imdbID: imdbIdOf(catalog),
       Title: entry.title,
       Year: String(entry.year),
+      ...(director ? { Directors: director } : {}),
     };
     const isWatched = entry.kind === "rated" || entry.kind === "winner";
     const isWatchlist = entry.kind === "queued";
@@ -86,6 +89,7 @@ export function letterboxdRows(input: LetterboxdExportInput): Record<(typeof LET
       patch.Rating10 = String(toLetterboxdRating10(entry.rating));
       patch.Rating = String(toLetterboxdRating5(entry.rating));
     }
+    if (isWatched && entry.watchedDate) patch.WatchedDate = entry.watchedDate;
     if (entry.comments?.trim()) patch.Review = entry.comments.trim();
     upsert(entry.titleId, patch);
   }
@@ -94,20 +98,24 @@ export function letterboxdRows(input: LetterboxdExportInput): Record<(typeof LET
     if (tag.medium !== "movie") continue;
     if (rows.has(tag.titleId)) continue;
     const catalog = lookup(tag.titleId);
+    const director = catalog?.director?.trim() || (catalog ? cachedDirector(catalog) : undefined);
     upsert(tag.titleId, {
       imdbID: imdbIdOf(catalog),
       Title: tag.title,
       Year: String(tag.year),
+      ...(director ? { Directors: director } : {}),
     });
   }
 
   for (const item of input.userQueue) {
     if (item.medium !== "movie") continue;
     if (rows.has(item.id)) continue;
+    const director = item.director?.trim() || cachedDirector(item);
     upsert(item.id, {
       imdbID: imdbIdOf(item),
       Title: item.title,
       Year: String(item.year),
+      ...(director ? { Directors: director } : {}),
     });
   }
 

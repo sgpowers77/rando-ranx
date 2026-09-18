@@ -17,6 +17,7 @@ export type CatalogTitle = {
   imageUrl?: string;
   imageCreditLabel?: string;
   imageCreditHref?: string;
+  director?: string;
 };
 
 export type StackSize = 10 | 25 | 50 | 100;
@@ -42,7 +43,14 @@ export type SessionResponse = {
   rating?: number;
   comments?: string;
   recordedAt: string;
+  watchedDate?: string;
   origin?: "rank" | "tourney" | "final";
+};
+
+export type RatingExtras = {
+  rating?: number;
+  comments?: string;
+  watchedDate?: string;
 };
 
 export type DiscardEntry = {

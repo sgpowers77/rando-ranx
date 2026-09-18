@@ -7,6 +7,7 @@ import { WtfDropZone, TITLE_DRAG_TYPE } from "@/components/wtf-drop-zone";
 import { WtfModal } from "@/components/wtf-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TitleDirector } from "@/hooks/use-director";
 import { decadeOf } from "@/lib/filters";
 import type { CatalogTitle, Medium } from "@/lib/types";
 import { useRef, useState } from "react";
@@ -16,7 +17,7 @@ type TitleStageProps = {
   watched?: boolean;
   onToggleWatch?: () => void;
   onWatchlist: (title: CatalogTitle) => void;
-  onRated: (rating: number, comments: string) => void;
+  onRated: (rating: number, comments: string, watchedDate?: string) => void;
   onSkip: () => void;
   onQueue: () => void;
 };
@@ -90,6 +91,7 @@ export function TitleStage({
               <CardTitle className="font-heading text-3xl leading-tight text-balance sm:text-4xl">
                 {title.title}
               </CardTitle>
+              <TitleDirector title={title} />
               <CardDescription className="text-base text-muted-foreground">
                 {title.year} · {decadeOf(title.year)}s
               </CardDescription>
@@ -144,7 +146,9 @@ export function TitleStage({
           ) : (
             <RatingForm
               medium={medium}
-              onSubmit={onRated}
+              onSubmit={(rating, comments, watchedDate) =>
+                onRated(rating, comments, watchedDate)
+              }
               onCancel={() => setMode("choose")}
             />
           )}

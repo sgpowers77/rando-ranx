@@ -1,6 +1,7 @@
 import { resolveTitle, titlesFor, withReleaseYear } from "@/data/catalog";
 import { defaultFilters, decadesFor, matchesFilters, sanitizeFilters, stackSizeOf } from "@/lib/filters";
 import { parseMpaaList } from "@/lib/mpaa";
+import { parseWatchedDate } from "@/lib/director";
 import type {
   CatalogTitle,
   DiscardEntry,
@@ -8,6 +9,7 @@ import type {
   Medium,
   PathFilters,
   PlayMode,
+  RatingExtras,
   SessionResponse,
   StoredSession,
   TourneyUndoFrame,
@@ -311,7 +313,10 @@ function parseCustomTitles(value: unknown): CatalogTitle[] {
     if (item.medium !== "movie" && item.medium !== "game") return false;
     if (!Array.isArray(item.genres)) return false;
     return [1, 2, 3, 4, 5].includes(item.obscurity);
-  });
+  }).map((item) => ({
+    ...item,
+    director: typeof item.director === "string" && item.director.trim() ? item.director.trim() : undefined,
+  }));
 }
 
 function parseOnePathFilters(raw: unknown, medium: Medium): PathFilters | null {
@@ -388,6 +393,7 @@ export function parseSession(raw: string): StoredSession {
           entry.kind === "winner")
     ).map((entry) => ({
       ...entry,
+      watchedDate: parseWatchedDate(entry.watchedDate),
       origin:
         entry.origin === "rank" || entry.origin === "tourney" || entry.origin === "final"
           ? entry.origin
@@ -524,7 +530,7 @@ export function applyTourneyOutcome(
   prev: StoredSession,
   winnerId: string,
   loserId: string,
-  extras?: { rating?: number; comments?: string }
+  extras?: RatingExtras
 ): StoredSession {
   if (!prev.medium) return prev;
   const medium = prev.medium;
@@ -545,6 +551,7 @@ export function applyTourneyOutcome(
     kind: scored ? "rated" : "winner",
     rating: scored ? extras.rating : undefined,
     comments: extras?.comments?.trim() ? extras.comments.trim() : undefined,
+    watchedDate: parseWatchedDate(extras?.watchedDate),
     recordedAt: now,
     origin,
   };

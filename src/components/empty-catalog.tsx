@@ -4,6 +4,7 @@ import { TitlePoster } from "@/components/title-poster";
 import { TourneyUndoButton } from "@/components/tourney-stage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TitleDirector } from "@/hooks/use-director";
 import type { CatalogTitle, Medium, PlayMode } from "@/lib/types";
 
 type EmptyCatalogProps = {
@@ -97,6 +98,7 @@ export function EmptyCatalog({
               <CardTitle className="font-heading text-3xl leading-tight text-balance">
                 {leftoverTitle.title}
               </CardTitle>
+              <TitleDirector title={leftoverTitle} />
               <CardDescription className="text-base">
                 {leftoverTitle.year} · Final Round champion. Discard still holds every title that
                 lost a vote. Watch tags are unchanged.

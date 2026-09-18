@@ -14,14 +14,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { TitleDirector } from "@/hooks/use-director";
 import { decadeOf } from "@/lib/filters";
-import type { CatalogTitle } from "@/lib/types";
+import type { CatalogTitle, RatingExtras } from "@/lib/types";
 import { SkipForward, Undo2 } from "lucide-react";
 import { useRef, useState } from "react";
 
 type TourneyStageProps = {
   pair: [CatalogTitle, CatalogTitle];
-  onPick: (winnerId: string, loserId: string, extras?: { rating?: number; comments?: string }) => void;
+  onPick: (winnerId: string, loserId: string, extras?: RatingExtras) => void;
   onWatchlist: (title: CatalogTitle) => void;
   onToggleWatch: (title: CatalogTitle) => void;
   watchedIds: string[];
@@ -77,7 +78,7 @@ export function TourneyStage({
   const [dragging, setDragging] = useState(false);
   const [dropArmed, setDropArmed] = useState(false);
   const [wtfTitle, setWtfTitle] = useState<CatalogTitle | null>(null);
-  const [notes, setNotes] = useState<Record<string, { rating: number; comments: string }>>({});
+  const [notes, setNotes] = useState<Record<string, RatingExtras>>({});
   const dragged = useRef(false);
 
   const endDrag = () => {
@@ -110,9 +111,7 @@ export function TourneyStage({
           draggedRef={dragged}
           onSelect={() => select(left, right)}
           onToggleWatch={() => onToggleWatch(left)}
-          onSaveNotes={(rating, comments) =>
-            setNotes((prev) => ({ ...prev, [left.id]: { rating, comments } }))
-          }
+          onSaveNotes={(extras) => setNotes((prev) => ({ ...prev, [left.id]: extras }))}
           onDragBegin={() => setDragging(true)}
           onDragEnd={() => {
             requestAnimationFrame(endDrag);
@@ -125,9 +124,7 @@ export function TourneyStage({
           draggedRef={dragged}
           onSelect={() => select(right, left)}
           onToggleWatch={() => onToggleWatch(right)}
-          onSaveNotes={(rating, comments) =>
-            setNotes((prev) => ({ ...prev, [right.id]: { rating, comments } }))
-          }
+          onSaveNotes={(extras) => setNotes((prev) => ({ ...prev, [right.id]: extras }))}
           onDragBegin={() => setDragging(true)}
           onDragEnd={() => {
             requestAnimationFrame(endDrag);
@@ -187,11 +184,11 @@ function MatchupCard({
   draggedRef,
 }: {
   title: CatalogTitle;
-  notes?: { rating: number; comments: string };
+  notes?: RatingExtras;
   watched: boolean;
   onSelect: () => void;
   onToggleWatch: () => void;
-  onSaveNotes: (rating: number, comments: string) => void;
+  onSaveNotes: (extras: RatingExtras) => void;
   onDragBegin: () => void;
   onDragEnd: () => void;
   draggedRef: { current: boolean };
@@ -243,9 +240,13 @@ function MatchupCard({
         <CardTitle className="font-heading line-clamp-2 min-h-[2.5rem] text-sm leading-tight text-balance lg:min-h-[4.5rem] lg:text-3xl">
           {title.title}
         </CardTitle>
+        <TitleDirector
+          title={title}
+          className="line-clamp-1 h-4 text-[11px] text-muted-foreground lg:h-5 lg:text-sm"
+        />
         <CardDescription className="text-[11px] lg:text-base">
           {title.year} · {decadeOf(title.year)}s
-          {notes ? ` · ${notes.rating}/10 saved` : ""}
+          {notes?.rating != null ? ` · ${notes.rating}/10 saved` : ""}
         </CardDescription>
       </CardHeader>
       <CardContent className="mt-auto shrink-0 px-2 pb-2 lg:px-4 lg:pb-4">
@@ -280,10 +281,11 @@ function MatchupCard({
             hideCancel
             initialRating={notes?.rating}
             initialComments={notes?.comments}
+            initialWatchedDate={notes?.watchedDate}
             submitLabel="Save"
             onCancel={() => setRateOpen(false)}
-            onSubmit={(rating, comments) => {
-              onSaveNotes(rating, comments);
+            onSubmit={(rating, comments, watchedDate) => {
+              onSaveNotes({ rating, comments, watchedDate });
               setRateOpen(false);
             }}
           />

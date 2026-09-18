@@ -248,7 +248,9 @@ export function RandoRanxApp() {
                 watched={logs.watchTags.some((tag) => tag.titleId === currentTitle.id)}
                 onToggleWatch={() => toggleWatchTag(currentTitle)}
                 onWatchlist={addWatchTag}
-                onRated={(rating, comments) => recordAndAdvance("rated", { rating, comments })}
+                onRated={(rating, comments, watchedDate) =>
+                  recordAndAdvance("rated", { rating, comments, watchedDate })
+                }
                 onSkip={() => recordAndAdvance("skipped")}
                 onQueue={() => recordAndAdvance("queued")}
               />

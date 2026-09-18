@@ -2,13 +2,15 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { ResponseKind, SessionResponse } from "@/lib/types";
+import { parseWatchedDate } from "@/lib/director";
+import type { RatingExtras, ResponseKind, SessionResponse } from "@/lib/types";
 import { useState } from "react";
 
 type EntryEditorProps = {
   entry: SessionResponse;
-  onSave: (kind: ResponseKind, extras: { rating?: number; comments: string }) => void;
+  onSave: (kind: ResponseKind, extras: RatingExtras) => void;
   onCancel: () => void;
 };
 
@@ -16,6 +18,7 @@ export function EntryEditor({ entry, onSave, onCancel }: EntryEditorProps) {
   const [kind, setKind] = useState<ResponseKind>(entry.kind);
   const [rating, setRating] = useState<number | null>(entry.rating ?? null);
   const [comments, setComments] = useState(entry.comments ?? "");
+  const [watchedDate, setWatchedDate] = useState(parseWatchedDate(entry.watchedDate) ?? "");
   const [saved, setSaved] = useState(false);
 
   const medium = entry.medium;
@@ -45,6 +48,8 @@ export function EntryEditor({ entry, onSave, onCancel }: EntryEditorProps) {
             onSave(kind, {
               rating: kind === "rated" ? rating ?? undefined : undefined,
               comments,
+              watchedDate:
+                kind === "rated" || kind === "winner" ? parseWatchedDate(watchedDate) : undefined,
             });
             setSaved(true);
           }}
@@ -111,6 +116,27 @@ export function EntryEditor({ entry, onSave, onCancel }: EntryEditorProps) {
                   );
                 })}
               </div>
+            </div>
+          ) : null}
+
+          {entry.medium === "movie" && (kind === "rated" || kind === "winner") ? (
+            <div className="space-y-2">
+              <label htmlFor="edit-watch-date" className="text-sm font-medium">
+                Watch date
+              </label>
+              <Input
+                id="edit-watch-date"
+                type="date"
+                value={watchedDate}
+                onChange={(event) => {
+                  setWatchedDate(event.target.value);
+                  setSaved(false);
+                }}
+                className="h-11 max-w-56"
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional. Written to Letterboxd CSV as WatchedDate when set.
+              </p>
             </div>
           ) : null}
 

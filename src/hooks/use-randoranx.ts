@@ -33,6 +33,7 @@ import type {
   Medium,
   PathFilters,
   PlayMode,
+  RatingExtras,
   SessionResponse,
   StoredSession,
 } from "@/lib/types";
@@ -231,7 +232,7 @@ export function useRandoRanx() {
   }, [persist]);
 
   const recordAndAdvance = useCallback(
-    (kind: SessionResponse["kind"], extras?: { rating?: number; comments?: string }) => {
+    (kind: SessionResponse["kind"], extras?: RatingExtras) => {
       persist((prev) => {
         if (!prev.medium || !prev.playMode) return prev;
         const filters = filtersFor(prev, prev.medium, prev.playMode);
@@ -252,6 +253,7 @@ export function useRandoRanx() {
           kind,
           rating: extras?.rating,
           comments: extras?.comments?.trim() ? extras.comments.trim() : undefined,
+          watchedDate: extras?.watchedDate,
           recordedAt: new Date().toISOString(),
           origin: "rank",
         };
@@ -277,7 +279,7 @@ export function useRandoRanx() {
   );
 
   const pickTourneyWinner = useCallback(
-    (winnerId: string, loserId: string, extras?: { rating?: number; comments?: string }) => {
+    (winnerId: string, loserId: string, extras?: RatingExtras) => {
       persist((prev) => applyTourneyOutcome(prev, winnerId, loserId, extras));
     },
     [persist]
@@ -296,7 +298,7 @@ export function useRandoRanx() {
   }, [persist]);
 
   const completeTourneyRound = useCallback(
-    (extras?: { rating?: number; comments?: string }) => {
+    (extras?: RatingExtras) => {
       persist((prev) => {
         if (!prev.pendingTourney) return prev;
         return applyTourneyOutcome(
@@ -411,7 +413,7 @@ export function useRandoRanx() {
   }, [refreshPool]);
 
   const updateResponse = useCallback(
-    (id: string, kind: SessionResponse["kind"], extras?: { rating?: number; comments?: string }) => {
+    (id: string, kind: SessionResponse["kind"], extras?: RatingExtras) => {
       persist((prev) => ({
         ...prev,
         responses: prev.responses.map((entry) => {
@@ -422,6 +424,8 @@ export function useRandoRanx() {
             kind,
             rating: kind === "rated" ? extras?.rating : undefined,
             comments,
+            watchedDate:
+              kind === "rated" || kind === "winner" ? extras?.watchedDate : undefined,
           };
         }),
       }));

@@ -1,15 +1,18 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { parseWatchedDate } from "@/lib/director";
 import { useState } from "react";
 
 type RatingFormProps = {
   medium: "movie" | "game";
-  onSubmit: (rating: number, comments: string) => void;
+  onSubmit: (rating: number, comments: string, watchedDate?: string) => void;
   onCancel: () => void;
   initialRating?: number;
   initialComments?: string;
+  initialWatchedDate?: string;
   submitLabel?: string;
   cancelLabel?: string;
   className?: string;
@@ -22,6 +25,7 @@ export function RatingForm({
   onCancel,
   initialRating,
   initialComments = "",
+  initialWatchedDate = "",
   submitLabel = "Next",
   cancelLabel = "Back to choices",
   className,
@@ -29,6 +33,7 @@ export function RatingForm({
 }: RatingFormProps) {
   const [rating, setRating] = useState<number | null>(initialRating ?? null);
   const [comments, setComments] = useState(initialComments);
+  const [watchedDate, setWatchedDate] = useState(parseWatchedDate(initialWatchedDate) ?? "");
 
   const verb = medium === "movie" ? "this movie" : "this game";
 
@@ -38,7 +43,7 @@ export function RatingForm({
       onSubmit={(event) => {
         event.preventDefault();
         if (rating == null) return;
-        onSubmit(rating, comments);
+        onSubmit(rating, comments, parseWatchedDate(watchedDate));
       }}
     >
       <div>
@@ -65,6 +70,23 @@ export function RatingForm({
           })}
         </div>
       </div>
+      {medium === "movie" ? (
+        <div className="space-y-2">
+          <label htmlFor="watch-date" className="text-sm font-medium">
+            Watch date
+          </label>
+          <Input
+            id="watch-date"
+            type="date"
+            value={watchedDate}
+            onChange={(event) => setWatchedDate(event.target.value)}
+            className="h-11 max-w-56"
+          />
+          <p className="text-xs text-muted-foreground">
+            Optional. Saved with this rating and written to Letterboxd CSV as WatchedDate when set.
+          </p>
+        </div>
+      ) : null}
       <div className="space-y-2">
         <label htmlFor="comments" className="text-sm font-medium">
           Comments
