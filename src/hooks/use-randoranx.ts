@@ -3,6 +3,7 @@
 import { resolveTitle } from "@/data/catalog";
 import { loadMovieCatalog, sampleClientPool } from "@/lib/client-pool";
 import { matchesFilters, randomizeFilters as rollPathFilters, stackSizeOf } from "@/lib/filters";
+import { distinctTourneyPair, pickDistinctTitles, uniqueTitles } from "@/lib/title-identity";
 import { preloadPosterStack } from "@/lib/poster";
 import {
   applyTourneyOutcome,
@@ -92,15 +93,14 @@ export function useRandoRanx() {
 
   const tourneyPair = useMemo<[CatalogTitle, CatalogTitle] | null>(() => {
     if (session.playMode !== "tourney") return null;
-    const first = visibleQueue[0];
-    const second = visibleQueue[1];
-    return first && second ? [first, second] : null;
+    return distinctTourneyPair(visibleQueue);
   }, [session.playMode, visibleQueue]);
 
   const leftoverTitle = useMemo<CatalogTitle | null>(() => {
     if (session.playMode !== "tourney") return null;
-    if (visibleQueue.length !== 1) return null;
-    return visibleQueue[0] ?? null;
+    if (distinctTourneyPair(visibleQueue)) return null;
+    const unique = uniqueTitles(visibleQueue);
+    return unique.length === 1 ? unique[0] ?? null : null;
   }, [session.playMode, visibleQueue]);
 
   useEffect(() => {
@@ -437,6 +437,9 @@ export function useRandoRanx() {
     const pairIds = remaining.slice(0, 2);
     if (pairIds.length < 2) return;
     skippingPair.current = true;
+    const remainingTitles = remaining
+      .map((id) => titleLookup(snapshot, id))
+      .filter((item): item is CatalogTitle => item != null);
     const exclude = new Set([
       ...usedTitleIds(snapshot, medium, "tourney"),
       ...remaining,
@@ -450,9 +453,9 @@ export function useRandoRanx() {
             medium,
             filters: filtersFor(snapshot, medium, "tourney"),
             excludeIds: [...exclude],
-            count: 2,
+            count: 8,
           });
-          extras = data.titles;
+          extras = pickDistinctTitles(data.titles, remainingTitles, 2);
         }
         persist((prev) => {
           if (!prev.medium || prev.playMode !== "tourney" || activeFinalRound(prev)) return prev;

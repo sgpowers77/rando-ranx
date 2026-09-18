@@ -2,6 +2,7 @@ import { resolveTitle, titlesFor, withReleaseYear } from "@/data/catalog";
 import { defaultFilters, decadesFor, matchesFilters, sanitizeFilters, stackSizeOf } from "@/lib/filters";
 import { parseMpaaList } from "@/lib/mpaa";
 import { parseWatchedDate } from "@/lib/director";
+import { pickDistinctTitles, titleIdentity, uniqueTitles } from "@/lib/title-identity";
 import type {
   CatalogTitle,
   DiscardEntry,
@@ -109,6 +110,41 @@ export function shuffleIds(ids: string[]): string[] {
   return next;
 }
 
+function lookupTitle(session: StoredSession, id: string): CatalogTitle | undefined {
+  return resolveTitle(id, session.customTitles, session.releaseYears, session.liveTitles);
+}
+
+export function uniqueTitleIds(session: StoredSession, ids: string[]): string[] {
+  const seenIds = new Set<string>();
+  const seenKeys = new Set<string>();
+  const next: string[] = [];
+  for (const id of ids) {
+    if (seenIds.has(id)) continue;
+    const title = lookupTitle(session, id);
+    const key = title ? titleIdentity(title) : `id:${id}`;
+    if (seenKeys.has(key)) continue;
+    seenIds.add(id);
+    seenKeys.add(key);
+    next.push(id);
+  }
+  return next;
+}
+
+/** Keep stack order, but put two distinct identities in the first two slots when possible. */
+export function arrangeDistinctPair(session: StoredSession, ids: string[]): string[] {
+  const unique = uniqueTitleIds(session, ids);
+  if (unique.length < 2) return unique;
+  const first = lookupTitle(session, unique[0]);
+  if (!first) return unique;
+  const swapAt = unique.findIndex((id, index) => {
+    if (index === 0) return false;
+    const title = lookupTitle(session, id);
+    return title != null && titleIdentity(title) !== titleIdentity(first);
+  });
+  if (swapAt <= 1) return unique;
+  return [unique[0], unique[swapAt], ...unique.slice(1, swapAt), ...unique.slice(swapAt + 1)];
+}
+
 export function filtersFor(session: StoredSession, medium: Medium, _playMode?: PlayMode): PathFilters {
   return sanitizeFilters(session.pathFilters[medium] ?? defaultFilters(medium), medium);
 }
@@ -131,7 +167,7 @@ export function usedTitleIds(session: StoredSession, medium: Medium, playMode?: 
 }
 
 export function queuedForMedium(session: StoredSession, medium: Medium): CatalogTitle[] {
-  return (session.userQueue ?? []).filter((item) => item.medium === medium);
+  return uniqueTitles((session.userQueue ?? []).filter((item) => item.medium === medium));
 }
 
 const RECENT_CAP = 12;
@@ -158,7 +194,7 @@ export function skipTourneyPair(session: StoredSession, replacements: CatalogTit
       session.medium,
       {
         ...round,
-        remainingIds: shuffleIds([...rest, ...pair]),
+        remainingIds: arrangeDistinctPair(session, uniqueTitleIds(session, shuffleIds([...rest, ...pair]))),
       }
     );
   }
@@ -168,13 +204,28 @@ export function skipTourneyPair(session: StoredSession, replacements: CatalogTit
   const pairIds = remaining.slice(0, 2);
   if (pairIds.length === 0) return session;
   const rest = remaining.slice(2);
-  const blocked = new Set([...pairIds, ...rest]);
-  const extra = replacements.filter((item) => item.medium === medium && !blocked.has(item.id));
+  const parked = pairIds
+    .map((id) => lookupTitle(session, id))
+    .filter((item): item is CatalogTitle => item != null);
+  const restTitles = rest
+    .map((id) => lookupTitle(session, id))
+    .filter((item): item is CatalogTitle => item != null);
+  const extra = pickDistinctTitles(
+    replacements.filter((item) => item.medium === medium),
+    [...parked, ...restTitles],
+    2
+  );
   const extraIds = extra.map((item) => item.id);
   let nextRemaining =
-    extraIds.length > 0 ? [...extraIds, ...rest] : [...rest, ...pairIds.filter((id) => !rest.includes(id))];
+    extraIds.length > 0
+      ? [...extraIds, ...rest]
+      : [...rest, ...pairIds.filter((id) => !rest.includes(id))];
+  nextRemaining = arrangeDistinctPair(session, nextRemaining);
   if (nextRemaining.length < 2) {
-    nextRemaining = [...nextRemaining, ...pairIds.filter((id) => !nextRemaining.includes(id))];
+    nextRemaining = arrangeDistinctPair(session, [
+      ...nextRemaining,
+      ...pairIds.filter((id) => !nextRemaining.includes(id)),
+    ]);
   }
   const keepCap = Math.max(
     stackSizeOf(filtersFor(session, medium, "tourney").stackSize) * 4,
@@ -199,7 +250,7 @@ export function withDealtQueue(
   playMode: PlayMode,
   pinnedId?: string
 ): StoredSession {
-  const queue = dealtQueue(session, medium, playMode, pinnedId);
+  const queue = arrangeDistinctPair(session, dealtQueue(session, medium, playMode, pinnedId));
   const shown = playMode === "tourney" ? queue.slice(0, 2) : queue.slice(0, 1);
   return {
     ...session,
@@ -217,7 +268,9 @@ function catalogWithYears(session: StoredSession, medium: Medium): CatalogTitle[
   const live = (session.liveTitles ?? []).filter((item) => item.medium === medium);
   const preset = titlesFor(medium);
   const primary = medium === "movie" ? (live.length > 0 ? live : preset) : [...preset, ...live];
-  return [...primary, ...extras].map((item) => withReleaseYear(item, session.releaseYears));
+  return uniqueTitles(
+    [...primary, ...extras].map((item) => withReleaseYear(item, session.releaseYears))
+  );
 }
 
 export function mergeLiveTitles(
@@ -230,7 +283,7 @@ export function mergeLiveTitles(
   for (const item of existing) {
     if (!next.has(item.id)) next.set(item.id, item);
   }
-  return [...next.values()].slice(0, cap);
+  return uniqueTitles([...next.values()]).slice(0, cap);
 }
 
 export function eligibleFor(session: StoredSession, medium: Medium, playMode: PlayMode): CatalogTitle[] {
@@ -257,10 +310,16 @@ export function dealtQueue(
   const recent = new Set((session.recentlyShown?.[medium] ?? []).filter((id) => id !== pinnedId));
   const fresh = pool.filter((item) => item.id !== pinnedId && !recent.has(item.id));
   const stale = pool.filter((item) => item.id !== pinnedId && recent.has(item.id));
-  const rest = [...shuffleIds(fresh.map((item) => item.id)), ...shuffleIds(stale.map((item) => item.id))];
+  const rest = uniqueTitleIds(session, [
+    ...shuffleIds(fresh.map((item) => item.id)),
+    ...shuffleIds(stale.map((item) => item.id)),
+  ]);
   const ordered = pinnedId && !used.has(pinnedId) ? [pinnedId, ...rest.filter((id) => id !== pinnedId)] : rest;
-  if (session.queueOnly) return ordered;
-  return ordered.slice(0, stackSizeOf(filtersFor(session, medium, playMode).stackSize));
+  if (session.queueOnly) return arrangeDistinctPair(session, ordered);
+  return arrangeDistinctPair(
+    session,
+    ordered.slice(0, stackSizeOf(filtersFor(session, medium, playMode).stackSize))
+  );
 }
 
 export function enqueueUserTitles(session: StoredSession, titles: CatalogTitle[]): StoredSession {
@@ -605,17 +664,23 @@ export function applyTourneyOutcome(
           discards: [...prev.discards, discard],
         },
         medium,
-        { ...round, remainingIds: remaining.length === 0 ? [winnerId] : [...remaining, winnerId] }
+        { ...round, remainingIds: remaining.length === 0 ? [winnerId] : arrangeDistinctPair(prev, uniqueTitleIds(prev, [...remaining, winnerId])) }
       )
     );
   }
 
-  const remaining = prev.remainingIds[medium].filter((id) => {
-    if (id === winnerId || id === loserId) return false;
-    const item = resolveTitle(id, prev.customTitles, prev.releaseYears, prev.liveTitles);
-    if (!item) return false;
-    return matchesFilters(item, filtersFor(prev, medium, prev.playMode ?? "tourney"));
-  });
+  const remaining = arrangeDistinctPair(
+    prev,
+    uniqueTitleIds(
+      prev,
+      prev.remainingIds[medium].filter((id) => {
+        if (id === winnerId || id === loserId) return false;
+        const item = resolveTitle(id, prev.customTitles, prev.releaseYears, prev.liveTitles);
+        if (!item) return false;
+        return matchesFilters(item, filtersFor(prev, medium, prev.playMode ?? "tourney"));
+      })
+    )
+  );
   return withTourneyUndo(prev, {
     ...prev,
     pendingTourney: null,
@@ -640,7 +705,15 @@ export function undoTourneySelect(session: StoredSession): StoredSession {
   if (stack.length === 0) return session;
   const frame = stack[stack.length - 1];
   const round = activeFinalRound(session);
-  const restoredRound = frame.finalRound?.medium === medium ? frame.finalRound : null;
+  const restoredRound = frame.finalRound?.medium === medium
+    ? {
+        ...frame.finalRound,
+        remainingIds: arrangeDistinctPair(
+          session,
+          uniqueTitleIds(session, frame.finalRound.remainingIds)
+        ),
+      }
+    : null;
   return withMediumTourneyUndo(
     withMediumFinalRound(
       {
@@ -649,7 +722,7 @@ export function undoTourneySelect(session: StoredSession): StoredSession {
         remainingIds:
           round || restoredRound
             ? session.remainingIds
-            : { ...session.remainingIds, [medium]: frame.remainingIds },
+            : { ...session.remainingIds, [medium]: arrangeDistinctPair(session, uniqueTitleIds(session, frame.remainingIds)) },
         responses: [
           ...session.responses.filter((entry) => entry.medium !== medium),
           ...frame.responses.filter((entry) => entry.medium === medium),
@@ -686,8 +759,11 @@ export function tourneyContenderIds(session: StoredSession, medium: Medium): str
           (discard) => discard.medium === medium && discard.lostToTitle === entry.title
         ));
     if (!fromTourney) continue;
-    if (seen.has(entry.titleId)) continue;
+    const title = lookupTitle(session, entry.titleId);
+    const key = title ? titleIdentity(title) : entry.titleId;
+    if (seen.has(entry.titleId) || seen.has(key)) continue;
     seen.add(entry.titleId);
+    seen.add(key);
     ids.push(entry.titleId);
   }
   return ids;
@@ -696,7 +772,10 @@ export function tourneyContenderIds(session: StoredSession, medium: Medium): str
 export function startFinalRound(session: StoredSession): StoredSession {
   const medium = session.medium;
   if (!medium) return session;
-  const ids = shuffleIds(tourneyContenderIds(session, medium));
+  const ids = arrangeDistinctPair(
+    session,
+    uniqueTitleIds(session, shuffleIds(tourneyContenderIds(session, medium)))
+  );
   if (ids.length < 2) return session;
   return withMediumTourneyUndo(
     withMediumFinalRound(
@@ -755,7 +834,7 @@ export function writeSession(next: StoredSession) {
 }
 
 export function normalizeSession(session: StoredSession): StoredSession {
-  return {
+  const next: StoredSession = {
     version: 1,
     medium: session.medium === "movie" || session.medium === "game" ? session.medium : null,
     playMode: parsePlayMode(session.playMode),
@@ -766,12 +845,12 @@ export function normalizeSession(session: StoredSession): StoredSession {
     responses: Array.isArray(session.responses) ? session.responses : [],
     discards: Array.isArray(session.discards) ? session.discards : [],
     watchTags: Array.isArray(session.watchTags) ? session.watchTags : [],
-    userQueue: Array.isArray(session.userQueue) ? session.userQueue : [],
+    userQueue: uniqueTitles(Array.isArray(session.userQueue) ? session.userQueue : []),
     queueOnly: session.queueOnly === true,
     pendingTourney: session.pendingTourney ?? null,
     skipTourneyScoring: session.skipTourneyScoring === true,
     customTitles: Array.isArray(session.customTitles) ? session.customTitles : [],
-    liveTitles: Array.isArray(session.liveTitles) ? session.liveTitles : [],
+    liveTitles: uniqueTitles(Array.isArray(session.liveTitles) ? session.liveTitles : []),
     pathFilters: parsePathFilters(session.pathFilters),
     recentlyShown: {
       movie: parseIdList(session.recentlyShown?.movie),
@@ -781,6 +860,28 @@ export function normalizeSession(session: StoredSession): StoredSession {
     finalRounds: parseFinalRounds(session),
     tourneyUndos: parseTourneyUndos(session),
     randomizeFilters: parseRandomizeFlags(session.randomizeFilters),
+  };
+  const rounds = next.finalRounds;
+  return {
+    ...next,
+    remainingIds: {
+      movie: arrangeDistinctPair(next, uniqueTitleIds(next, next.remainingIds.movie)),
+      game: arrangeDistinctPair(next, uniqueTitleIds(next, next.remainingIds.game)),
+    },
+    finalRounds: {
+      movie: rounds.movie
+        ? {
+            ...rounds.movie,
+            remainingIds: arrangeDistinctPair(next, uniqueTitleIds(next, rounds.movie.remainingIds)),
+          }
+        : null,
+      game: rounds.game
+        ? {
+            ...rounds.game,
+            remainingIds: arrangeDistinctPair(next, uniqueTitleIds(next, rounds.game.remainingIds)),
+          }
+        : null,
+    },
   };
 }
 

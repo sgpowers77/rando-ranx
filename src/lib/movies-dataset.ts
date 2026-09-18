@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { MOVIE_GENRES, matchesFilters, stackSizeOf } from "@/lib/filters";
 import { ensureMoviesMetadata, moviesMetadataPath } from "@/lib/dataset-file";
 import { titlesFor } from "@/data/catalog";
+import { uniqueTitles } from "@/lib/title-identity";
 import { isEnglishDialogueFilm } from "@/lib/language";
 import { obscurityFromSignals } from "@/lib/obscurity";
 import type { CatalogTitle, Medium, PathFilters } from "@/lib/types";

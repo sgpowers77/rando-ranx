@@ -1,6 +1,7 @@
 import { SEARCH_FALLBACK, titlesFor } from "@/data/catalog";
 import { matchesFilters, stackSizeOf } from "@/lib/filters";
 import { publicUrl } from "@/lib/public-url";
+import { uniqueTitles } from "@/lib/title-identity";
 import type { CatalogTitle, Medium, PathFilters } from "@/lib/types";
 
 type IndexFile = {
@@ -77,8 +78,8 @@ export async function sampleClientPool(options: {
       : stackSizeOf(options.limit);
   const exclude = new Set(options.excludeIds ?? []);
   if (options.medium === "game") {
-    const eligible = titlesFor("game").filter(
-      (item) => !exclude.has(item.id) && matchesFilters(item, options.filters)
+    const eligible = uniqueTitles(
+      titlesFor("game").filter((item) => !exclude.has(item.id) && matchesFilters(item, options.filters))
     );
     return { titles: shuffle(eligible).slice(0, take), source: "catalog", available: eligible.length };
   }
