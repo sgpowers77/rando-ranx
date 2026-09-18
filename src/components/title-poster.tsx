@@ -28,7 +28,7 @@ const frame: Record<PosterSize, string> = {
   tourney: "relative isolate h-40 w-[6.67rem] shrink-0 lg:h-96 lg:w-64",
 };
 
-const POSTER_WAIT_MS = 3000;
+const POSTER_WAIT_MS = 10000;
 
 export function TitlePoster(props: TitlePosterProps) {
   const catalog = props.catalog;
@@ -78,25 +78,62 @@ export function TitlePoster(props: TitlePosterProps) {
         )}
       >
         {poster && !broken ? (
-          // Wikimedia / Wikipedia CDN; next/image domains are not listed for static Pages.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={poster.url}
-            src={poster.url}
-            alt=""
-            className={cn(
-              "absolute inset-0 z-0 h-full w-full object-contain object-center",
-              imageReady ? "opacity-100" : "opacity-0"
-            )}
-            onLoad={() => {
-              setBroken(false);
-              setImageReady(true);
-            }}
-            onError={() => {
-              setBroken(true);
-              setImageReady(false);
-            }}
-          />
+          imdbHref ? (
+            <a
+              href={imdbHref}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Open ${subject?.title ?? "title"} on IMDb`}
+              className={cn(
+                "absolute inset-0 z-0",
+                imageReady ? "pointer-events-auto" : "pointer-events-none"
+              )}
+              draggable={false}
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              {/* Wikimedia / Wikipedia CDN; next/image domains are not listed for static Pages. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                key={poster.url}
+                src={poster.url}
+                alt=""
+                draggable={false}
+                className={cn(
+                  "h-full w-full object-contain object-center",
+                  imageReady ? "opacity-100" : "opacity-0"
+                )}
+                onLoad={() => {
+                  setBroken(false);
+                  setImageReady(true);
+                }}
+                onError={() => {
+                  setBroken(true);
+                  setImageReady(false);
+                }}
+              />
+            </a>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={poster.url}
+              src={poster.url}
+              alt=""
+              draggable={false}
+              className={cn(
+                "absolute inset-0 z-0 h-full w-full object-contain object-center",
+                imageReady ? "opacity-100" : "opacity-0"
+              )}
+              onLoad={() => {
+                setBroken(false);
+                setImageReady(true);
+              }}
+              onError={() => {
+                setBroken(true);
+                setImageReady(false);
+              }}
+            />
+          )
         ) : null}
         {!showImage ? (
           waiting ? (
