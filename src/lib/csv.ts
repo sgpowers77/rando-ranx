@@ -85,57 +85,6 @@ export function sessionCsv(
   return rows.map((row) => row.map(csvCell).join(",")).join("\n") + "\n";
 }
 
-export function filtersCsv(medium: "movie" | "game", filters: {
-  decades: number[];
-  genres: string[];
-  obscurity: number[];
-  mpaa: string[];
-  includeForeign: boolean;
-  stackSize: number;
-}): string {
-  const header = [
-    "medium",
-    "decades",
-    "genres",
-    "rating",
-    "obscurity",
-    "stack_size",
-    "include_foreign",
-  ];
-  const row = [
-    medium === "movie" ? "Movies" : "Games",
-    filters.decades.map((decade) => `${decade}s`).join("; "),
-    filters.genres.join("; "),
-    medium === "movie" ? (filters.mpaa ?? []).join("; ") : "",
-    filters.obscurity.join("; "),
-    String(filters.stackSize),
-    medium === "movie" ? (filters.includeForeign ? "yes" : "no") : "",
-  ];
-  return `${header.map(csvCell).join(",")}\n${row.map(csvCell).join(",")}\n`;
-}
-
-export function downloadFiltersCsv(
-  medium: "movie" | "game",
-  filters: {
-    decades: number[];
-    genres: string[];
-    obscurity: number[];
-    mpaa: string[];
-    includeForeign: boolean;
-    stackSize: number;
-  }
-) {
-  const blob = new Blob([filtersCsv(medium, filters)], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `randoranx-filters-${medium}-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
 export function downloadSessionCsv(
   responses: SessionResponse[],
   discards: DiscardEntry[],

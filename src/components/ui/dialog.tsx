@@ -43,11 +43,9 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
-  after,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
-  after?: React.ReactNode
 }) {
   return (
     <DialogPortal>
@@ -80,9 +78,6 @@ function DialogContent({
               </DialogPrimitive.Close>
             )}
           </DialogPrimitive.Popup>
-          {after ? (
-            <div className="pointer-events-auto mt-3 flex justify-center">{after}</div>
-          ) : null}
         </div>
       </div>
     </DialogPortal>
