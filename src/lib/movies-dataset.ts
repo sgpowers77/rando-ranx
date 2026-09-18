@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import { MOVIE_GENRES, matchesFilters, stackSizeOf } from "@/lib/filters";
 import { ensureMoviesMetadata, moviesMetadataPath } from "@/lib/dataset-file";
 import { titlesFor } from "@/data/catalog";
@@ -217,6 +218,34 @@ function shuffleInPlace<T>(items: T[]): T[] {
   return items;
 }
 
+function loadGamesIndexSync(): CatalogTitle[] {
+  try {
+    const filePath = path.join(process.cwd(), "public", "games-index.json");
+    const data = JSON.parse(readFileSync(filePath, "utf8")) as {
+      games?: Array<{
+        id: string;
+        title: string;
+        year: number;
+        genres: string[];
+        obscurity: CatalogTitle["obscurity"];
+        platforms?: string[];
+      }>;
+    };
+    return (data.games ?? []).map((item) => ({
+      id: item.id,
+      medium: "game" as const,
+      title: item.title,
+      year: item.year,
+      genres: item.genres,
+      obscurity: item.obscurity,
+      source: "dataset" as const,
+      platforms: item.platforms ?? ["Other"],
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function sampleTitlePool(options: {
   medium: Medium;
   filters: PathFilters;
@@ -228,12 +257,14 @@ export async function sampleTitlePool(options: {
   const filters = options.filters;
 
   if (options.medium === "game") {
+    const fromIndex = loadGamesIndexSync();
+    const pool = uniqueTitles([...titlesFor("game"), ...fromIndex]);
     const eligible = uniqueTitles(
-      titlesFor("game").filter((item) => !exclude.has(item.id) && matchesFilters(item, filters))
+      pool.filter((item) => !exclude.has(item.id) && matchesFilters(item, filters))
     );
     return {
       titles: shuffleInPlace([...eligible]).slice(0, limit),
-      source: "catalog",
+      source: fromIndex.length > 0 ? "dataset" : "catalog",
       available: eligible.length,
     };
   }

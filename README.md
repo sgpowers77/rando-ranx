@@ -26,6 +26,8 @@ Answers stay in this browser via `localStorage`. There is no account and no data
 npm install
 npm run fetch-movies
 npm run build-movies-index
+npm run fetch-games
+npm run build-games-index
 npm run dev -- --port 43147 --hostname 0.0.0.0
 ```
 
@@ -35,7 +37,7 @@ Open [http://127.0.0.1:43147](http://127.0.0.1:43147).
 
 Published URL: [https://sgpowers77.github.io/rando-ranx/](https://sgpowers77.github.io/rando-ranx/)
 
-This app is a static Next.js export. GitHub Actions (`.github/workflows/pages.yml`) downloads The Movies Dataset, writes `public/movies-index.json`, and deploys the `out/` folder with `basePath` `/rando-ranx`.
+This app is a static Next.js export. GitHub Actions (`.github/workflows/pages.yml`) downloads The Movies Dataset and the public OpenGameDB / GameDex dumps, writes `public/movies-index.json` and `public/games-index.json`, and deploys the `out/` folder with `basePath` `/rando-ranx`.
 
 ### Enable Pages (once)
 
@@ -48,6 +50,7 @@ This app is a static Next.js export. GitHub Actions (`.github/workflows/pages.ym
 
 ```bash
 npm run fetch-movies
+npm run fetch-games
 npm run export:pages
 ```
 
@@ -77,6 +80,20 @@ unzip the-movies-dataset.zip movies_metadata.csv -d data
 ```
 
 If download fails, Ranx still deals a small built-in movie fallback so the app is usable. Wikipedia search, WTF blurbs, Filters Done-lock, and CSV export stay available either way.
+
+## Game catalog (OpenGameDB + GameDex)
+
+Games mode samples from a baked `public/games-index.json`, merged at build time from:
+
+- [OpenGameDB](https://github.com/karlforshaw/opengamedb) platform CSVs (`title`, `released`, scores, `genre`)
+- [GameDex](https://github.com/Darkvus/gamedex) documented fixture dumps (games, consoles, genres)
+
+Titles are deduped by a stable identity (`title` + `year`, plus Steam / GameDex ids when present). Platform families, decades, genres, and obscurity are mapped onto the existing Filters (Nintendo / PlayStation / Xbox / PC / Mobile / Other). Handhelds roll into their home family. The small built-in games list is merged first so curated ids stay stable, then used as a fallback if the index is missing.
+
+```bash
+npm run fetch-games
+npm run build-games-index
+```
 
 ```bash
 npm run build

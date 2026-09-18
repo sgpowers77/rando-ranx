@@ -267,7 +267,7 @@ function catalogWithYears(session: StoredSession, medium: Medium): CatalogTitle[
   const extras = session.customTitles.filter((item) => item.medium === medium);
   const live = (session.liveTitles ?? []).filter((item) => item.medium === medium);
   const preset = titlesFor(medium);
-  const primary = medium === "movie" ? (live.length > 0 ? live : preset) : [...preset, ...live];
+  const primary = live.length > 0 ? live : preset;
   return uniqueTitles(
     [...primary, ...extras].map((item) => withReleaseYear(item, session.releaseYears))
   );

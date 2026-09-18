@@ -4,9 +4,9 @@ import { publicUrl } from "@/lib/public-url";
 import { uniqueTitles } from "@/lib/title-identity";
 import type { CatalogTitle, Medium, PathFilters } from "@/lib/types";
 
-type IndexFile = {
+type MovieIndexFile = {
   source?: string;
-    movies?: Array<{
+  movies?: Array<{
     id: string;
     title: string;
     year: number;
@@ -21,8 +21,22 @@ type IndexFile = {
   }>;
 };
 
+type GameIndexFile = {
+  source?: string;
+  games?: Array<{
+    id: string;
+    title: string;
+    year: number;
+    genres: string[];
+    obscurity: CatalogTitle["obscurity"];
+    platforms?: string[];
+  }>;
+};
+
 let movieCache: CatalogTitle[] | null = null;
 let movieSource: "dataset" | "catalog" = "catalog";
+let gameCache: CatalogTitle[] | null = null;
+let gameSource: "dataset" | "catalog" = "catalog";
 
 function shuffle<T>(items: T[]): T[] {
   const next = [...items];
@@ -38,7 +52,7 @@ export async function loadMovieCatalog(): Promise<{ titles: CatalogTitle[]; sour
   try {
     const res = await fetch(publicUrl("movies-index.json"));
     if (!res.ok) throw new Error("index missing");
-    const data = (await res.json()) as IndexFile;
+    const data = (await res.json()) as MovieIndexFile;
     const movies = (data.movies ?? []).map((item) => ({
       id: item.id,
       medium: "movie" as const,
@@ -64,6 +78,34 @@ export async function loadMovieCatalog(): Promise<{ titles: CatalogTitle[]; sour
   }
 }
 
+export async function loadGameCatalog(): Promise<{ titles: CatalogTitle[]; source: "dataset" | "catalog" }> {
+  if (gameCache) return { titles: gameCache, source: gameSource };
+  try {
+    const res = await fetch(publicUrl("games-index.json"));
+    if (!res.ok) throw new Error("index missing");
+    const data = (await res.json()) as GameIndexFile;
+    const fromIndex = (data.games ?? []).map((item) => ({
+      id: item.id,
+      medium: "game" as const,
+      title: item.title,
+      year: item.year,
+      genres: item.genres,
+      obscurity: item.obscurity,
+      source: "dataset" as const,
+      platforms: item.platforms ?? ["Other"],
+    }));
+    const games = uniqueTitles([...titlesFor("game"), ...fromIndex]);
+    if (games.length === 0) throw new Error("empty index");
+    gameCache = games;
+    gameSource = fromIndex.length > 0 ? "dataset" : "catalog";
+    return { titles: games, source: gameSource };
+  } catch {
+    gameCache = titlesFor("game");
+    gameSource = "catalog";
+    return { titles: gameCache, source: "catalog" };
+  }
+}
+
 export async function sampleClientPool(options: {
   medium: Medium;
   filters: PathFilters;
@@ -78,10 +120,15 @@ export async function sampleClientPool(options: {
       : stackSizeOf(options.limit);
   const exclude = new Set(options.excludeIds ?? []);
   if (options.medium === "game") {
+    const loaded = await loadGameCatalog();
     const eligible = uniqueTitles(
-      titlesFor("game").filter((item) => !exclude.has(item.id) && matchesFilters(item, options.filters))
+      loaded.titles.filter((item) => !exclude.has(item.id) && matchesFilters(item, options.filters))
     );
-    return { titles: shuffle(eligible).slice(0, take), source: "catalog", available: eligible.length };
+    return {
+      titles: shuffle(eligible).slice(0, take),
+      source: loaded.source,
+      available: eligible.length,
+    };
   }
   const loaded = await loadMovieCatalog();
   const eligible = loaded.titles.filter(

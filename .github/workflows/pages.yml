@@ -29,8 +29,12 @@ jobs:
         run: npm ci
       - name: Fetch The Movies Dataset
         run: npm run fetch-movies
+      - name: Fetch game catalogs
+        run: npm run fetch-games
       - name: Build movie index
         run: npm run build-movies-index
+      - name: Build game index
+        run: npm run build-games-index
       - name: Static export
         run: npm run build
         env:

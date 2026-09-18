@@ -1,7 +1,7 @@
 "use client";
 
 import { resolveTitle } from "@/data/catalog";
-import { loadMovieCatalog, sampleClientPool } from "@/lib/client-pool";
+import { loadGameCatalog, loadMovieCatalog, sampleClientPool } from "@/lib/client-pool";
 import { matchesFilters, randomizeFilters as rollPathFilters, stackSizeOf } from "@/lib/filters";
 import { distinctTourneyPair, pickDistinctTitles, uniqueTitles } from "@/lib/title-identity";
 import { preloadPosterStack } from "@/lib/poster";
@@ -184,8 +184,9 @@ export function useRandoRanx() {
   }, [persist]);
 
   useEffect(() => {
-    if (!mounted || session.medium !== "movie") return;
-    void loadMovieCatalog();
+    if (!mounted) return;
+    if (session.medium === "movie") void loadMovieCatalog();
+    if (session.medium === "game") void loadGameCatalog();
   }, [mounted, session.medium]);
 
   const eligibleCount = useMemo(() => {
