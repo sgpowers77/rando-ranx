@@ -111,7 +111,7 @@ function shufflePick<T>(items: readonly T[]): T[] {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  const count = 1 + Math.floor(Math.random() * pool.length);
+  const count = pool.length <= 1 ? pool.length : 1 + Math.floor(Math.random() * (pool.length - 1));
   return pool.slice(0, count);
 }
 

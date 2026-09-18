@@ -5,8 +5,9 @@ import { cn } from "cn";
 
 function Switch({ className, ...props }: SwitchPrimitive.Root.Props) {
   return (
-    <SwitchPrimitive.Root
+      <SwitchPrimitive.Root
       data-slot="switch"
+      nativeButton
       className={cn(
         "peer group/switch inline-flex h-5 w-8 shrink-0 items-center rounded-full border border-transparent bg-input p-0.5 transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-checked:bg-primary",
         className

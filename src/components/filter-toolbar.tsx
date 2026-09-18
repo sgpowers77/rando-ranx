@@ -30,14 +30,15 @@ export function FilterToolbar({
         <SlidersHorizontal className="size-4" />
         Filters
       </Button>
-      <label className="flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-sm hover:bg-muted">
+      <div className="flex h-8 items-center gap-2 rounded-lg px-2.5 text-sm">
         <Switch
           checked={randomizeOn}
+          nativeButton
           onCheckedChange={(checked) => onRandomizeChange(checked === true)}
           aria-label="Randomize filters"
         />
-        Randomize
-      </label>
+        <span className="select-none">Randomize</span>
+      </div>
     </div>
   );
 }
