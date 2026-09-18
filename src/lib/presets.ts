@@ -58,6 +58,16 @@ export const TOURNEY_PRESETS: TourneyPreset[] = [
     title: "Feel Good Only",
     blurb: "No grimdark. Comedy, adventure, animation, and warmth.",
   },
+  {
+    id: "no-subtitles",
+    title: "I Don’t Like Subtitles… or Thinking",
+    blurb: "English dialogue only. Big, easy crowd-pleasers. No homework.",
+  },
+  {
+    id: "technicolor-ruined",
+    title: "Technicolor Ruined Cinema",
+    blurb: "Studio-era decades before color took over. 1940s is as early as the catalog goes.",
+  },
 ];
 
 function moviePreset(id: string): PathFilters {
@@ -149,6 +159,24 @@ function moviePreset(id: string): PathFilters {
         genres: ["Comedy", "Animation", "Adventure", "Romance"],
         obscurity: [1, 2],
         mpaa: ["G", "PG", "PG-13"],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "no-subtitles":
+      return {
+        decades: [1990, 2000, 2010, 2020],
+        genres: ["Action", "Adventure", "Animation", "Comedy", "Sci-Fi"],
+        obscurity: [1, 2],
+        mpaa: ["G", "PG", "PG-13"],
+        includeForeign: false,
+        stackSize: 50,
+      };
+    case "technicolor-ruined":
+      return {
+        decades: [1940],
+        genres: ["Drama", "Romance", "Crime", "Comedy", "Thriller"],
+        obscurity: [1, 2, 3, 4],
+        mpaa: ["G", "PG", "Not Rated"],
         includeForeign: true,
         stackSize: 50,
       };
@@ -245,6 +273,24 @@ function gamePreset(id: string): PathFilters {
         decades: [2010, 2020],
         genres: ["Adventure", "Platformer", "Simulation", "Puzzle"],
         obscurity: [1, 2],
+        mpaa: [],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "no-subtitles":
+      return {
+        decades: [2010, 2020],
+        genres: ["Action", "Adventure", "Platformer", "Simulation"],
+        obscurity: [1, 2],
+        mpaa: [],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "technicolor-ruined":
+      return {
+        decades: [1970],
+        genres: ["Action", "Adventure", "Puzzle", "Platformer"],
+        obscurity: [2, 3, 4],
         mpaa: [],
         includeForeign: true,
         stackSize: 50,
