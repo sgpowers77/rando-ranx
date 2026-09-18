@@ -26,9 +26,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       suppressHydrationWarning
       data-palette="midnight"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-dvh overflow-hidden antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} dark min-h-dvh antialiased`}
     >
-      <body className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-background">
+      <body className="min-h-dvh bg-background">
         <Script id="randoranx-palette" strategy="beforeInteractive">
           {`try{var p=localStorage.getItem("randoranx-palette");if(p==="arcade"||p==="pine"||p==="daylight"||p==="midnight"){document.documentElement.setAttribute("data-palette",p);document.documentElement.classList.toggle("dark",p!=="daylight");}}catch(e){}`}
         </Script>

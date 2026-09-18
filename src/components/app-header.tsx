@@ -24,7 +24,7 @@ export function AppHeader({
   showTourneyHelp = false,
 }: AppHeaderProps) {
   return (
-    <header className="no-print sticky top-0 z-40 flex shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background/90 px-4 py-3 backdrop-blur-md sm:px-6">
+    <header className="no-print sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background/90 px-4 backdrop-blur-md sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
         {showHome ? (
           <Button

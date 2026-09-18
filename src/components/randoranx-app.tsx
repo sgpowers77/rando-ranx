@@ -129,7 +129,7 @@ export function RandoRanxApp() {
       (session.playMode === "tourney" && !tourneyPair));
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="flex min-h-dvh flex-col">
       <AppHeader
         onHome={() => {
           stopEditing();
@@ -154,12 +154,12 @@ export function RandoRanxApp() {
         showTourneyHelp={Boolean(showTourney)}
       />
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        <aside className="no-print hidden h-full min-h-0 w-80 shrink-0 overflow-hidden border-r border-border/70 bg-card/40 lg:flex lg:flex-col">
+      <div className="flex min-h-[calc(100dvh-4rem)] flex-1">
+        <aside className="no-print sticky top-16 hidden h-[calc(100dvh-4rem)] w-80 shrink-0 self-start overflow-hidden border-r border-border/70 bg-card/40 lg:flex lg:flex-col">
           {log}
         </aside>
 
-        <main className={`no-print mx-auto flex h-full min-h-0 w-full max-w-3xl flex-1 flex-col overflow-y-auto px-4 sm:px-6 ${showTourney ? "py-3 lg:py-8" : "py-8"}`}>
+        <main className={`no-print mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-3xl flex-1 flex-col px-4 sm:px-6 ${showTourney ? "py-3 lg:py-8" : "py-8"}`}>
           {status === "loading" ? (
             <div className="flex flex-1 flex-col justify-center" role="status" aria-live="polite">
               <p className="text-sm font-medium tracking-wide text-primary uppercase">
