@@ -40,18 +40,18 @@ export function ModePicker({
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Button type="button" onClick={() => onChoose("rank")} className="h-14 w-full gap-2 text-base">
-          <ListOrdered className="size-5" />
-          Ranx
+        <Button type="button" onClick={() => onChoose("tourney")} className="h-14 w-full gap-2 text-base">
+          <Dices className="size-5" />
+          Tourney
         </Button>
         <Button
           type="button"
           variant="outline"
-          onClick={() => onChoose("tourney")}
+          onClick={() => onChoose("rank")}
           className="h-14 w-full gap-2 text-base"
         >
-          <Dices className="size-5" />
-          Tourney
+          <ListOrdered className="size-5" />
+          Ranx
         </Button>
       </div>
       <Button
