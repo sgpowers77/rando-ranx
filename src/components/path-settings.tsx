@@ -10,50 +10,52 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { defaultFilters, decadesFor, filtersComplete, GAME_GENRES, MOVIE_GENRES, OBSCURITY_LEVELS, STACK_SIZES, sanitizeFilters } from "@/lib/filters";
+import {
+  defaultFilters,
+  decadesFor,
+  filtersComplete,
+  GAME_GENRES,
+  MOVIE_GENRES,
+  OBSCURITY_LEVELS,
+  STACK_SIZES,
+  sanitizeFilters,
+} from "@/lib/filters";
 import { MPAA_RATINGS } from "@/lib/mpaa";
 import { GAME_OBSCURITY_COPY, MOVIE_OBSCURITY_COPY } from "@/lib/obscurity";
-import type { Medium, PathFilters, PlayMode, StackSize } from "@/lib/types";
+import type { Medium, PathFilters, StackSize } from "@/lib/types";
 import { useState } from "react";
 
 type PathSettingsProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   medium: Medium;
-  filtersByMode: Record<PlayMode, PathFilters>;
-  onSave: (playMode: PlayMode, filters: PathFilters) => void;
+  filters: PathFilters;
+  onSave: (filters: PathFilters) => void;
 };
 
 export function PathSettings({
   open,
   onOpenChange,
   medium,
-  filtersByMode,
+  filters,
   onSave,
 }: PathSettingsProps) {
-  const [mode, setMode] = useState<PlayMode>("rank");
-  const [draft, setDraft] = useState<Record<PlayMode, PathFilters>>({
-    rank: sanitizeFilters(filtersByMode.rank, medium),
-    tourney: sanitizeFilters(filtersByMode.tourney, medium),
-  });
+  const [draft, setDraft] = useState<PathFilters>(() => sanitizeFilters(filters, medium));
 
   const genres = medium === "movie" ? MOVIE_GENRES : GAME_GENRES;
   const decades = decadesFor(medium);
   const obscurityCopy = medium === "game" ? GAME_OBSCURITY_COPY : MOVIE_OBSCURITY_COPY;
-  const current = draft[mode];
-  const canClose = filtersComplete(draft.rank, medium) && filtersComplete(draft.tourney, medium);
-  const rankMissing = missingGroups(draft.rank, medium);
-  const tourneyMissing = missingGroups(draft.tourney, medium);
+  const canClose = filtersComplete(draft, medium);
+  const missing = missingGroups(draft, medium);
 
-  const applyMode = (playMode: PlayMode, patch: Partial<PathFilters>) => {
+  const apply = (patch: Partial<PathFilters>) => {
     const nextFilters: PathFilters = {
       ...defaultFilters(medium),
-      ...draft[playMode],
+      ...draft,
       ...patch,
     };
-    setDraft((prev) => ({ ...prev, [playMode]: nextFilters }));
-    onSave(playMode, nextFilters);
+    setDraft(nextFilters);
+    onSave(nextFilters);
   };
 
   const toggle = (list: number[] | string[], value: number | string) => {
@@ -66,10 +68,7 @@ export function PathSettings({
       open={open}
       onOpenChange={(next) => {
         if (next) {
-          setDraft({
-            rank: sanitizeFilters(filtersByMode.rank, medium),
-            tourney: sanitizeFilters(filtersByMode.tourney, medium),
-          });
+          setDraft(sanitizeFilters(filters, medium));
           onOpenChange(true);
           return;
         }
@@ -81,217 +80,197 @@ export function PathSettings({
         <DialogHeader>
           <DialogTitle>Filters</DialogTitle>
           <DialogDescription>
-            Filters apply separately to Ranx and Tourney for{" "}
+            These filters apply to both Ranx and Tourney for{" "}
             {medium === "movie" ? "Movies" : "Games"}. Each of Year, Genre, Obscurity
-            {medium === "movie" ? ", and MPAA Rating" : ""} needs at
-            least one box checked on both paths. Unchecked boxes drop those titles from the deal
-            right away. Done stays off until every group has a selection.
+            {medium === "movie" ? ", and MPAA Rating" : ""} needs at least one box checked.
+            Unchecked boxes drop those titles from the deal right away. Done stays off until every
+            group has a selection.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={mode} onValueChange={(value) => setMode(value as PlayMode)}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="rank">Ranx</TabsTrigger>
-            <TabsTrigger value="tourney">Tourney</TabsTrigger>
-          </TabsList>
-          <TabsContent value={mode} className="space-y-5 pt-4">
+        <div className="space-y-5 pt-1">
+          <fieldset className="space-y-2">
+            <legend className="w-full">
+              <GroupControls
+                label="Year"
+                onCheckAll={() => apply({ decades: [...decades] })}
+                onUncheckAll={() => apply({ decades: [] })}
+              />
+            </legend>
+            <p className="text-xs text-muted-foreground">
+              Decade uses the Wikipedia / Wikidata release year (same source as search and blurbs).
+              {medium === "game"
+                ? " Games start at the 1970s — there is no 1960s or earlier bucket."
+                : " Local catalog years are only a fallback."}{" "}
+              Unchecked decades are left out of Ranx and Tourney. Keep at least one decade checked.
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {decades.map((decade) => {
+                const id = `filter-decade-${decade}`;
+                return (
+                  <label key={decade} htmlFor={id} className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      id={id}
+                      checked={draft.decades.includes(decade)}
+                      onCheckedChange={() =>
+                        apply({ decades: toggle(draft.decades, decade) as number[] })
+                      }
+                    />
+                    {decade}s
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <fieldset className="space-y-2">
+            <legend className="w-full">
+              <GroupControls
+                label="Genre"
+                onCheckAll={() => apply({ genres: [...genres] })}
+                onUncheckAll={() => apply({ genres: [] })}
+              />
+            </legend>
+            <div className="grid grid-cols-2 gap-2">
+              {genres.map((genre) => {
+                const id = `filter-genre-${genre}`;
+                return (
+                  <label key={genre} htmlFor={id} className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      id={id}
+                      checked={draft.genres.includes(genre)}
+                      onCheckedChange={() =>
+                        apply({ genres: toggle(draft.genres, genre) as string[] })
+                      }
+                    />
+                    {genre}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          {medium === "movie" ? (
+            <label className="flex items-start gap-3 rounded-lg border border-border/70 px-3 py-3 text-sm">
+              <Checkbox
+                checked={draft.includeForeign !== false}
+                onCheckedChange={(value) => apply({ includeForeign: value === true })}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium">Include foreign / non-English films</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  On by default. Turn off to deal only English-dialogue films (original language
+                  English, or English listed in spoken languages from The Movies Dataset).
+                </span>
+              </span>
+            </label>
+          ) : null}
+
+          <fieldset className="space-y-2">
+            <legend className="w-full">
+              <GroupControls
+                label="Obscurity"
+                onCheckAll={() => apply({ obscurity: [...OBSCURITY_LEVELS] })}
+                onUncheckAll={() => apply({ obscurity: [] })}
+              />
+            </legend>
+            <p className="text-xs text-muted-foreground">
+              {medium === "game"
+                ? "1 is an AAA+ blockbuster. 5 is a micro-indie / ultra obscure release."
+                : "1 is wide-release / high exposure. 5 is little-seen. Ranked from The Movies Dataset: production budget, marketing/exposure (popularity and box-office revenue), public sentiment (vote average), and attention (vote count). Director names are not in the catalog, so vote volume stands in for prestige."}
+            </p>
+            <div className="grid gap-2">
+              {OBSCURITY_LEVELS.map((level) => {
+                const id = `filter-obscurity-${level}`;
+                return (
+                  <label key={level} htmlFor={id} className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      id={id}
+                      checked={draft.obscurity.includes(level)}
+                      onCheckedChange={() =>
+                        apply({ obscurity: toggle(draft.obscurity, level) as number[] })
+                      }
+                    />
+                    {obscurityCopy[level]}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium">Stack size</legend>
+            <p className="text-xs text-muted-foreground">
+              How many titles to sample into this catalog’s deal for both Ranx and Tourney. Default
+              is 50.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {STACK_SIZES.map((size) => {
+                const id = `filter-stack-${size}`;
+                return (
+                  <label
+                    key={size}
+                    htmlFor={id}
+                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-border/70 px-3 py-2 text-sm"
+                  >
+                    <input
+                      id={id}
+                      type="radio"
+                      name="filter-stack-size"
+                      className="accent-primary"
+                      checked={draft.stackSize === size}
+                      onChange={() => apply({ stackSize: size as StackSize })}
+                    />
+                    {size}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          {medium === "movie" ? (
             <fieldset className="space-y-2">
               <legend className="w-full">
                 <GroupControls
-                  label="Year"
-                  onCheckAll={() => applyMode(mode, { decades: [...decades] })}
-                  onUncheckAll={() => applyMode(mode, { decades: [] })}
+                  label="MPAA Rating"
+                  onCheckAll={() => apply({ mpaa: [...MPAA_RATINGS] })}
+                  onUncheckAll={() => apply({ mpaa: [] })}
                 />
               </legend>
               <p className="text-xs text-muted-foreground">
-                Decade uses the Wikipedia / Wikidata release year (same source as search and blurbs).
-                {medium === "game"
-                  ? " Games start at the 1970s — there is no 1960s or earlier bucket."
-                  : " Local catalog years are only a fallback."}{" "}
-                Unchecked decades are left out of Ranx and Tourney. Keep at least one decade checked.
+                Uses Wikidata MPA film ratings when known. Titles without a listed rating count as
+                Not Rated.
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {decades.map((decade) => {
-                  const id = `${mode}-decade-${decade}`;
-                  const checked = current.decades.includes(decade);
+                {MPAA_RATINGS.map((rating) => {
+                  const id = `filter-mpaa-${rating}`;
                   return (
-                    <label key={decade} htmlFor={id} className="flex items-center gap-2 text-sm">
+                    <label key={rating} htmlFor={id} className="flex items-center gap-2 text-sm">
                       <Checkbox
                         id={id}
-                        checked={checked}
+                        checked={(draft.mpaa ?? []).includes(rating)}
                         onCheckedChange={() =>
-                          applyMode(mode, {
-                            decades: toggle(current.decades, decade) as number[],
-                          })
+                          apply({ mpaa: toggle(draft.mpaa ?? [], rating) as string[] })
                         }
                       />
-                      {decade}s
+                      {rating}
                     </label>
                   );
                 })}
               </div>
             </fieldset>
-
-            <fieldset className="space-y-2">
-              <legend className="w-full">
-                <GroupControls
-                  label="Genre"
-                  onCheckAll={() => applyMode(mode, { genres: [...genres] })}
-                  onUncheckAll={() => applyMode(mode, { genres: [] })}
-                />
-              </legend>
-              <div className="grid grid-cols-2 gap-2">
-                {genres.map((genre) => {
-                  const id = `${mode}-genre-${genre}`;
-                  return (
-                    <label key={genre} htmlFor={id} className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        id={id}
-                        checked={current.genres.includes(genre)}
-                        onCheckedChange={() =>
-                          applyMode(mode, {
-                            genres: toggle(current.genres, genre) as string[],
-                          })
-                        }
-                      />
-                      {genre}
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-
-            {medium === "movie" ? (
-              <label className="flex items-start gap-3 rounded-lg border border-border/70 px-3 py-3 text-sm">
-                <Checkbox
-                  checked={current.includeForeign !== false}
-                  onCheckedChange={(value) => applyMode(mode, { includeForeign: value === true })}
-                  className="mt-0.5"
-                />
-                <span>
-                  <span className="font-medium">Include foreign / non-English films</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    On by default. Turn off to deal only English-dialogue films (original language
-                    English, or English listed in spoken languages from The Movies Dataset).
-                  </span>
-                </span>
-              </label>
-            ) : null}
-
-            <fieldset className="space-y-2">
-              <legend className="w-full">
-                <GroupControls
-                  label="Obscurity"
-                  onCheckAll={() => applyMode(mode, { obscurity: [...OBSCURITY_LEVELS] })}
-                  onUncheckAll={() => applyMode(mode, { obscurity: [] })}
-                />
-              </legend>
-              <p className="text-xs text-muted-foreground">
-                {medium === "game"
-                  ? "1 is an AAA+ blockbuster. 5 is a micro-indie / ultra obscure release."
-                  : "1 is wide-release / high exposure. 5 is little-seen. Ranked from The Movies Dataset: production budget, marketing/exposure (popularity and box-office revenue), public sentiment (vote average), and attention (vote count). Director names are not in the catalog, so vote volume stands in for prestige."}
-              </p>
-              <div className="grid gap-2">
-                {OBSCURITY_LEVELS.map((level) => {
-                  const id = `${mode}-obscurity-${level}`;
-                  return (
-                    <label key={level} htmlFor={id} className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        id={id}
-                        checked={current.obscurity.includes(level)}
-                        onCheckedChange={() =>
-                          applyMode(mode, {
-                            obscurity: toggle(current.obscurity, level) as number[],
-                          })
-                        }
-                      />
-                      {obscurityCopy[level]}
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Stack size</legend>
-              <p className="text-xs text-muted-foreground">
-                How many titles to sample into this path’s deal. Default is 50 (nearest to the old
-                ~40-title Tourney stack).
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {STACK_SIZES.map((size) => {
-                  const id = `${mode}-stack-${size}`;
-                  const checked = current.stackSize === size;
-                  return (
-                    <label
-                      key={size}
-                      htmlFor={id}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-border/70 px-3 py-2 text-sm"
-                    >
-                      <input
-                        id={id}
-                        type="radio"
-                        name={`${mode}-stack-size`}
-                        className="accent-primary"
-                        checked={checked}
-                        onChange={() => applyMode(mode, { stackSize: size as StackSize })}
-                      />
-                      {size}
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-
-            {medium === "movie" ? (
-              <fieldset className="space-y-2">
-                <legend className="w-full">
-                  <GroupControls
-                    label="MPAA Rating"
-                    onCheckAll={() => applyMode(mode, { mpaa: [...MPAA_RATINGS] })}
-                    onUncheckAll={() => applyMode(mode, { mpaa: [] })}
-                  />
-                </legend>
-                <p className="text-xs text-muted-foreground">
-                  Uses Wikidata MPA film ratings when known. Titles without a listed rating count as
-                  Not Rated.
-                </p>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {MPAA_RATINGS.map((rating) => {
-                    const id = `${mode}-mpaa-${rating}`;
-                    return (
-                      <label key={rating} htmlFor={id} className="flex items-center gap-2 text-sm">
-                        <Checkbox
-                          id={id}
-                          checked={(current.mpaa ?? []).includes(rating)}
-                          onCheckedChange={() =>
-                            applyMode(mode, {
-                              mpaa: toggle(current.mpaa ?? [], rating) as string[],
-                            })
-                          }
-                        />
-                        {rating}
-                      </label>
-                    );
-                  })}
-                </div>
-              </fieldset>
-            ) : null}
-          </TabsContent>
-        </Tabs>
+          ) : null}
+        </div>
 
         {canClose ? null : (
           <p className="text-sm text-muted-foreground" role="status">
-            {closeBlockedCopy(rankMissing, tourneyMissing)}
+            Still needs {missing.join(", ")}. Check at least one box in each group before Done.
           </p>
         )}
         <DialogFooter className="gap-2 sm:justify-between">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => applyMode(mode, defaultFilters(medium))}
-          >
-            Reset this path
+          <Button type="button" variant="ghost" onClick={() => apply(defaultFilters(medium))}>
+            Reset filters
           </Button>
           <Button
             type="button"
@@ -317,13 +296,6 @@ function missingGroups(filters: PathFilters, medium: Medium): string[] {
   if ((filters.obscurity?.length ?? 0) === 0) missing.push("Obscurity");
   if (medium === "movie" && (filters.mpaa?.length ?? 0) === 0) missing.push("MPAA Rating");
   return missing;
-}
-
-function closeBlockedCopy(rankMissing: string[], tourneyMissing: string[]): string {
-  const parts: string[] = [];
-  if (rankMissing.length > 0) parts.push(`Ranx still needs ${rankMissing.join(", ")}`);
-  if (tourneyMissing.length > 0) parts.push(`Tourney still needs ${tourneyMissing.join(", ")}`);
-  return `${parts.join(". ")}. Check at least one box in each group before Done.`;
 }
 
 function GroupControls({

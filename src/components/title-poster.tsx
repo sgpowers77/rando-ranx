@@ -22,11 +22,11 @@ type TitlePosterProps = {
 };
 
 const frame: Record<PosterSize, string> = {
-  lg: "aspect-[2/3] w-full max-w-[18rem] sm:max-w-[20rem]",
-  md: "aspect-[2/3] w-full max-w-[16rem] sm:max-w-[18rem]",
-  sm: "aspect-[2/3] h-28 w-auto shrink-0",
+  lg: "relative aspect-[2/3] w-full max-w-[18rem] sm:max-w-[20rem]",
+  md: "relative aspect-[2/3] w-full max-w-[16rem] sm:max-w-[18rem]",
+  sm: "relative aspect-[2/3] h-28 w-[4.67rem] shrink-0",
   tourney:
-    "aspect-[2/3] h-40 w-auto max-h-40 lg:h-auto lg:max-h-none lg:w-full lg:max-w-[16rem]",
+    "relative aspect-[2/3] h-40 w-[6.67rem] max-h-40 shrink-0 lg:h-auto lg:w-full lg:max-h-none lg:max-w-[16rem]",
 };
 
 const POSTER_WAIT_MS = 3000;
@@ -71,7 +71,7 @@ export function TitlePoster(props: TitlePosterProps) {
   }, [subject?.id, subject?.title, subject?.year, subject?.medium, subject?.imdbId]);
 
   return (
-    <figure className={cn("min-w-0", props.className)}>
+    <figure className={cn("min-w-0 shrink-0", props.className)}>
       <div
         className={cn(
           "overflow-hidden rounded-lg bg-muted/40 ring-1 ring-white/10",
@@ -86,8 +86,8 @@ export function TitlePoster(props: TitlePosterProps) {
             src={poster.url}
             alt=""
             className={cn(
-              "h-full w-full object-contain object-center",
-              imageReady ? "block" : "hidden"
+              "absolute inset-0 h-full w-full object-contain object-center",
+              imageReady ? "opacity-100" : "opacity-0"
             )}
             onLoad={() => {
               setBroken(false);
@@ -102,7 +102,7 @@ export function TitlePoster(props: TitlePosterProps) {
         {!showImage ? (
           <div
             className={cn(
-              "flex h-full w-full items-center justify-center px-2 text-center",
+              "absolute inset-0 flex items-center justify-center px-2 text-center",
               size === "sm" ? "text-[9px] leading-tight" : "text-xs",
               waiting ? "text-muted-foreground" : "text-foreground"
             )}
@@ -114,7 +114,7 @@ export function TitlePoster(props: TitlePosterProps) {
                 href={imdbHref}
                 target="_blank"
                 rel="noreferrer"
-                className="text-primary underline underline-offset-2"
+                className="max-w-full px-1 text-primary underline underline-offset-2"
                 onClick={(event) => event.stopPropagation()}
               >
                 Open on IMDb
@@ -144,24 +144,15 @@ export function TitlePoster(props: TitlePosterProps) {
             {poster.credit.label}
           </a>
         </figcaption>
-      ) : missing && showCredit ? (
-        <figcaption className="mt-1.5 text-xs text-muted-foreground">
-          {imdbHref ? (
-            <>
-              Poster took too long or was missing.{" "}
-              <a
-                href={imdbHref}
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary underline underline-offset-2"
-                onClick={(event) => event.stopPropagation()}
-              >
-                IMDb page
-              </a>
-            </>
-          ) : (
-            "No Wikipedia or Wikimedia image"
+      ) : showCredit ? (
+        <figcaption
+          className={cn(
+            "mt-1.5 min-h-[1rem] text-xs text-muted-foreground",
+            size === "tourney" && "hidden lg:block"
           )}
+          aria-hidden={!missing}
+        >
+          {missing && !imdbHref ? "No Wikipedia or Wikimedia image" : null}
         </figcaption>
       ) : null}
     </figure>

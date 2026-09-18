@@ -1,5 +1,5 @@
 import { resolveTitle, titlesFor, withReleaseYear } from "@/data/catalog";
-import { defaultFilters, decadesFor, matchesFilters, pathKey, sanitizeFilters, stackSizeOf } from "@/lib/filters";
+import { defaultFilters, decadesFor, matchesFilters, sanitizeFilters, stackSizeOf } from "@/lib/filters";
 import { parseMpaaList } from "@/lib/mpaa";
 import type {
   CatalogTitle,
@@ -7,7 +7,6 @@ import type {
   FinalRound,
   Medium,
   PathFilters,
-  PathKey,
   PlayMode,
   SessionResponse,
   StoredSession,
@@ -46,8 +45,8 @@ export function shuffleIds(ids: string[]): string[] {
   return next;
 }
 
-export function filtersFor(session: StoredSession, medium: Medium, playMode: PlayMode): PathFilters {
-  return sanitizeFilters(session.pathFilters[pathKey(medium, playMode)] ?? defaultFilters(medium), medium);
+export function filtersFor(session: StoredSession, medium: Medium, _playMode?: PlayMode): PathFilters {
+  return sanitizeFilters(session.pathFilters[medium] ?? defaultFilters(medium), medium);
 }
 
 export function resultTitleIds(session: StoredSession, medium: Medium): Set<string> {
@@ -244,27 +243,33 @@ function parseCustomTitles(value: unknown): CatalogTitle[] {
   });
 }
 
+function parseOnePathFilters(raw: unknown, medium: Medium): PathFilters | null {
+  if (!raw || typeof raw !== "object") return null;
+  const data = raw as PathFilters;
+  const allowedDecades = new Set(decadesFor(medium));
+  const decades = Array.isArray(data.decades)
+    ? data.decades.filter((n) => typeof n === "number" && allowedDecades.has(n))
+    : [];
+  return {
+    decades: decades.length > 0 ? decades : [...decadesFor(medium)],
+    genres: Array.isArray(data.genres) ? data.genres.filter((n) => typeof n === "string") : [],
+    obscurity: Array.isArray(data.obscurity)
+      ? data.obscurity.filter((n) => typeof n === "number")
+      : [],
+    mpaa: parseMpaaList(data.mpaa, medium),
+    includeForeign: data.includeForeign !== false,
+    stackSize: stackSizeOf(typeof data.stackSize === "number" ? data.stackSize : undefined),
+  };
+}
+
 function parsePathFilters(value: unknown): StoredSession["pathFilters"] {
   if (!value || typeof value !== "object") return {};
+  const rec = value as Record<string, unknown>;
   const next: StoredSession["pathFilters"] = {};
-  for (const key of ["movie:rank", "movie:tourney", "game:rank", "game:tourney"] as PathKey[]) {
-    const raw = (value as Record<string, PathFilters | undefined>)[key];
-    if (!raw) continue;
-    const medium = key.startsWith("movie") ? "movie" : "game";
-    const allowedDecades = new Set(decadesFor(medium));
-    const decades = Array.isArray(raw.decades)
-      ? raw.decades.filter((n) => typeof n === "number" && allowedDecades.has(n))
-      : [];
-    next[key] = {
-      decades: decades.length > 0 ? decades : [...decadesFor(medium)],
-      genres: Array.isArray(raw.genres) ? raw.genres.filter((n) => typeof n === "string") : [],
-      obscurity: Array.isArray(raw.obscurity)
-        ? raw.obscurity.filter((n) => typeof n === "number")
-        : [],
-      mpaa: parseMpaaList(raw.mpaa, medium),
-      includeForeign: raw.includeForeign !== false,
-      stackSize: stackSizeOf(typeof raw.stackSize === "number" ? raw.stackSize : undefined),
-    };
+  for (const medium of ["movie", "game"] as Medium[]) {
+    const raw = rec[medium] ?? rec[`${medium}:rank`] ?? rec[`${medium}:tourney`];
+    const parsed = parseOnePathFilters(raw, medium);
+    if (parsed) next[medium] = parsed;
   }
   return next;
 }

@@ -2,7 +2,7 @@
 
 import { resolveTitle } from "@/data/catalog";
 import { loadMovieCatalog, sampleClientPool } from "@/lib/client-pool";
-import { matchesFilters, pathKey, stackSizeOf } from "@/lib/filters";
+import { matchesFilters, stackSizeOf } from "@/lib/filters";
 import { preloadPosterStack } from "@/lib/poster";
 import {
   applyTourneyOutcome,
@@ -319,13 +319,13 @@ export function useRandoRanx() {
   );
 
   const savePathFilters = useCallback(
-    (medium: Medium, playMode: PlayMode, filters: PathFilters) => {
+    (medium: Medium, filters: PathFilters) => {
       persist((prev) => ({
         ...prev,
-        pathFilters: { ...prev.pathFilters, [pathKey(medium, playMode)]: filters },
+        pathFilters: { ...prev.pathFilters, [medium]: filters },
       }));
       const snap = getSessionSnapshot();
-      if (snap.medium === medium && snap.playMode === playMode) {
+      if (snap.medium === medium && snap.playMode) {
         void refreshPool();
       }
     },

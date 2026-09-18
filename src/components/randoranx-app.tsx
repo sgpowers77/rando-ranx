@@ -22,7 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { defaultFilters, pathKey } from "@/lib/filters";
+import { defaultFilters } from "@/lib/filters";
 import { queuedForMedium } from "@/lib/session";
 import { useRandoRanx } from "@/hooks/use-randoranx";
 import { useMemo, useState } from "react";
@@ -188,16 +188,11 @@ export function RandoRanxApp() {
           {showModePick && session.medium ? (
             <ModePicker
               medium={session.medium}
-              filtersByMode={{
-                rank: session.pathFilters[pathKey(session.medium, "rank")] ?? defaultFilters(session.medium),
-                tourney:
-                  session.pathFilters[pathKey(session.medium, "tourney")] ??
-                  defaultFilters(session.medium),
-              }}
+              filters={session.pathFilters[session.medium] ?? defaultFilters(session.medium)}
               onChoose={choosePlayMode}
-              onSaveFilters={(playMode, filters) => {
+              onSaveFilters={(next) => {
                 if (!session.medium) return;
-                savePathFilters(session.medium, playMode, filters);
+                savePathFilters(session.medium, next);
               }}
               onBack={goHome}
             />
@@ -315,14 +310,10 @@ export function RandoRanxApp() {
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
           medium={session.medium}
-          filtersByMode={{
-            rank: session.pathFilters[pathKey(session.medium, "rank")] ?? defaultFilters(session.medium),
-            tourney:
-              session.pathFilters[pathKey(session.medium, "tourney")] ?? defaultFilters(session.medium),
-          }}
-          onSave={(playMode, filters) => {
+          filters={session.pathFilters[session.medium] ?? defaultFilters(session.medium)}
+          onSave={(next) => {
             if (!session.medium) return;
-            savePathFilters(session.medium, playMode, filters);
+            savePathFilters(session.medium, next);
           }}
         />
       ) : null}

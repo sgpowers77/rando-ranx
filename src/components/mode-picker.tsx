@@ -9,15 +9,15 @@ import { useState } from "react";
 
 type ModePickerProps = {
   medium: Medium;
-  filtersByMode: Record<PlayMode, PathFilters>;
+  filters: PathFilters;
   onChoose: (mode: PlayMode) => void;
-  onSaveFilters: (playMode: PlayMode, filters: PathFilters) => void;
+  onSaveFilters: (filters: PathFilters) => void;
   onBack: () => void;
 };
 
 export function ModePicker({
   medium,
-  filtersByMode,
+  filters,
   onChoose,
   onSaveFilters,
   onBack,
@@ -71,10 +71,7 @@ export function ModePicker({
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         medium={medium}
-        filtersByMode={{
-          rank: filtersByMode.rank ?? defaultFilters(medium),
-          tourney: filtersByMode.tourney ?? defaultFilters(medium),
-        }}
+        filters={filters ?? defaultFilters(medium)}
         onSave={onSaveFilters}
       />
     </section>

@@ -1,6 +1,6 @@
 import { titleIsEnglishDialogue } from "@/lib/language";
 import { MPAA_RATINGS, titleMpaa } from "@/lib/mpaa";
-import type { CatalogTitle, Medium, PathFilters, PathKey, PlayMode, StackSize } from "@/lib/types";
+import type { CatalogTitle, Medium, PathFilters, StackSize } from "@/lib/types";
 
 export const MOVIE_GENRES = [
   "Action",
@@ -32,21 +32,17 @@ export const GAME_DECADES = [1970, 1980, 1990, 2000, 2010, 2020] as const;
 
 export const OBSCURITY_LEVELS = [1, 2, 3, 4, 5] as const;
 
-export const STACK_SIZES = [10, 25, 50] as const;
+export const STACK_SIZES = [10, 25, 50, 100] as const;
 /** Nearest allowed size to the previous ~40-title Tourney sample. */
 export const DEFAULT_STACK_SIZE: StackSize = 50;
 
 export function stackSizeOf(value: number | undefined): StackSize {
-  if (value === 10 || value === 25 || value === 50) return value;
+  if (value === 10 || value === 25 || value === 50 || value === 100) return value;
   return DEFAULT_STACK_SIZE;
 }
 
 export function decadesFor(medium: Medium): readonly number[] {
   return medium === "game" ? GAME_DECADES : DECADES;
-}
-
-export function pathKey(medium: Medium, playMode: PlayMode): PathKey {
-  return `${medium}:${playMode}`;
 }
 
 export function decadeOf(year: number): number {

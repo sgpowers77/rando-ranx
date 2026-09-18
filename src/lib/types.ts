@@ -2,8 +2,6 @@ export type Medium = "movie" | "game";
 
 export type PlayMode = "rank" | "tourney";
 
-export type PathKey = `${Medium}:${PlayMode}`;
-
 export type CatalogTitle = {
   id: string;
   medium: Medium;
@@ -21,7 +19,7 @@ export type CatalogTitle = {
   imageCreditHref?: string;
 };
 
-export type StackSize = 10 | 25 | 50;
+export type StackSize = 10 | 25 | 50 | 100;
 
 export type PathFilters = {
   decades: number[];
@@ -96,7 +94,7 @@ export type StoredSession = {
   pendingTourney: PendingTourney | null;
   skipTourneyScoring: boolean;
   customTitles: CatalogTitle[];
-  pathFilters: Partial<Record<PathKey, PathFilters>>;
+  pathFilters: Partial<Record<Medium, PathFilters>>;
   recentlyShown: Record<Medium, string[]>;
   releaseYears: Record<string, number>;
   liveTitles: CatalogTitle[];
