@@ -5,7 +5,7 @@ It's Showdown Time. Rank. Compare. Discover.
 ## What it does
 
 1. Choose **Movies** or **Games**.
-2. Choose **Ranx** or **Tourney**. Wikipedia search stays hidden until a mode is selected.
+2. Choose **Tourney** (primary) or **Ranx**. Wikipedia search stays hidden until a mode is selected.
 3. **Ranx** deals one title. Movies: Seen It / Haven't Seen It / Want to See It. Games: Played It / Haven't Played It / Want to Play It. A title already in Results is never dealt again. Discard is hidden in Ranx. Drag the card onto **WTF??** for a blurb; **Continue** does not log a result.
 4. Seen / played opens a 1–10 scale and optional comments. **Next** saves and deals the next title. Haven't skips. Want parks the title on your list.
 5. **Tourney** deals two titles. On a phone, both cards sit side by side with shorter posters and star/bookmark on the poster. **Select** logs a Contender; the other card goes to **Discard**. A **star** opens an optional 1–10 score and comment modal (X or overlay to close). A **bookmark** adds or removes Watch without voting. **Undo** (top left above the cards) undoes the last Select (pair, log, and Discard), up to three times, and stays disabled when there is nothing to undo. **Skip** both cards with no winner. Drag onto **WTF??** the same way as Ranx. On mobile, Tourney instructions live behind the header **info** icon next to Settings.
