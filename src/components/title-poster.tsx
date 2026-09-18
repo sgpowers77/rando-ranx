@@ -22,10 +22,10 @@ type TitlePosterProps = {
 };
 
 const frame: Record<PosterSize, string> = {
-  lg: "relative isolate aspect-[2/3] w-full max-w-[18rem] sm:max-w-[20rem]",
+  lg: "relative isolate h-72 w-48 max-w-none",
   md: "relative isolate aspect-[2/3] w-full max-w-[16rem] sm:max-w-[18rem]",
-  sm: "relative isolate aspect-[2/3] h-28 w-[4.67rem] shrink-0",
-  tourney: "relative isolate aspect-[2/3] h-40 w-[6.67rem] shrink-0 lg:h-auto lg:w-64 lg:max-h-none",
+  sm: "relative isolate h-28 w-[4.67rem] shrink-0",
+  tourney: "relative isolate h-40 w-[6.67rem] shrink-0 lg:h-96 lg:w-64",
 };
 
 const POSTER_WAIT_MS = 3000;
@@ -137,7 +137,7 @@ export function TitlePoster(props: TitlePosterProps) {
       {showImage && showCredit && poster ? (
         <figcaption
           className={cn(
-            "mt-1.5 text-muted-foreground",
+            "mt-1.5 h-8 overflow-hidden text-muted-foreground",
             size === "sm" ? "text-[10px]" : "text-xs",
             size === "tourney" && "hidden lg:block"
           )}
@@ -156,7 +156,7 @@ export function TitlePoster(props: TitlePosterProps) {
       ) : showCredit ? (
         <figcaption
           className={cn(
-            "mt-1.5 min-h-[1rem] text-xs text-muted-foreground",
+            "mt-1.5 h-8 overflow-hidden text-xs text-muted-foreground",
             size === "tourney" && "hidden lg:block"
           )}
           aria-hidden={!missing}

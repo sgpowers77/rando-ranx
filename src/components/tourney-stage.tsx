@@ -200,7 +200,7 @@ function MatchupCard({
 
   return (
     <Card
-      className="relative h-full overflow-visible border-none bg-card/80 ring-1 ring-white/10"
+      className="relative flex h-full flex-col overflow-visible border-none bg-card/80 ring-1 ring-white/10"
       draggable
       onDragStart={(event) => {
         if ((event.target as HTMLElement).closest("[data-card-chrome], button, a")) {
@@ -215,8 +215,8 @@ function MatchupCard({
       }}
       onDragEnd={onDragEnd}
     >
-      <div className="relative mx-auto w-[6.67rem] shrink-0 lg:w-64">
-        <TitlePoster catalog={title} size="tourney" className="block w-full" />
+      <div className="relative mx-auto h-40 w-[6.67rem] shrink-0 lg:h-96 lg:w-64">
+        <TitlePoster catalog={title} size="tourney" showCredit={false} className="block h-full w-full" />
         <CardIconBar>
           <StarIconButton
             active={Boolean(notes)}
@@ -236,11 +236,11 @@ function MatchupCard({
           />
         </CardIconBar>
       </div>
-      <CardHeader className="flex-1 gap-1 px-2 pt-2 lg:gap-2 lg:px-4 lg:pr-4">
+      <CardHeader className="flex min-h-0 flex-1 flex-col gap-1 px-2 pt-2 lg:gap-2 lg:px-4 lg:pr-4">
         <p className="hidden text-xs font-medium tracking-widest text-primary uppercase lg:block">
           {title.medium === "movie" ? "Movie" : "Game"}
         </p>
-        <CardTitle className="font-heading line-clamp-2 text-sm leading-tight text-balance lg:text-3xl">
+        <CardTitle className="font-heading line-clamp-2 min-h-[2.5rem] text-sm leading-tight text-balance lg:min-h-[4.5rem] lg:text-3xl">
           {title.title}
         </CardTitle>
         <CardDescription className="text-[11px] lg:text-base">
@@ -248,7 +248,7 @@ function MatchupCard({
           {notes ? ` · ${notes.rating}/10 saved` : ""}
         </CardDescription>
       </CardHeader>
-      <CardContent className="mt-auto px-2 pb-2 lg:px-4 lg:pb-4">
+      <CardContent className="mt-auto shrink-0 px-2 pb-2 lg:px-4 lg:pb-4">
         <Button
           type="button"
           className="h-9 w-full text-sm lg:h-12 lg:text-base"

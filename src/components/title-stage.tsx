@@ -71,7 +71,7 @@ export function TitleStage({
       >
         <CardHeader className="gap-3">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-            <TitlePoster catalog={title} size="lg" className="mx-auto w-48 shrink-0 sm:mx-0" />
+            <TitlePoster catalog={title} size="lg" showCredit={false} className="mx-auto shrink-0 sm:mx-0" />
             <div className="min-w-0 flex-1 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <p className="text-xs font-medium tracking-widest text-primary uppercase">
