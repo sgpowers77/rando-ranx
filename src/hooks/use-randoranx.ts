@@ -2,7 +2,7 @@
 
 import { resolveTitle } from "@/data/catalog";
 import { loadMovieCatalog, sampleClientPool } from "@/lib/client-pool";
-import { matchesFilters, randomizeFilters, stackSizeOf } from "@/lib/filters";
+import { matchesFilters, randomizeFilters as rollPathFilters, stackSizeOf } from "@/lib/filters";
 import { preloadPosterStack } from "@/lib/poster";
 import {
   applyTourneyOutcome,
@@ -351,7 +351,7 @@ export function useRandoRanx() {
         return {
           ...prev,
           randomizeFilters: flags,
-          pathFilters: { ...prev.pathFilters, [medium]: randomizeFilters(medium) },
+          pathFilters: { ...prev.pathFilters, [medium]: rollPathFilters(medium) },
         };
       });
       const snap = getSessionSnapshot();

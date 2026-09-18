@@ -34,7 +34,7 @@ export function FilterToolbar({
         <Switch
           checked={randomizeOn}
           nativeButton
-          onCheckedChange={(checked) => onRandomizeChange(checked === true)}
+          onCheckedChange={(checked) => onRandomizeChange(Boolean(checked))}
           aria-label="Randomize filters"
         />
         <span className="select-none">Randomize</span>
