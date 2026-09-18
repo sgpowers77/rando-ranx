@@ -28,7 +28,6 @@ type ResultsLogProps = {
   responses: SessionResponse[];
   discards: DiscardEntry[];
   watchTags: WatchTag[];
-  onClear: () => void;
 };
 
 export { resultLabel } from "@/lib/labels";
@@ -124,7 +123,6 @@ export function ResultsLog({
   responses,
   discards,
   watchTags,
-  onClear,
 }: ResultsLogProps) {
   const rated = responses.filter((entry) => entry.kind === "rated").length;
   const skipped = responses.filter((entry) => entry.kind === "skipped").length;
@@ -150,15 +148,6 @@ export function ResultsLog({
           <ResultsTable responses={responses} discards={discards} watchTags={watchTags} />
         </div>
         <SheetFooter className="mt-0 shrink-0 border-t pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-11 w-full"
-            onClick={onClear}
-            disabled={!hasAnything}
-          >
-            Clear session
-          </Button>
           <Button
             type="button"
             variant="outline"

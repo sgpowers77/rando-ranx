@@ -28,7 +28,7 @@ export function ModePicker({
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-8 px-4 py-10 sm:px-6">
       <div>
-        <p className="text-sm font-medium tracking-wide text-amber-200/80 uppercase">
+        <p className="text-sm font-medium tracking-wide text-primary uppercase">
           {medium === "movie" ? "Movies" : "Games"}
         </p>
         <h1 className="mt-2 max-w-xl font-heading text-4xl leading-tight tracking-tight text-balance sm:text-5xl">

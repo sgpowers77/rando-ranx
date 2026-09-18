@@ -42,7 +42,7 @@ export function WtfDropZone({
       className={`fixed bottom-4 left-1/2 z-50 w-[min(28rem,calc(100%-1rem))] -translate-x-1/2 rounded-2xl border-2 border-dashed px-6 py-8 text-center shadow-lg [&>*]:pointer-events-none ${
         armed
           ? "border-primary bg-primary/20 text-foreground"
-          : "border-amber-200/70 bg-background/95 text-amber-100"
+          : "border-primary/70 bg-background/95 text-primary"
       }`}
     >
       <p className="font-heading text-2xl tracking-tight">WTF??</p>

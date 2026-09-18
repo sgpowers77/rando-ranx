@@ -1,5 +1,7 @@
+import { ThemeHydrator } from "@/components/theme-provider";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,9 +24,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning
+      data-palette="midnight"
       className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background">{children}</body>
+      <body className="min-h-full flex flex-col bg-background">
+        <Script id="randoranx-palette" strategy="beforeInteractive">
+          {`try{var p=localStorage.getItem("randoranx-palette");if(p==="arcade"||p==="pine"||p==="daylight"||p==="midnight"){document.documentElement.setAttribute("data-palette",p);document.documentElement.classList.toggle("dark",p!=="daylight");}}catch(e){}`}
+        </Script>
+        <ThemeHydrator />
+        {children}
+      </body>
     </html>
   );
 }

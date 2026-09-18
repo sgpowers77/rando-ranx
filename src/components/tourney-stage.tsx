@@ -92,7 +92,7 @@ export function TourneyStage({
   return (
     <div className="space-y-3">
       {isFinalRound ? (
-        <p className="hidden rounded-xl border border-amber-200/30 bg-amber-200/10 px-4 py-3 text-sm lg:block">
+        <p className="hidden rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm lg:block">
           Final Round. Vote among logged Contenders until one champion remains. Losers still go to
           Discard. WTF?? and Watch work the same as Tourney.
         </p>
@@ -237,7 +237,7 @@ function MatchupCard({
         </CardIconBar>
       </div>
       <CardHeader className="flex-1 gap-1 px-2 pt-2 lg:gap-2 lg:px-4 lg:pr-4">
-        <p className="hidden text-xs font-medium tracking-widest text-amber-200/80 uppercase lg:block">
+        <p className="hidden text-xs font-medium tracking-widest text-primary uppercase lg:block">
           {title.medium === "movie" ? "Movie" : "Game"}
         </p>
         <CardTitle className="font-heading line-clamp-2 text-sm leading-tight text-balance lg:text-3xl">

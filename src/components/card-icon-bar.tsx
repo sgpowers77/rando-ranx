@@ -48,7 +48,7 @@ export function StarIconButton({
         onClick();
       }}
     >
-      <Star className={`size-4 ${active ? "fill-amber-300 text-amber-300" : ""}`} />
+      <Star className={`size-4 ${active ? "fill-primary text-primary" : ""}`} />
     </Button>
   );
 }

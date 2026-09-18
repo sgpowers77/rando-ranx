@@ -12,6 +12,7 @@ import { TourneyStage } from "@/components/tourney-stage";
 import { PathSettings } from "@/components/path-settings";
 import { QueueModal } from "@/components/queue-modal";
 import { TitleSearch } from "@/components/title-search";
+import { AppSettingsSheet } from "@/components/app-settings";
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
 import {
@@ -64,10 +65,11 @@ export function RandoRanxApp() {
     contenderCount,
   } = useRandoRanx();
   const [printOpen, setPrintOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileLogOpen, setMobileLogOpen] = useState(false);
   const [queueOpen, setQueueOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [tourneyHelpOpen, setTourneyHelpOpen] = useState(false);
 
   const mediumQueue = session.medium ? queuedForMedium(session, session.medium) : session.userQueue;
@@ -133,7 +135,7 @@ export function RandoRanxApp() {
           stopEditing();
           goHome();
         }}
-        onOpenPrint={() => setPrintOpen(true)}
+        onOpenSettings={() => setSettingsOpen(true)}
         onOpenMobileLog={() => setMobileLogOpen(true)}
         onOpenTourneyHelp={() => setTourneyHelpOpen(true)}
         resultCount={session.responses.length + session.discards.length}
@@ -149,7 +151,7 @@ export function RandoRanxApp() {
         <main className={`no-print mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 sm:px-6 ${showTourney ? "py-3 lg:py-8" : "py-8"}`}>
           {status === "loading" ? (
             <div className="flex flex-1 flex-col justify-center" role="status" aria-live="polite">
-              <p className="text-sm font-medium tracking-wide text-amber-200/80 uppercase">
+              <p className="text-sm font-medium tracking-wide text-primary uppercase">
                 Loading
               </p>
               <h1 className="mt-2 font-heading text-3xl">Shuffling the stacks…</h1>
@@ -183,7 +185,7 @@ export function RandoRanxApp() {
             </div>
           ) : null}
 
-          {showLanding ? <Landing onChoose={chooseMedium} onResetAll={clearSession} /> : null}
+          {showLanding ? <Landing onChoose={chooseMedium} /> : null}
 
           {showModePick && session.medium ? (
             <ModePicker
@@ -200,7 +202,7 @@ export function RandoRanxApp() {
 
           {showPoolLoading ? (
             <div className="flex flex-1 flex-col justify-center" role="status" aria-live="polite">
-              <p className="text-sm font-medium tracking-wide text-amber-200/80 uppercase">
+              <p className="text-sm font-medium tracking-wide text-primary uppercase">
                 Live catalog
               </p>
               <h1 className="mt-2 font-heading text-3xl">
@@ -221,7 +223,7 @@ export function RandoRanxApp() {
                 label={`Ranx · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} in this deal${poolSource === "dataset" ? " · Movies Dataset" : ""}`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
-                onOpenSettings={() => setSettingsOpen(true)}
+                onOpenSettings={() => setFiltersOpen(true)}
               />
               <TitleStage
                 key={currentTitle.id}
@@ -247,7 +249,7 @@ export function RandoRanxApp() {
                 label={`${finalRoundActive ? "Final Round" : "Tourney"} · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left in this stack`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
-                onOpenSettings={() => setSettingsOpen(true)}
+                onOpenSettings={() => setFiltersOpen(true)}
                 compactMobile
               />
               <TourneyStage
@@ -307,8 +309,8 @@ export function RandoRanxApp() {
 
       {session.medium && session.playMode ? (
         <PathSettings
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
+          open={filtersOpen}
+          onOpenChange={setFiltersOpen}
           medium={session.medium}
           filters={session.pathFilters[session.medium] ?? defaultFilters(session.medium)}
           onSave={(next) => {
@@ -355,17 +357,25 @@ export function RandoRanxApp() {
         </DialogContent>
       </Dialog>
 
+      <AppSettingsSheet
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        responses={session.responses}
+        discards={session.discards}
+        watchTags={session.watchTags}
+        onResetAll={() => {
+          clearSession();
+          setEditingId(null);
+        }}
+        onViewTable={() => setPrintOpen(true)}
+      />
+
       <ResultsLog
         open={printOpen}
         onOpenChange={setPrintOpen}
         responses={session.responses}
         discards={session.discards}
         watchTags={session.watchTags}
-        onClear={() => {
-          clearSession();
-          setPrintOpen(false);
-          setEditingId(null);
-        }}
       />
 
       <section className="print-only hidden p-6 text-black print:block">

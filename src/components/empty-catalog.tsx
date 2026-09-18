@@ -91,7 +91,7 @@ export function EmptyCatalog({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
             <TitlePoster catalog={leftoverTitle} size="lg" className="mx-auto sm:mx-0" />
             <div className="min-w-0 flex-1 space-y-3">
-              <p className="text-xs font-medium tracking-widest text-amber-200/80 uppercase">
+              <p className="text-xs font-medium tracking-widest text-primary uppercase">
                 Champion
               </p>
               <CardTitle className="font-heading text-3xl leading-tight text-balance">

@@ -28,7 +28,7 @@ export function EntryEditor({ entry, onSave, onCancel }: EntryEditorProps) {
   return (
     <Card className="border-none bg-card/80 ring-1 ring-white/10">
       <CardHeader className="gap-3">
-        <p className="text-xs font-medium tracking-widest text-amber-200/80 uppercase">
+        <p className="text-xs font-medium tracking-widest text-primary uppercase">
           Editing {medium === "movie" ? "movie" : "game"}
         </p>
         <CardTitle className="font-heading text-3xl leading-tight text-balance sm:text-4xl">

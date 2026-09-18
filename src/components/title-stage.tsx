@@ -74,7 +74,7 @@ export function TitleStage({
             <TitlePoster catalog={title} size="lg" className="mx-auto w-48 shrink-0 sm:mx-0" />
             <div className="min-w-0 flex-1 space-y-3">
               <div className="flex items-start justify-between gap-3">
-                <p className="text-xs font-medium tracking-widest text-amber-200/80 uppercase">
+                <p className="text-xs font-medium tracking-widest text-primary uppercase">
                   {medium === "movie" ? "Movie" : "Game"}
                 </p>
                 {onToggleWatch ? (

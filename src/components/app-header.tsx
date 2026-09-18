@@ -1,11 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Info, List, Printer } from "lucide-react";
+import { ArrowLeft, Info, List, Settings } from "lucide-react";
 
 type AppHeaderProps = {
   onHome: () => void;
-  onOpenPrint: () => void;
+  onOpenSettings: () => void;
   onOpenMobileLog: () => void;
   onOpenTourneyHelp?: () => void;
   resultCount: number;
@@ -15,7 +15,7 @@ type AppHeaderProps = {
 
 export function AppHeader({
   onHome,
-  onOpenPrint,
+  onOpenSettings,
   onOpenMobileLog,
   onOpenTourneyHelp,
   resultCount,
@@ -74,11 +74,11 @@ export function AppHeader({
           type="button"
           variant="outline"
           size="icon-lg"
-          aria-label={`Open printable results table, ${resultCount} ${resultCount === 1 ? "entry" : "entries"}`}
-          onClick={onOpenPrint}
+          aria-label="Open settings"
+          onClick={onOpenSettings}
           className="relative"
         >
-          <Printer />
+          <Settings />
           {resultCount > 0 ? (
             <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
               {resultCount}
