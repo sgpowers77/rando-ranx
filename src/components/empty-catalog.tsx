@@ -44,8 +44,10 @@ export function EmptyCatalog({
         <CardHeader>
           <CardTitle className="font-heading text-2xl">Could not load the live catalog</CardTitle>
           <CardDescription>
-            {poolError} Ranx still works from a small local fallback if the Kaggle movies file is
-            missing. Drop movies_metadata.csv into data/ or retry the fetch.
+            {poolError}{" "}
+            {medium === "movie"
+              ? "Ranx still works from a small local fallback if the Kaggle movies file is missing. Drop movies_metadata.csv into data/ or retry the fetch."
+              : "Ranx still works from a small local games list if the OpenGameDB / GameDex index is missing. Run npm run fetch-games and npm run build-games-index, then retry."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -67,8 +69,11 @@ export function EmptyCatalog({
           <CardTitle className="font-heading text-2xl">Nothing matches these filters</CardTitle>
           <CardDescription>
             No {noun} in the current stack sit in the decades, genres, and obscurity levels you
-            checked. Open Filters and include at least one decade. Movie years and genres come
-            from The Movies Dataset (release_date, genres, vote/popularity).
+            checked. Open Filters and include at least one decade
+            {medium === "game" ? " and platform family" : ""}.{" "}
+            {medium === "movie"
+              ? "Movie years and genres come from The Movies Dataset (release_date, genres, vote/popularity)."
+              : "Game years, genres, platforms, and obscurity come from OpenGameDB and GameDex."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -150,7 +155,13 @@ export function EmptyCatalog({
         <CardTitle className="font-heading text-2xl">You worked through this stack</CardTitle>
         <CardDescription>
           Every {noun.slice(0, -1)} in this deal already has a result or a Discard entry. Fetch
-          another sample from the {poolSource === "dataset" ? "movies dataset" : medium === "movie" ? "movies dataset" : "games list"}, switch
+          another sample from the{" "}
+          {medium === "movie"
+            ? "movies dataset"
+            : poolSource === "dataset"
+              ? "OpenGameDB + GameDex catalog"
+              : "games list"}
+          , switch
           catalogs, or change filters.
         </CardDescription>
       </CardHeader>

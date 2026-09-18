@@ -231,19 +231,25 @@ export function RandoRanxApp() {
               <h1 className="mt-2 font-heading text-3xl">
                 {session.medium === "movie"
                   ? "Sampling The Movies Dataset…"
-                  : "Shuffling game titles…"}
+                  : "Sampling OpenGameDB + GameDex…"}
               </h1>
               <p className="mt-2 text-muted-foreground">
                 {session.medium === "movie"
                   ? "Dealing films from movies_metadata.csv using release date, genres, and vote/popularity. Wikipedia stays on search and WTF blurbs."
-                  : "Pulling a fresh game stack that matches your path filters."}
+                  : "Dealing games from the baked OpenGameDB and GameDex index using year, genre, platform, and obscurity."}
               </p>
             </div>
           ) : null}
           {showRank && currentTitle ? (
             <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-4">
               <StageMeta
-                label={`Ranx · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} in this deal${poolSource === "dataset" ? " · Movies Dataset" : ""}`}
+                label={`Ranx · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} in this deal${
+                  poolSource === "dataset"
+                    ? session.medium === "movie"
+                      ? " · Movies Dataset"
+                      : " · OpenGameDB + GameDex"
+                    : ""
+                }`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
               />
