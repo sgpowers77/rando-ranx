@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { filtersForPreset, TOURNEY_PRESETS } from "@/lib/presets";
+import { filtersForPreset, GAME_PRESETS, TOURNEY_PRESETS } from "@/lib/presets";
 import type { Medium, PathFilters } from "@/lib/types";
 import { SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -64,7 +64,7 @@ export function ExperienceModal({
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2">
-          {TOURNEY_PRESETS.map((preset) => {
+          {(medium === "game" ? GAME_PRESETS : TOURNEY_PRESETS).map((preset) => {
             const selected = !fullRando && selectedId === preset.id;
             return (
               <button

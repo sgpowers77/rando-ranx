@@ -30,6 +30,18 @@ export const GAME_GENRES = [
 export const DECADES = [1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020] as const;
 export const GAME_DECADES = [1970, 1980, 1990, 2000, 2010, 2020] as const;
 
+/** First-release families that match the current game catalog (handhelds roll into Nintendo / PlayStation). */
+export const GAME_PLATFORMS = [
+  "Nintendo",
+  "PlayStation",
+  "Xbox",
+  "PC",
+  "Mobile",
+  "Other",
+] as const;
+
+export type GamePlatform = (typeof GAME_PLATFORMS)[number];
+
 export const OBSCURITY_LEVELS = [1, 2, 3, 4, 5] as const;
 
 export const STACK_SIZES = [10, 25, 50, 100] as const;
@@ -57,6 +69,7 @@ export function defaultFilters(medium: Medium): PathFilters {
     mpaa: medium === "movie" ? [...MPAA_RATINGS] : [],
     includeForeign: true,
     stackSize: DEFAULT_STACK_SIZE,
+    platforms: medium === "game" ? [...GAME_PLATFORMS] : [],
   };
 }
 
@@ -78,7 +91,20 @@ export function matchesFilters(title: CatalogTitle, filters: PathFilters): boole
     if (allowed.length === 0 || !allowed.includes(titleMpaa(title))) return false;
     if (filters.includeForeign === false && !titleIsEnglishDialogue(title)) return false;
   }
+  if (title.medium === "game") {
+    const allowed = filters.platforms ?? [];
+    if (allowed.length === 0) return false;
+    const families = titlePlatforms(title);
+    if (!families.some((platform) => allowed.includes(platform))) return false;
+  }
   return true;
+}
+
+export function titlePlatforms(title: CatalogTitle): string[] {
+  const listed = (title.platforms ?? []).filter((platform) =>
+    (GAME_PLATFORMS as readonly string[]).includes(platform)
+  );
+  return listed.length > 0 ? listed : ["Other"];
 }
 
 export function sanitizeFilters(filters: PathFilters, medium: Medium): PathFilters {
@@ -94,7 +120,20 @@ export function sanitizeFilters(filters: PathFilters, medium: Medium): PathFilte
     mpaa: medium === "movie" ? ((filters.mpaa?.length ?? 0) > 0 ? filters.mpaa : [...defaults.mpaa]) : [],
     includeForeign: filters.includeForeign !== false,
     stackSize: stackSizeOf(filters.stackSize),
+    platforms:
+      medium === "game"
+        ? (() => {
+            const platforms = validGamePlatforms(filters);
+            return platforms.length > 0 ? platforms : [...GAME_PLATFORMS];
+          })()
+        : [],
   };
+}
+
+function validGamePlatforms(filters: PathFilters): string[] {
+  return (filters.platforms ?? []).filter((platform) =>
+    (GAME_PLATFORMS as readonly string[]).includes(platform)
+  );
 }
 
 export function filtersComplete(filters: PathFilters, medium: Medium): boolean {
@@ -102,6 +141,7 @@ export function filtersComplete(filters: PathFilters, medium: Medium): boolean {
   if ((filters.genres?.length ?? 0) === 0) return false;
   if ((filters.obscurity?.length ?? 0) === 0) return false;
   if (medium === "movie" && (filters.mpaa?.length ?? 0) === 0) return false;
+  if (medium === "game" && (filters.platforms?.length ?? 0) === 0) return false;
   return true;
 }
 
@@ -124,6 +164,7 @@ export function randomizeFilters(medium: Medium): PathFilters {
     stackSize: STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] as StackSize,
     mpaa: medium === "movie" ? shufflePick([...MPAA_RATINGS]) : [],
     includeForeign: medium === "movie" ? Math.random() < 0.5 : true,
+    platforms: medium === "game" ? shufflePick([...GAME_PLATFORMS]) : [],
   };
   return sanitizeFilters(next, medium);
 }
@@ -136,6 +177,7 @@ export function filtersActive(filters: PathFilters, medium: Medium): boolean {
     filters.obscurity.length !== defaults.obscurity.length ||
     (medium === "movie" && (filters.mpaa?.length ?? 0) !== defaults.mpaa.length) ||
     (medium === "movie" && filters.includeForeign === false) ||
+    (medium === "game" && (filters.platforms?.length ?? 0) !== GAME_PLATFORMS.length) ||
     stackSizeOf(filters.stackSize) !== defaults.stackSize
   );
 }

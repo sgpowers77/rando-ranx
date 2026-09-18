@@ -15,6 +15,7 @@ import {
   decadesFor,
   filtersComplete,
   GAME_GENRES,
+  GAME_PLATFORMS,
   MOVIE_GENRES,
   OBSCURITY_LEVELS,
   STACK_SIZES,
@@ -150,6 +151,38 @@ export function PathSettings({
               })}
             </div>
           </fieldset>
+
+          {medium === "game" ? (
+            <fieldset className="space-y-2">
+              <legend className="w-full">
+                <GroupControls
+                  label="Platform"
+                  onCheckAll={() => apply({ platforms: [...GAME_PLATFORMS] })}
+                  onUncheckAll={() => apply({ platforms: [] })}
+                />
+              </legend>
+              <p className="text-xs text-muted-foreground">
+                First-release family. Handhelds count with their home console (Nintendo, PlayStation).
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {GAME_PLATFORMS.map((platform) => {
+                  const id = `filter-platform-${platform}`;
+                  return (
+                    <label key={platform} htmlFor={id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        id={id}
+                        checked={(draft.platforms ?? []).includes(platform)}
+                        onCheckedChange={() =>
+                          apply({ platforms: toggle(draft.platforms ?? [], platform) as string[] })
+                        }
+                      />
+                      {platform}
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ) : null}
 
           {medium === "movie" ? (
             <label className="flex items-start gap-3 rounded-lg border border-border/70 px-3 py-3 text-sm">
@@ -289,6 +322,7 @@ function missingGroups(filters: PathFilters, medium: Medium): string[] {
   if ((filters.genres?.length ?? 0) === 0) missing.push("Genre");
   if ((filters.obscurity?.length ?? 0) === 0) missing.push("Obscurity");
   if (medium === "movie" && (filters.mpaa?.length ?? 0) === 0) missing.push("MPAA Rating");
+  if (medium === "game" && (filters.platforms?.length ?? 0) === 0) missing.push("Platform");
   return missing;
 }
 

@@ -325,6 +325,9 @@ function parseCustomTitles(value: unknown): CatalogTitle[] {
   }).map((item) => ({
     ...item,
     director: typeof item.director === "string" && item.director.trim() ? item.director.trim() : undefined,
+    platforms: Array.isArray(item.platforms)
+      ? item.platforms.filter((platform): platform is string => typeof platform === "string")
+      : undefined,
   }));
 }
 
@@ -352,6 +355,12 @@ function parseOnePathFilters(raw: unknown, medium: Medium): PathFilters | null {
     mpaa: parseMpaaList(data.mpaa, medium),
     includeForeign: data.includeForeign !== false,
     stackSize: stackSizeOf(typeof data.stackSize === "number" ? data.stackSize : undefined),
+    platforms:
+      medium === "game"
+        ? Array.isArray(data.platforms)
+          ? data.platforms.filter((item) => typeof item === "string")
+          : []
+        : [],
   };
 }
 

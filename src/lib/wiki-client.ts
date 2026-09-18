@@ -50,6 +50,19 @@ function guessGenres(text: string, medium: Medium): string[] {
   return [medium === "movie" ? "Drama" : "Adventure"];
 }
 
+function guessPlatforms(text: string): string[] {
+  const blob = text.toLowerCase();
+  const found: string[] = [];
+  if (/nintendo|switch\b|wii\b|\bsnes\b|\bnes\b|gamecube|game boy|\b3ds\b|\bnds\b|nintendo ds/.test(blob)) {
+    found.push("Nintendo");
+  }
+  if (/playstation|\bps[1-5]\b|\bps vita|\bpsp\b/.test(blob)) found.push("PlayStation");
+  if (/xbox|series x|series s/.test(blob)) found.push("Xbox");
+  if (/\bpc\b|windows|steam|macos|linux/.test(blob)) found.push("PC");
+  if (/\bios\b|android|mobile phone|smartphone/.test(blob)) found.push("Mobile");
+  return found.length > 0 ? [...new Set(found)] : ["Other"];
+}
+
 function looksLikeMedium(text: string, medium: Medium, title: string): boolean {
   const blob = `${title} ${text}`.toLowerCase();
   if (medium === "movie") return /film|movie|cinema|directed by|screenplay/.test(blob);
@@ -114,6 +127,7 @@ export async function searchWikipediaClient(
           genres: guessGenres(blob, medium),
           obscurity: 3,
           source: "search",
+          ...(medium === "game" ? { platforms: guessPlatforms(blob) } : {}),
         };
         const directed = directorFromExtract(blob);
         if (directed) title.director = directed;

@@ -1,4 +1,4 @@
-import { decadesFor, GAME_GENRES, MOVIE_GENRES, sanitizeFilters } from "@/lib/filters";
+import { decadesFor, GAME_GENRES, GAME_PLATFORMS, MOVIE_GENRES, sanitizeFilters } from "@/lib/filters";
 import type { Medium, PathFilters } from "@/lib/types";
 
 export type TourneyPreset = {
@@ -117,6 +117,119 @@ export const TOURNEY_PRESETS: TourneyPreset[] = [
     id: "cgi-entered-chat",
     title: "CGI Has Entered the Chat",
     blurb: "2000s onward spectacle. If it can explode in pixels, it will.",
+  },
+];
+
+export const GAME_PRESETS: TourneyPreset[] = [
+  {
+    id: "nintendo-direct",
+    title: "Nintendo Direct Fodder",
+    blurb: "First-party energy. Platformers, adventures, and island life on Nintendo hardware.",
+  },
+  {
+    id: "playstation-prestige",
+    title: "PlayStation Prestige",
+    blurb: "Big first-party set pieces. You will talk about the set dressing.",
+  },
+  {
+    id: "xbox-launch-night",
+    title: "Xbox Launch Night",
+    blurb: "Green-box era shooters and the living-room LAN that followed.",
+  },
+  {
+    id: "pc-master-race",
+    title: "PC Master Race, Apparently",
+    blurb: "Mouse, keyboard, and a settings menu longer than the campaign.",
+  },
+  {
+    id: "handheld-back-seat",
+    title: "Handheld in the Back Seat",
+    blurb: "Cartridge RPGs and Metroidvania homework on Nintendo hardware.",
+  },
+  {
+    id: "keyboard-mouse",
+    title: "Keyboard and Mouse Only",
+    blurb: "Strategy, puzzles, and sims that hate a thumbstick.",
+  },
+  {
+    id: "souls-borne",
+    title: "Souls-Borne and Suffering",
+    blurb: "You will die. Then you will die with a build. Consoles and PC welcome.",
+  },
+  {
+    id: "itch-until-dawn",
+    title: "Itch.io Until Dawn",
+    blurb: "Little-seen PC indies. Wishlist later. Play now.",
+  },
+  {
+    id: "fight-stick-tax",
+    title: "Fight Stick Tax",
+    blurb: "Versus fighters on PlayStation, Xbox, and PC. Neutral jump, then mash.",
+  },
+  {
+    id: "cozy-stardew",
+    title: "Cozy Stardew Hours",
+    blurb: "Farms, islands, and low-stakes loops. PC or Nintendo on the couch.",
+  },
+  {
+    id: "puzzle-until-2am",
+    title: "Puzzle Until 2am",
+    blurb: "One more gate. One more rule. PC and Nintendo brain-breakers.",
+  },
+  {
+    id: "jrpg-homework",
+    title: "JRPG Homework",
+    blurb: "Menus, jobs, and a 40-hour side quest. Nintendo and PlayStation first.",
+  },
+  {
+    id: "cartridge-era",
+    title: "Cartridge Era Only",
+    blurb: "1990s Nintendo silicon. Blow on it if you must.",
+  },
+  {
+    id: "split-screen",
+    title: "Split-Screen Arguments",
+    blurb: "Action and fighting you can lose a friendship over. Living-room hardware.",
+  },
+  {
+    id: "one-more-run",
+    title: "One More Run",
+    blurb: "Roguelikes and deckbuilders on PC. The run is never the last run.",
+  },
+  {
+    id: "open-world-hangover",
+    title: "Open World Hangover",
+    blurb: "Map icons, horse physics, and a main quest you keep postponing.",
+  },
+  {
+    id: "phone-battery-tax",
+    title: "Phone Battery Tax",
+    blurb: "First shipped on a phone. Play between levels of real life.",
+  },
+  {
+    id: "early-access-forever",
+    title: "Early Access Forever",
+    blurb: "PC indies that shipped a roadmap and a dream. Patch notes are the plot.",
+  },
+  {
+    id: "trophy-hunting",
+    title: "Trophy Hunting Season",
+    blurb: "PlayStation first. Platinum or bust. The last 2% will hurt.",
+  },
+  {
+    id: "gamerscore",
+    title: "Gamerscore Doesn't Count",
+    blurb: "Xbox action from the 360 years. The achievement popped. The pride did not.",
+  },
+  {
+    id: "couch-co-op",
+    title: "Couch Co-Op Night",
+    blurb: "Platformers and adventures for two on the same TV. Pass the second pad.",
+  },
+  {
+    id: "day-one-patch",
+    title: "AAA Day-One Patch",
+    blurb: "2020s spectacle on PlayStation, Xbox, and PC. Download size TBD.",
   },
 ];
 
@@ -325,208 +438,179 @@ function moviePreset(id: string): PathFilters {
   }
 }
 
+function gameFilters(
+  partial: Pick<PathFilters, "decades" | "genres" | "obscurity" | "platforms"> &
+    Partial<Pick<PathFilters, "stackSize">>
+): PathFilters {
+  return {
+    mpaa: [],
+    includeForeign: true,
+    stackSize: 50,
+    ...partial,
+  };
+}
+
 function gamePreset(id: string): PathFilters {
   switch (id) {
-    case "star-wars-newbie":
-      return {
+    case "nintendo-direct":
+      return gameFilters({
         decades: [2010, 2020],
-        genres: ["Adventure", "Action", "Platformer", "RPG"],
+        genres: ["Platformer", "Adventure", "Simulation", "Action"],
         obscurity: [1, 2],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "that-movie-was-boring":
-      return {
+        platforms: ["Nintendo"],
+      });
+    case "playstation-prestige":
+      return gameFilters({
+        decades: [2010, 2020],
+        genres: ["Action", "Adventure", "RPG"],
+        obscurity: [1, 2],
+        platforms: ["PlayStation"],
+      });
+    case "xbox-launch-night":
+      return gameFilters({
+        decades: [2000, 2010],
+        genres: ["Action", "Adventure"],
+        obscurity: [1, 2],
+        platforms: ["Xbox"],
+      });
+    case "pc-master-race":
+      return gameFilters({
+        decades: [2010, 2020],
+        genres: ["Action", "Adventure", "Indie", "RPG", "Simulation"],
+        obscurity: [1, 2, 3],
+        platforms: ["PC"],
+      });
+    case "handheld-back-seat":
+      return gameFilters({
+        decades: [1990],
+        genres: ["RPG", "Adventure", "Action"],
+        obscurity: [1, 2, 3],
+        platforms: ["Nintendo"],
+      });
+    case "keyboard-mouse":
+      return gameFilters({
         decades: [2000, 2010, 2020],
-        genres: ["Action", "Adventure", "Fighting"],
-        obscurity: [1, 2, 3],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "vcr-whats-that":
-      return {
+        genres: ["Strategy", "Puzzle", "Simulation"],
+        obscurity: [2, 3, 4],
+        platforms: ["PC"],
+      });
+    case "souls-borne":
+      return gameFilters({
         decades: [2010, 2020],
-        genres: ["Action", "Adventure", "Platformer", "RPG", "Simulation"],
-        obscurity: [1, 2],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "drive-in":
-      return {
-        decades: [1970, 1980, 1990],
-        genres: ["Action", "Adventure", "Platformer", "Puzzle"],
+        genres: ["Action", "RPG"],
         obscurity: [1, 2, 3],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "vcr-rentals":
-      return {
-        decades: [1980, 1990],
-        genres: ["Action", "Adventure", "Platformer", "Fighting", "RPG"],
-        obscurity: [1, 2, 3],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "cannes-ovation":
-      return {
+        platforms: ["PlayStation", "Xbox", "PC"],
+      });
+    case "itch-until-dawn":
+      return gameFilters({
         decades: [2010, 2020],
-        genres: ["Indie", "Adventure", "Puzzle", "RPG"],
+        genres: ["Indie", "Adventure", "Puzzle"],
         obscurity: [3, 4, 5],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "french-one":
-      return {
+        platforms: ["PC"],
+      });
+    case "fight-stick-tax":
+      return gameFilters({
         decades: [2000, 2010, 2020],
-        genres: ["Indie", "Adventure", "Puzzle", "Simulation"],
+        genres: ["Fighting"],
+        obscurity: [1, 2, 3],
+        platforms: ["PlayStation", "Xbox", "PC"],
+      });
+    case "cozy-stardew":
+      return gameFilters({
+        decades: [2010, 2020],
+        genres: ["Simulation", "Indie"],
+        obscurity: [1, 2, 3],
+        platforms: ["PC", "Nintendo"],
+      });
+    case "puzzle-until-2am":
+      return gameFilters({
+        decades: [2010, 2020],
+        genres: ["Puzzle"],
         obscurity: [2, 3, 4, 5],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "thrills-n-chills":
-      return {
+        platforms: ["PC", "Nintendo"],
+      });
+    case "jrpg-homework":
+      return gameFilters({
         decades: [1990, 2000, 2010, 2020],
-        genres: ["Action", "Adventure", "Fighting"],
-        obscurity: [1, 2, 3, 4],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "date-night":
-      return {
-        decades: [2010, 2020],
-        genres: ["Adventure", "Puzzle", "Simulation", "Indie"],
+        genres: ["RPG"],
         obscurity: [1, 2, 3],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 25,
-      };
-    case "feel-good-only":
-      return {
-        decades: [2010, 2020],
-        genres: ["Adventure", "Platformer", "Simulation", "Puzzle"],
-        obscurity: [1, 2],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "no-subtitles":
-      return {
-        decades: [2010, 2020],
-        genres: ["Action", "Adventure", "Platformer", "Simulation"],
-        obscurity: [1, 2],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "technicolor-ruined":
-      return {
-        decades: [1970],
-        genres: ["Action", "Adventure", "Puzzle", "Platformer"],
+        platforms: ["Nintendo", "PlayStation"],
+      });
+    case "cartridge-era":
+      return gameFilters({
+        decades: [1990],
+        genres: ["Action", "Adventure", "RPG", "Platformer"],
         obscurity: [2, 3, 4],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "blood-n-guts":
-      return {
-        decades: [1990, 2000, 2010, 2020],
-        genres: ["Action", "Fighting"],
-        obscurity: [1, 2, 3, 4],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "high-brow-hits":
-      return {
-        decades: [2010, 2020],
-        genres: ["Indie", "RPG", "Adventure", "Puzzle"],
-        obscurity: [1, 2],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "low-brow-laughs":
-      return {
+        platforms: ["Nintendo"],
+      });
+    case "split-screen":
+      return gameFilters({
         decades: [2000, 2010, 2020],
-        genres: ["Simulation", "Platformer", "Indie"],
-        obscurity: [1, 2, 3],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "oscar-bait":
-      return {
-        decades: [2010, 2020],
-        genres: ["Indie", "RPG", "Adventure"],
-        obscurity: [2, 3, 4],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 25,
-      };
-    case "kids-table":
-      return {
-        decades: [2010, 2020],
-        genres: ["Platformer", "Adventure", "Puzzle", "Simulation"],
-        obscurity: [1, 2],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "direct-to-video":
-      return {
-        decades: [2000, 2010],
-        genres: ["Action", "Fighting", "Indie"],
-        obscurity: [4, 5],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "because-of-lawyers":
-      return {
-        decades: [1970, 1980, 1990],
         genres: ["Action", "Fighting"],
-        obscurity: [1, 2, 3],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "airport-movie":
-      return {
-        decades: [2010, 2020],
-        genres: ["Adventure", "Simulation", "Puzzle", "Platformer"],
         obscurity: [1, 2],
-        mpaa: [],
-        includeForeign: true,
+        platforms: ["Xbox", "PlayStation", "Nintendo"],
+      });
+    case "one-more-run":
+      return gameFilters({
+        decades: [2010, 2020],
+        genres: ["Indie", "Strategy", "Action"],
+        obscurity: [2, 3, 4],
+        platforms: ["PC"],
+      });
+    case "open-world-hangover":
+      return gameFilters({
+        decades: [2010, 2020],
+        genres: ["Action", "Adventure", "RPG"],
+        obscurity: [1, 2],
+        platforms: ["PlayStation", "Xbox", "PC"],
         stackSize: 25,
-      };
-    case "walmart-dvd":
-      return {
-        decades: [2000, 2010],
-        genres: ["Action", "Fighting", "Simulation"],
-        obscurity: [3, 4, 5],
-        mpaa: [],
-        includeForeign: true,
-        stackSize: 50,
-      };
-    case "cgi-entered-chat":
-      return {
+      });
+    case "phone-battery-tax":
+      return gameFilters({
         decades: [2010, 2020],
-        genres: ["Action", "Adventure", "RPG", "Simulation"],
+        genres: ["Indie", "Simulation", "Puzzle"],
+        obscurity: [1, 2, 3],
+        platforms: ["Mobile"],
+      });
+    case "early-access-forever":
+      return gameFilters({
+        decades: [2010, 2020],
+        genres: ["Indie"],
+        obscurity: [3, 4, 5],
+        platforms: ["PC"],
+      });
+    case "trophy-hunting":
+      return gameFilters({
+        decades: [2010, 2020],
+        genres: ["Action", "Adventure"],
         obscurity: [1, 2],
-        mpaa: [],
-        includeForeign: true,
+        platforms: ["PlayStation"],
+      });
+    case "gamerscore":
+      return gameFilters({
+        decades: [2000, 2010],
+        genres: ["Action", "Adventure"],
+        obscurity: [1, 2],
+        platforms: ["Xbox"],
+      });
+    case "couch-co-op":
+      return gameFilters({
+        decades: [2010, 2020],
+        genres: ["Platformer", "Adventure", "Puzzle"],
+        obscurity: [1, 2, 3],
+        platforms: ["Nintendo", "PlayStation", "Xbox"],
+        stackSize: 25,
+      });
+    case "day-one-patch":
+      return gameFilters({
+        decades: [2020],
+        genres: ["Action", "Adventure", "RPG"],
+        obscurity: [1, 2],
+        platforms: ["PlayStation", "Xbox", "PC"],
         stackSize: 100,
-      };
+      });
     default:
-      return gamePreset("star-wars-newbie");
+      return gamePreset("nintendo-direct");
   }
 }
 
@@ -536,11 +620,17 @@ export function filtersForPreset(id: string, medium: Medium): PathFilters {
   const decades = raw.decades.filter((decade) => allowed.has(decade));
   const allowedGenres = new Set(medium === "movie" ? MOVIE_GENRES : GAME_GENRES);
   const genres = raw.genres.filter((genre) => allowedGenres.has(genre as never));
+  const allowedPlatforms = new Set(GAME_PLATFORMS);
+  const platforms =
+    medium === "game"
+      ? (raw.platforms ?? []).filter((platform) => allowedPlatforms.has(platform as never))
+      : [];
   return sanitizeFilters(
     {
       ...raw,
       decades: decades.length > 0 ? decades : [...decadesFor(medium)],
       genres: genres.length > 0 ? genres : [...allowedGenres],
+      platforms: medium === "game" ? (platforms.length > 0 ? platforms : [...GAME_PLATFORMS]) : [],
     },
     medium
   );

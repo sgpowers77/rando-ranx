@@ -18,6 +18,8 @@ export type CatalogTitle = {
   imageCreditLabel?: string;
   imageCreditHref?: string;
   director?: string;
+  /** First-release platform families. Games only. */
+  platforms?: string[];
 };
 
 export type StackSize = 10 | 25 | 50 | 100;
@@ -29,6 +31,8 @@ export type PathFilters = {
   mpaa: string[];
   includeForeign: boolean;
   stackSize: StackSize;
+  /** Games only. First-release families such as Nintendo, PlayStation, Xbox, PC. */
+  platforms?: string[];
 };
 
 export type ResponseKind = "rated" | "skipped" | "queued" | "winner";
