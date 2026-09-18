@@ -346,7 +346,7 @@ export function RandoRanxApp() {
             </p>
             <p>
               Skip both titles without picking a winner and deal a new pair. They will not show up
-              again right away. Back undoes the last Select, up to three times.
+              again right away. Undo undoes the last Select, up to three times.
             </p>
             <p className="text-muted-foreground">
               Filters stay available above the cards. Star and bookmark sit on each poster.

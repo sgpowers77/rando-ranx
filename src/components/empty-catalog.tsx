@@ -1,10 +1,10 @@
 "use client";
 
 import { TitlePoster } from "@/components/title-poster";
+import { TourneyUndoButton } from "@/components/tourney-stage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CatalogTitle, Medium, PlayMode } from "@/lib/types";
-import { Undo2 } from "lucide-react";
 
 type EmptyCatalogProps = {
   medium: Medium;
@@ -84,7 +84,9 @@ export function EmptyCatalog({
 
   if (playMode === "tourney" && leftoverTitle && isFinalRound) {
     return (
-      <Card className="border-none bg-card/80 ring-1 ring-white/10">
+      <div className="space-y-2">
+        <TourneyUndoButton onUndo={onUndo} undoCount={undoCount} />
+        <Card className="border-none bg-card/80 ring-1 ring-white/10">
         <CardHeader className="gap-3">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
             <TitlePoster catalog={leftoverTitle} size="lg" className="mx-auto sm:mx-0" />
@@ -103,12 +105,6 @@ export function EmptyCatalog({
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {undoCount > 0 && onUndo ? (
-            <Button type="button" variant="secondary" className="h-11 gap-2" onClick={onUndo}>
-              <Undo2 className="size-4" />
-              Back
-            </Button>
-          ) : null}
           <Button type="button" onClick={onChangeMode} className="h-11">
             Ranx or Tourney
           </Button>
@@ -117,12 +113,15 @@ export function EmptyCatalog({
           </Button>
         </CardContent>
       </Card>
+      </div>
     );
   }
 
   if (playMode === "tourney" && leftoverTitle) {
     return (
-      <Card className="border-none bg-card/80 ring-1 ring-white/10">
+      <div className="space-y-2">
+        <TourneyUndoButton onUndo={onUndo} undoCount={undoCount} />
+        <Card className="border-none bg-card/80 ring-1 ring-white/10">
         <CardHeader>
           <CardTitle className="font-heading text-2xl">Odd one out</CardTitle>
           <CardDescription>
@@ -131,12 +130,6 @@ export function EmptyCatalog({
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {undoCount > 0 && onUndo ? (
-            <Button type="button" variant="secondary" className="h-11 gap-2" onClick={onUndo}>
-              <Undo2 className="size-4" />
-              Back
-            </Button>
-          ) : null}
           <Button type="button" onClick={onChangeMode} className="h-11">
             Ranx or Tourney
           </Button>
@@ -145,6 +138,7 @@ export function EmptyCatalog({
           </Button>
         </CardContent>
       </Card>
+      </div>
     );
   }
 

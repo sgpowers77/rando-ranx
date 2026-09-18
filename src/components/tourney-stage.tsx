@@ -33,6 +33,35 @@ type TourneyStageProps = {
 
 const DRAG_TYPE = TITLE_DRAG_TYPE;
 
+export function TourneyUndoButton({
+  onUndo,
+  undoCount = 0,
+}: {
+  onUndo?: () => void;
+  undoCount?: number;
+}) {
+  const disabled = !onUndo || undoCount < 1;
+  return (
+    <Button
+      type="button"
+      variant="secondary"
+      size="sm"
+      className="h-9 gap-1.5 self-start"
+      disabled={disabled}
+      aria-disabled={disabled}
+      aria-label="Undo last Select"
+      title="Undo last Select, up to three times"
+      onClick={() => {
+        if (disabled || !onUndo) return;
+        onUndo();
+      }}
+    >
+      <Undo2 className="size-4" />
+      Undo
+    </Button>
+  );
+}
+
 export function TourneyStage({
   pair,
   onPick,
@@ -72,6 +101,7 @@ export function TourneyStage({
         Select a Contender. Star adds an optional score. Bookmark adds Watch without voting. Drag a
         card onto WTF?? for a Wikipedia blurb — that does not count as a pick.
       </p>
+      <TourneyUndoButton onUndo={onUndo} undoCount={undoCount} />
       <div className="grid grid-cols-2 items-stretch gap-2 lg:gap-3">
         <MatchupCard
           title={left}
@@ -105,12 +135,6 @@ export function TourneyStage({
         />
       </div>
       <div className="space-y-2 pt-1">
-        {undoCount > 0 && onUndo ? (
-          <Button type="button" variant="secondary" className="h-11 w-full gap-2 text-base" onClick={onUndo}>
-            <Undo2 className="size-4" />
-            Back
-          </Button>
-        ) : null}
         <Button
           type="button"
           variant="outline"
