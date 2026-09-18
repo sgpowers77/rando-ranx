@@ -143,8 +143,8 @@ export function TourneyStage({
           Skip
         </Button>
         <p className="hidden text-center text-xs text-muted-foreground lg:block">
-          Skip both titles without picking a winner and deal a new pair. They will not show up again
-          right away.
+          Skip both titles without picking a winner. Two new titles that match your filters join the
+          stack and this pair will not show up again right away. Skip does not shrink the stack.
         </p>
       </div>
 

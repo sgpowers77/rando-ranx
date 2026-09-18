@@ -145,43 +145,51 @@ export function rememberShown(session: StoredSession, medium: Medium, ids: strin
   return next.slice(-RECENT_CAP);
 }
 
-export function skipTourneyPair(session: StoredSession): StoredSession {
+export function skipTourneyPair(session: StoredSession, replacements: CatalogTitle[] = []): StoredSession {
   const round = activeFinalRound(session);
   if (round && session.medium) {
     const ids = round.remainingIds;
     if (ids.length < 2) return session;
     const pair = ids.slice(0, 2);
     const rest = ids.slice(2);
-    return withMediumTourneyUndo(
-      withMediumFinalRound(
-        { ...session, pendingTourney: null },
-        session.medium,
-        {
-          ...round,
-          remainingIds: shuffleIds([...rest, ...pair]),
-        }
-      ),
+    return withMediumFinalRound(
+      { ...session, pendingTourney: null },
       session.medium,
-      []
+      {
+        ...round,
+        remainingIds: shuffleIds([...rest, ...pair]),
+      }
     );
   }
   if (!session.medium || session.playMode !== "tourney") return session;
-  const pairIds = session.remainingIds[session.medium].slice(0, 2);
+  const medium = session.medium;
+  const remaining = session.remainingIds[medium] ?? [];
+  const pairIds = remaining.slice(0, 2);
   if (pairIds.length === 0) return session;
-  const marked: StoredSession = withMediumTourneyUndo(
-    {
-      ...session,
-      pendingTourney: null,
-      recentlyShown: {
-        movie: session.recentlyShown?.movie ?? [],
-        game: session.recentlyShown?.game ?? [],
-        [session.medium]: rememberShown(session, session.medium, pairIds),
-      },
-    },
-    session.medium,
-    []
+  const rest = remaining.slice(2);
+  const blocked = new Set([...pairIds, ...rest]);
+  const extra = replacements.filter((item) => item.medium === medium && !blocked.has(item.id));
+  const extraIds = extra.map((item) => item.id);
+  let nextRemaining =
+    extraIds.length > 0 ? [...extraIds, ...rest] : [...rest, ...pairIds.filter((id) => !rest.includes(id))];
+  if (nextRemaining.length < 2) {
+    nextRemaining = [...nextRemaining, ...pairIds.filter((id) => !nextRemaining.includes(id))];
+  }
+  const keepCap = Math.max(
+    stackSizeOf(filtersFor(session, medium, "tourney").stackSize) * 4,
+    (session.liveTitles?.length ?? 0) + extra.length
   );
-  return withDealtQueue(marked, session.medium, "tourney");
+  return {
+    ...session,
+    pendingTourney: null,
+    liveTitles: mergeLiveTitles(session.liveTitles ?? [], extra, keepCap),
+    remainingIds: { ...session.remainingIds, [medium]: nextRemaining },
+    recentlyShown: {
+      movie: session.recentlyShown?.movie ?? [],
+      game: session.recentlyShown?.game ?? [],
+      [medium]: rememberShown(session, medium, pairIds),
+    },
+  };
 }
 
 export function withDealtQueue(

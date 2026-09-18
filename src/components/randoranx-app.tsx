@@ -366,8 +366,9 @@ export function RandoRanxApp() {
               Drag a card onto WTF?? for a Wikipedia blurb — that does not count as a pick.
             </p>
             <p>
-              Skip both titles without picking a winner and deal a new pair. They will not show up
-              again right away. Undo undoes the last Select, up to three times.
+              Skip both titles without picking a winner. Two new titles that match your filters join
+              the stack; this pair will not show up again right away. Skip does not shrink the stack.
+              Undo undoes the last Select, up to three times.
             </p>
             <p className="text-muted-foreground">
               Filters stay available above the cards. Star and bookmark sit on each poster.

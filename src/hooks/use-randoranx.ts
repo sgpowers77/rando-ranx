@@ -59,6 +59,7 @@ export function useRandoRanx() {
   const [poolError, setPoolError] = useState<string | null>(null);
   const [poolSource, setPoolSource] = useState<"dataset" | "catalog" | "none">("none");
   const fetching = useRef(false);
+  const skippingPair = useRef(false);
 
   const visibleQueue = useMemo(() => {
     if (!session.medium || !session.playMode) return [];
@@ -396,9 +397,49 @@ export function useRandoRanx() {
   }, [persist]);
 
   const skipTourneyMatchup = useCallback(() => {
-    persist((prev) => skipTourneyPair(prev));
-    void refreshPool({ silent: true });
-  }, [persist, refreshPool]);
+    const snapshot = getSessionSnapshot();
+    if (!snapshot.medium || snapshot.playMode !== "tourney") return;
+    if (activeFinalRound(snapshot)) {
+      persist((prev) => skipTourneyPair(prev));
+      return;
+    }
+    if (skippingPair.current) return;
+    const medium = snapshot.medium;
+    const remaining = snapshot.remainingIds[medium] ?? [];
+    const pairIds = remaining.slice(0, 2);
+    if (pairIds.length < 2) return;
+    skippingPair.current = true;
+    const exclude = new Set([
+      ...usedTitleIds(snapshot, medium, "tourney"),
+      ...remaining,
+      ...(snapshot.recentlyShown?.[medium] ?? []),
+    ]);
+    void (async () => {
+      try {
+        let extras: CatalogTitle[] = [];
+        if (!snapshot.queueOnly) {
+          const data = await sampleClientPool({
+            medium,
+            filters: filtersFor(snapshot, medium, "tourney"),
+            excludeIds: [...exclude],
+            count: 2,
+          });
+          extras = data.titles;
+        }
+        persist((prev) => {
+          if (!prev.medium || prev.playMode !== "tourney" || activeFinalRound(prev)) return prev;
+          const currentPair = (prev.remainingIds[prev.medium] ?? []).slice(0, 2);
+          if (currentPair.length < 2) return prev;
+          if (currentPair[0] !== pairIds[0] || currentPair[1] !== pairIds[1]) return prev;
+          return skipTourneyPair(prev, extras);
+        });
+      } catch {
+        persist((prev) => skipTourneyPair(prev, []));
+      } finally {
+        skippingPair.current = false;
+      }
+    })();
+  }, [persist]);
 
   const beginFinalRound = useCallback(() => {
     persist((prev) => startFinalRound(prev));

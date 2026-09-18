@@ -69,20 +69,25 @@ export async function sampleClientPool(options: {
   filters: PathFilters;
   excludeIds?: string[];
   limit?: number;
+  /** Exact draw size. Use this for Skip replenishment; `limit` is a stack-size bucket. */
+  count?: number;
 }): Promise<{ titles: CatalogTitle[]; source: "dataset" | "catalog"; available: number }> {
-  const limit = stackSizeOf(options.limit);
+  const take =
+    typeof options.count === "number" && Number.isFinite(options.count) && options.count > 0
+      ? Math.floor(options.count)
+      : stackSizeOf(options.limit);
   const exclude = new Set(options.excludeIds ?? []);
   if (options.medium === "game") {
     const eligible = titlesFor("game").filter(
       (item) => !exclude.has(item.id) && matchesFilters(item, options.filters)
     );
-    return { titles: shuffle(eligible).slice(0, limit), source: "catalog", available: eligible.length };
+    return { titles: shuffle(eligible).slice(0, take), source: "catalog", available: eligible.length };
   }
   const loaded = await loadMovieCatalog();
   const eligible = loaded.titles.filter(
     (item) => !exclude.has(item.id) && matchesFilters(item, options.filters)
   );
-  const sampled = shuffle(eligible).slice(0, limit);
+  const sampled = shuffle(eligible).slice(0, take);
   return {
     titles: await withDirectors(sampled),
     source: loaded.source,
