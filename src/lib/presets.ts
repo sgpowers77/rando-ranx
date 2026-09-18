@@ -68,6 +68,56 @@ export const TOURNEY_PRESETS: TourneyPreset[] = [
     title: "Technicolor Ruined Cinema",
     blurb: "Studio-era decades before color took over. 1940s is as early as the catalog goes.",
   },
+  {
+    id: "blood-n-guts",
+    title: "Blood N' Guts",
+    blurb: "Horror, crime, and the kind of action that needs a mop.",
+  },
+  {
+    id: "high-brow-hits",
+    title: "High Brow Hits",
+    blurb: "Widely seen prestige. Drama people pretend they saw in theaters.",
+  },
+  {
+    id: "low-brow-laughs",
+    title: "Low Brow Laughs",
+    blurb: "English-language comedy. Jokes first. Themes later. Maybe never.",
+  },
+  {
+    id: "oscar-bait",
+    title: "Oscar Bait and Switch",
+    blurb: "Serious drama with award-season lighting. Bring a thought, not popcorn.",
+  },
+  {
+    id: "kids-table",
+    title: "Kids Table, Adults Pay",
+    blurb: "G and PG animation, adventure, and comedy. You bought the tickets.",
+  },
+  {
+    id: "direct-to-video",
+    title: "Direct-to-Video Energy",
+    blurb: "Little-seen '80s–'00s tapes. The cover art promised more than the runtime.",
+  },
+  {
+    id: "because-of-lawyers",
+    title: "They Don't Make 'Em Because of Lawyers",
+    blurb: "1970s–80s R-rated chaos. Insurance had not entered the chat.",
+  },
+  {
+    id: "airport-movie",
+    title: "Airport Movie Syndrome",
+    blurb: "English crowd-pleasers you could finish between boarding and baggage.",
+  },
+  {
+    id: "walmart-dvd",
+    title: "Walmart DVD Bin Royalty",
+    blurb: "2000s leftovers. Three-dollar cases, five-dollar plots.",
+  },
+  {
+    id: "cgi-entered-chat",
+    title: "CGI Has Entered the Chat",
+    blurb: "2000s onward spectacle. If it can explode in pixels, it will.",
+  },
 ];
 
 function moviePreset(id: string): PathFilters {
@@ -179,6 +229,96 @@ function moviePreset(id: string): PathFilters {
         mpaa: ["G", "PG", "Not Rated"],
         includeForeign: true,
         stackSize: 50,
+      };
+    case "blood-n-guts":
+      return {
+        decades: [1970, 1980, 1990, 2000, 2010, 2020],
+        genres: ["Horror", "Crime", "Action", "Thriller"],
+        obscurity: [1, 2, 3, 4],
+        mpaa: ["R", "NC-17", "Not Rated"],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "high-brow-hits":
+      return {
+        decades: [1960, 1970, 1980, 1990, 2000, 2010, 2020],
+        genres: ["Drama", "Romance", "Thriller"],
+        obscurity: [1, 2],
+        mpaa: ["PG-13", "R", "Not Rated"],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "low-brow-laughs":
+      return {
+        decades: [1980, 1990, 2000, 2010, 2020],
+        genres: ["Comedy"],
+        obscurity: [1, 2, 3],
+        mpaa: ["PG", "PG-13", "R"],
+        includeForeign: false,
+        stackSize: 50,
+      };
+    case "oscar-bait":
+      return {
+        decades: [1990, 2000, 2010, 2020],
+        genres: ["Drama"],
+        obscurity: [2, 3, 4],
+        mpaa: ["PG-13", "R", "Not Rated"],
+        includeForeign: true,
+        stackSize: 25,
+      };
+    case "kids-table":
+      return {
+        decades: [1990, 2000, 2010, 2020],
+        genres: ["Animation", "Adventure", "Comedy"],
+        obscurity: [1, 2],
+        mpaa: ["G", "PG"],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "direct-to-video":
+      return {
+        decades: [1980, 1990, 2000],
+        genres: ["Action", "Horror", "Crime", "Thriller"],
+        obscurity: [4, 5],
+        mpaa: ["PG-13", "R", "Not Rated"],
+        includeForeign: false,
+        stackSize: 50,
+      };
+    case "because-of-lawyers":
+      return {
+        decades: [1970, 1980],
+        genres: ["Action", "Crime", "Horror", "Thriller"],
+        obscurity: [1, 2, 3],
+        mpaa: ["R", "NC-17", "Not Rated"],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "airport-movie":
+      return {
+        decades: [2000, 2010, 2020],
+        genres: ["Comedy", "Adventure", "Romance", "Action"],
+        obscurity: [1, 2],
+        mpaa: ["G", "PG", "PG-13"],
+        includeForeign: false,
+        stackSize: 25,
+      };
+    case "walmart-dvd":
+      return {
+        decades: [2000, 2010],
+        genres: ["Action", "Comedy", "Horror", "Sci-Fi"],
+        obscurity: [3, 4, 5],
+        mpaa: ["PG-13", "R"],
+        includeForeign: false,
+        stackSize: 50,
+      };
+    case "cgi-entered-chat":
+      return {
+        decades: [2000, 2010, 2020],
+        genres: ["Action", "Adventure", "Animation", "Sci-Fi"],
+        obscurity: [1, 2],
+        mpaa: ["PG", "PG-13"],
+        includeForeign: true,
+        stackSize: 100,
       };
     default:
       return moviePreset("star-wars-newbie");
@@ -294,6 +434,96 @@ function gamePreset(id: string): PathFilters {
         mpaa: [],
         includeForeign: true,
         stackSize: 50,
+      };
+    case "blood-n-guts":
+      return {
+        decades: [1990, 2000, 2010, 2020],
+        genres: ["Action", "Fighting"],
+        obscurity: [1, 2, 3, 4],
+        mpaa: [],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "high-brow-hits":
+      return {
+        decades: [2010, 2020],
+        genres: ["Indie", "RPG", "Adventure", "Puzzle"],
+        obscurity: [1, 2],
+        mpaa: [],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "low-brow-laughs":
+      return {
+        decades: [2000, 2010, 2020],
+        genres: ["Simulation", "Platformer", "Indie"],
+        obscurity: [1, 2, 3],
+        mpaa: [],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "oscar-bait":
+      return {
+        decades: [2010, 2020],
+        genres: ["Indie", "RPG", "Adventure"],
+        obscurity: [2, 3, 4],
+        mpaa: [],
+        includeForeign: true,
+        stackSize: 25,
+      };
+    case "kids-table":
+      return {
+        decades: [2010, 2020],
+        genres: ["Platformer", "Adventure", "Puzzle", "Simulation"],
+        obscurity: [1, 2],
+        mpaa: [],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "direct-to-video":
+      return {
+        decades: [2000, 2010],
+        genres: ["Action", "Fighting", "Indie"],
+        obscurity: [4, 5],
+        mpaa: [],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "because-of-lawyers":
+      return {
+        decades: [1970, 1980, 1990],
+        genres: ["Action", "Fighting"],
+        obscurity: [1, 2, 3],
+        mpaa: [],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "airport-movie":
+      return {
+        decades: [2010, 2020],
+        genres: ["Adventure", "Simulation", "Puzzle", "Platformer"],
+        obscurity: [1, 2],
+        mpaa: [],
+        includeForeign: true,
+        stackSize: 25,
+      };
+    case "walmart-dvd":
+      return {
+        decades: [2000, 2010],
+        genres: ["Action", "Fighting", "Simulation"],
+        obscurity: [3, 4, 5],
+        mpaa: [],
+        includeForeign: true,
+        stackSize: 50,
+      };
+    case "cgi-entered-chat":
+      return {
+        decades: [2010, 2020],
+        genres: ["Action", "Adventure", "RPG", "Simulation"],
+        obscurity: [1, 2],
+        mpaa: [],
+        includeForeign: true,
+        stackSize: 100,
       };
     default:
       return gamePreset("star-wars-newbie");
