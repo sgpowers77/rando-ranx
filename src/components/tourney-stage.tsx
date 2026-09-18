@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { TitleDirector } from "@/hooks/use-director";
+import { useWtfDropReveal } from "@/hooks/use-wtf-drop-reveal";
 import { decadeOf } from "@/lib/filters";
 import type { CatalogTitle, RatingExtras } from "@/lib/types";
 import { SkipForward, Undo2 } from "lucide-react";
@@ -75,14 +76,14 @@ export function TourneyStage({
   isFinalRound = false,
 }: TourneyStageProps) {
   const [left, right] = pair;
-  const [dragging, setDragging] = useState(false);
   const [dropArmed, setDropArmed] = useState(false);
   const [wtfTitle, setWtfTitle] = useState<CatalogTitle | null>(null);
   const [notes, setNotes] = useState<Record<string, RatingExtras>>({});
   const dragged = useRef(false);
+  const wtfDrop = useWtfDropReveal();
 
   const endDrag = () => {
-    setDragging(false);
+    wtfDrop.hide();
     setDropArmed(false);
   };
 
@@ -112,7 +113,7 @@ export function TourneyStage({
           onSelect={() => select(left, right)}
           onToggleWatch={() => onToggleWatch(left)}
           onSaveNotes={(extras) => setNotes((prev) => ({ ...prev, [left.id]: extras }))}
-          onDragBegin={() => setDragging(true)}
+          onDragBegin={(clientX, clientY) => wtfDrop.begin(clientX, clientY)}
           onDragEnd={() => {
             requestAnimationFrame(endDrag);
           }}
@@ -125,7 +126,7 @@ export function TourneyStage({
           onSelect={() => select(right, left)}
           onToggleWatch={() => onToggleWatch(right)}
           onSaveNotes={(extras) => setNotes((prev) => ({ ...prev, [right.id]: extras }))}
-          onDragBegin={() => setDragging(true)}
+          onDragBegin={(clientX, clientY) => wtfDrop.begin(clientX, clientY)}
           onDragEnd={() => {
             requestAnimationFrame(endDrag);
           }}
@@ -148,7 +149,7 @@ export function TourneyStage({
         </p>
       </div>
 
-      {dragging ? (
+      {wtfDrop.visible ? (
         <WtfDropZone
           armed={dropArmed}
           onArmed={setDropArmed}
@@ -189,7 +190,7 @@ function MatchupCard({
   onSelect: () => void;
   onToggleWatch: () => void;
   onSaveNotes: (extras: RatingExtras) => void;
-  onDragBegin: () => void;
+  onDragBegin: (clientX: number, clientY: number) => void;
   onDragEnd: () => void;
   draggedRef: { current: boolean };
 }) {
@@ -208,7 +209,7 @@ function MatchupCard({
         event.dataTransfer.setData(DRAG_TYPE, title.id);
         event.dataTransfer.setData("text/plain", title.id);
         event.dataTransfer.effectAllowed = "copy";
-        onDragBegin();
+        onDragBegin(event.clientX, event.clientY);
       }}
       onDragEnd={onDragEnd}
     >

@@ -8,6 +8,7 @@ import { WtfModal } from "@/components/wtf-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TitleDirector } from "@/hooks/use-director";
+import { useWtfDropReveal } from "@/hooks/use-wtf-drop-reveal";
 import { decadeOf } from "@/lib/filters";
 import type { CatalogTitle, Medium } from "@/lib/types";
 import { useRef, useState } from "react";
@@ -32,17 +33,17 @@ export function TitleStage({
   onQueue,
 }: TitleStageProps) {
   const [mode, setMode] = useState<"choose" | "rate">("choose");
-  const [dragging, setDragging] = useState(false);
   const [dropArmed, setDropArmed] = useState(false);
   const [wtfOpen, setWtfOpen] = useState(false);
   const dragged = useRef(false);
+  const wtfDrop = useWtfDropReveal();
   const medium: Medium = title.medium;
   const seenLabel = medium === "movie" ? "Seen It" : "Played It";
   const skipLabel = medium === "movie" ? "Haven't Seen It" : "Haven't Played It";
   const wantLabel = medium === "movie" ? "Want to See It" : "Want to Play It";
 
   const endDrag = () => {
-    setDragging(false);
+    wtfDrop.hide();
     setDropArmed(false);
   };
 
@@ -61,10 +62,10 @@ export function TitleStage({
             return;
           }
           dragged.current = true;
+          wtfDrop.begin(event.clientX, event.clientY);
           event.dataTransfer.setData(TITLE_DRAG_TYPE, title.id);
           event.dataTransfer.setData("text/plain", title.id);
           event.dataTransfer.effectAllowed = "copy";
-          setDragging(true);
         }}
         onDragEnd={() => {
           requestAnimationFrame(endDrag);
@@ -155,7 +156,7 @@ export function TitleStage({
         </CardContent>
       </Card>
 
-      {dragging ? (
+      {wtfDrop.visible ? (
         <WtfDropZone
           armed={dropArmed}
           onArmed={setDropArmed}

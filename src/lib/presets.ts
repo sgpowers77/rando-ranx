@@ -233,6 +233,92 @@ export const GAME_PRESETS: TourneyPreset[] = [
   },
 ];
 
+export type PresetGroup = {
+  id: string;
+  title: string;
+  presetIds: string[];
+};
+
+export const MOVIE_PRESET_GROUPS: PresetGroup[] = [
+  {
+    id: "easy-night",
+    title: "Easy Night In",
+    presetIds: ["star-wars-newbie", "no-subtitles", "feel-good-only", "kids-table", "airport-movie"],
+  },
+  {
+    id: "time-warp",
+    title: "Time Warp",
+    presetIds: ["vcr-whats-that", "drive-in", "vcr-rentals", "technicolor-ruined", "cgi-entered-chat"],
+  },
+  {
+    id: "prestige",
+    title: "Prestige Homework",
+    presetIds: ["cannes-ovation", "french-one", "high-brow-hits", "oscar-bait"],
+  },
+  {
+    id: "guts",
+    title: "Guts & Jump Scares",
+    presetIds: ["that-movie-was-boring", "thrills-n-chills", "blood-n-guts", "because-of-lawyers"],
+  },
+  {
+    id: "bargain",
+    title: "Jokes, Tapes & Bargain Bins",
+    presetIds: ["date-night", "low-brow-laughs", "direct-to-video", "walmart-dvd"],
+  },
+];
+
+export const GAME_PRESET_GROUPS: PresetGroup[] = [
+  {
+    id: "first-party",
+    title: "First-Party Hardware",
+    presetIds: [
+      "nintendo-direct",
+      "playstation-prestige",
+      "xbox-launch-night",
+      "trophy-hunting",
+      "gamerscore",
+    ],
+  },
+  {
+    id: "pc-phone",
+    title: "PC, Peripherals & Phones",
+    presetIds: [
+      "pc-master-race",
+      "keyboard-mouse",
+      "itch-until-dawn",
+      "early-access-forever",
+      "phone-battery-tax",
+    ],
+  },
+  {
+    id: "cartridges",
+    title: "Cartridges & Handhelds",
+    presetIds: ["handheld-back-seat", "cartridge-era", "jrpg-homework"],
+  },
+  {
+    id: "git-gud",
+    title: "Git Gud Hours",
+    presetIds: ["souls-borne", "fight-stick-tax", "one-more-run", "split-screen", "puzzle-until-2am"],
+  },
+  {
+    id: "couch-map",
+    title: "Couch Night & Open World",
+    presetIds: ["cozy-stardew", "couch-co-op", "open-world-hangover", "day-one-patch"],
+  },
+];
+
+export function groupedPresets(medium: Medium): { group: PresetGroup; presets: TourneyPreset[] }[] {
+  const list = medium === "game" ? GAME_PRESETS : TOURNEY_PRESETS;
+  const byId = new Map(list.map((preset) => [preset.id, preset]));
+  const groups = medium === "game" ? GAME_PRESET_GROUPS : MOVIE_PRESET_GROUPS;
+  return groups.map((group) => ({
+    group,
+    presets: group.presetIds
+      .map((id) => byId.get(id))
+      .filter((preset): preset is TourneyPreset => preset != null),
+  }));
+}
+
 function moviePreset(id: string): PathFilters {
   switch (id) {
     case "star-wars-newbie":
