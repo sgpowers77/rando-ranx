@@ -57,8 +57,8 @@ export function TitleSearch({ medium, queuedIds = [], onQueue }: TitleSearchProp
         Search {medium === "movie" ? "films on Wikipedia" : "games on Wikipedia"}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        Queue is search-only. Check one or more titles, then Queue. This never deals a random catalog
-        title on its own.
+        Build your own custom queue by searching titles from Wikipedia.com. Queue can be viewed and
+        edited from the Queue icon to the right of the Movies or Games Log.
       </p>
       <form className="mt-3 flex flex-col gap-2 sm:flex-row" onSubmit={runSearch}>
         <Input
