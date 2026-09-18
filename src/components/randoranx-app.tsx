@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { defaultFilters } from "@/lib/filters";
-import { logsForMedium } from "@/lib/session";
+import { logsForMedium, queuedForMedium } from "@/lib/session";
 import { useRandoRanx } from "@/hooks/use-randoranx";
 import { useMemo, useState } from "react";
 
@@ -71,6 +71,8 @@ export function RandoRanxApp() {
   const [tourneyHelpOpen, setTourneyHelpOpen] = useState(false);
 
   const logs = logsForMedium(session, session.medium);
+  const movieLogs = logsForMedium(session, "movie");
+  const movieQueue = queuedForMedium(session, "movie");
   const mediumQueue = logs.userQueue;
   const showQueueIcon = Boolean(session.medium) && mediumQueue.length > 0;
 
@@ -141,6 +143,10 @@ export function RandoRanxApp() {
             discards={logs.discards}
             watchTags={logs.watchTags}
             resultCount={logs.responses.length + logs.discards.length}
+            movieResponses={movieLogs.responses}
+            movieWatchTags={movieLogs.watchTags}
+            movieQueue={movieQueue}
+            catalogTitles={[...(session.liveTitles ?? []), ...(session.customTitles ?? [])]}
             onResetAll={() => {
               clearSession();
               setEditingId(null);

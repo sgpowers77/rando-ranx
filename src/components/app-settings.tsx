@@ -30,9 +30,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { downloadSessionCsv } from "@/lib/csv";
+import { downloadLetterboxdCsv, letterboxdRowCount } from "@/lib/letterboxd";
 import { PALETTES, type PaletteId } from "@/lib/theme";
 import { usePalette } from "@/components/theme-provider";
-import type { DiscardEntry, SessionResponse, WatchTag } from "@/lib/types";
+import type { CatalogTitle, DiscardEntry, SessionResponse, WatchTag } from "@/lib/types";
 import { Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -42,6 +43,10 @@ type AppSettingsMenuProps = {
   watchTags: WatchTag[];
   resultCount: number;
   onResetAll: () => void;
+  movieResponses: SessionResponse[];
+  movieWatchTags: WatchTag[];
+  movieQueue: CatalogTitle[];
+  catalogTitles: CatalogTitle[];
 };
 
 function useWideSettingsMenu() {
@@ -62,12 +67,24 @@ export function AppSettingsMenu({
   watchTags,
   resultCount,
   onResetAll,
+  movieResponses,
+  movieWatchTags,
+  movieQueue,
+  catalogTitles,
 }: AppSettingsMenuProps) {
   const { palette, choose } = usePalette();
   const wide = useWideSettingsMenu();
   const [clearOpen, setClearOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const hasAnything = responses.length + discards.length + watchTags.length > 0;
+  const letterboxdInput = {
+    responses: movieResponses,
+    watchTags: movieWatchTags,
+    userQueue: movieQueue,
+    customTitles: catalogTitles,
+    liveTitles: catalogTitles,
+  };
+  const hasLetterboxd = letterboxdRowCount(letterboxdInput) > 0;
 
   return (
     <>
@@ -125,6 +142,12 @@ export function AppSettingsMenu({
             onClick={() => downloadSessionCsv(responses, discards, watchTags)}
           >
             Export to CSV
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={!hasLetterboxd}
+            onClick={() => downloadLetterboxdCsv(letterboxdInput)}
+          >
+            Letterboxd CSV
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={() => setClearOpen(true)}>
