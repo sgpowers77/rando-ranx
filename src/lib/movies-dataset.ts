@@ -228,8 +228,8 @@ export async function sampleTitlePool(options: {
   const filters = options.filters;
 
   if (options.medium === "game") {
-    const eligible = titlesFor("game").filter(
-      (item) => !exclude.has(item.id) && matchesFilters(item, filters)
+    const eligible = uniqueTitles(
+      titlesFor("game").filter((item) => !exclude.has(item.id) && matchesFilters(item, filters))
     );
     return {
       titles: shuffleInPlace([...eligible]).slice(0, limit),
