@@ -359,3 +359,45 @@ export function catalogPosterSubject(title: CatalogTitle): PosterSubject {
     imdbId: title.imdbId,
   };
 }
+
+function warmupImage(url: string): Promise<void> {
+  if (typeof Image === "undefined") return Promise.resolve();
+  return new Promise((resolve) => {
+    const img = new Image();
+    const done = () => resolve();
+    img.onload = done;
+    img.onerror = done;
+    const timer = window.setTimeout(done, 8000);
+    img.onload = () => {
+      window.clearTimeout(timer);
+      resolve();
+    };
+    img.onerror = () => {
+      window.clearTimeout(timer);
+      resolve();
+    };
+    img.src = url;
+  });
+}
+
+/** Resolve and decode posters for the current dealt stack so the next card is not a first-paint wait. */
+export async function preloadPosterStack(titles: CatalogTitle[]): Promise<void> {
+  const subjects = titles.map(catalogPosterSubject);
+  let cursor = 0;
+  const workers = Math.min(4, Math.max(1, subjects.length));
+  await Promise.all(
+    Array.from({ length: workers }, async () => {
+      while (cursor < subjects.length) {
+        const subject = subjects[cursor];
+        cursor += 1;
+        if (!subject) continue;
+        try {
+          const info = await fetchPoster(subject);
+          if (info?.url) await warmupImage(info.url);
+        } catch {
+          // Preload is best-effort; card UI still has its own timeout / IMDb fallback.
+        }
+      }
+    })
+  );
+}

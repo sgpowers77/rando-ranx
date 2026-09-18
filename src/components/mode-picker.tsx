@@ -4,7 +4,7 @@ import { PathSettings } from "@/components/path-settings";
 import { Button } from "@/components/ui/button";
 import { defaultFilters } from "@/lib/filters";
 import type { Medium, PathFilters, PlayMode } from "@/lib/types";
-import { Dices, ListOrdered, Settings } from "lucide-react";
+import { Dices, ListOrdered, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 
 type ModePickerProps = {
@@ -58,10 +58,11 @@ export function ModePicker({
         type="button"
         variant="outline"
         className="self-start gap-2"
+        aria-label="Filters"
         onClick={() => setSettingsOpen(true)}
       >
-        <Settings className="size-4" />
-        Path settings
+        <SlidersHorizontal className="size-4" />
+        Filters
       </Button>
       <Button type="button" variant="ghost" className="self-start" onClick={onBack}>
         Back to Movies or Games

@@ -66,7 +66,7 @@ export function EmptyCatalog({
           <CardTitle className="font-heading text-2xl">Nothing matches these filters</CardTitle>
           <CardDescription>
             No {noun} in the current stack sit in the decades, genres, and obscurity levels you
-            checked. Open Path settings and include at least one decade. Movie years and genres come
+            checked. Open Filters and include at least one decade. Movie years and genres come
             from The Movies Dataset (release_date, genres, vote/popularity).
           </CardDescription>
         </CardHeader>

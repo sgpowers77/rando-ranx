@@ -80,12 +80,35 @@ function parseGenres(raw) {
   return [...new Set(names.map((name) => GENRE_ALIAS[name]).filter(Boolean))];
 }
 
-function obscurityFrom(popularity, voteCount) {
-  if (voteCount >= 4000 || popularity >= 25) return 1;
-  if (voteCount >= 1200 || popularity >= 12) return 2;
-  if (voteCount >= 300 || popularity >= 6) return 3;
-  if (voteCount >= 60 || popularity >= 2) return 4;
+function unitLog(value, high) {
+  if (!Number.isFinite(value) || value <= 0 || high <= 0) return 0;
+  return Math.min(1, Math.log1p(value) / Math.log1p(high));
+}
+
+function obscurityFromSignals({ budget, revenue, popularity, voteCount, voteAverage }) {
+  const production = unitLog(budget, 150_000_000);
+  const marketing = Math.max(unitLog(popularity, 30), unitLog(revenue, 400_000_000));
+  const prestige = unitLog(voteCount, 5_000);
+  const sentimentWeight = Math.min(1, Math.log1p(voteCount) / Math.log1p(250));
+  const sentiment = sentimentWeight * Math.max(0, Math.min(1, ((voteAverage || 0) - 4.5) / 4.5));
+  const fame = 0.3 * production + 0.3 * marketing + 0.25 * prestige + 0.15 * sentiment;
+  if (fame >= 0.72) return 1;
+  if (fame >= 0.5) return 2;
+  if (fame >= 0.32) return 3;
+  if (fame >= 0.16) return 4;
   return 5;
+}
+
+function spokenHasEnglish(raw) {
+  return /'iso_639_1'\s*:\s*'en'|"iso_639_1"\s*:\s*"en"|'name'\s*:\s*'English'|"name"\s*:\s*"English"/i.test(
+    raw ?? ""
+  );
+}
+
+function isEnglishDialogue(origLang, spokenRaw) {
+  const orig = (origLang ?? "").trim().toLowerCase();
+  if (orig === "en") return true;
+  return spokenHasEnglish(spokenRaw);
 }
 
 const RATING_Q = {
@@ -152,6 +175,11 @@ async function main() {
   const iDate = idx("release_date");
   const iTitle = idx("title");
   const iVotes = idx("vote_count");
+  const iBudget = idx("budget");
+  const iRevenue = idx("revenue");
+  const iVoteAvg = idx("vote_average");
+  const iOrigLang = idx("original_language");
+  const iSpoken = idx("spoken_languages");
 
   const mpaaByImdb = await fetchMpaaByImdb();
   const seen = new Set();
@@ -173,6 +201,11 @@ async function main() {
     if (genres.length === 0) genres.push("Drama");
     const popularity = Number(cols[iPop] ?? 0) || 0;
     const voteCount = Number(cols[iVotes] ?? 0) || 0;
+    const budget = Number(cols[iBudget] ?? 0) || 0;
+    const revenue = Number(cols[iRevenue] ?? 0) || 0;
+    const voteAverage = Number(cols[iVoteAvg] ?? 0) || 0;
+    const originalLanguage = (cols[iOrigLang] ?? "").trim();
+    const en = isEnglishDialogue(originalLanguage, cols[iSpoken] ?? "");
     const imdbId = (cols[iImdb] ?? "").trim();
     const validImdb = /^tt\d+$/.test(imdbId) ? imdbId : undefined;
     movies.push({
@@ -180,14 +213,23 @@ async function main() {
       title,
       year,
       genres,
-      obscurity: obscurityFrom(popularity, voteCount),
+      obscurity: obscurityFromSignals({ budget, revenue, popularity, voteCount, voteAverage }),
       imdbId: validImdb,
       mpaa: (validImdb && mpaaByImdb.get(validImdb)) || "Not Rated",
+      en,
     });
   }
 
+  const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  let english = 0;
+  for (const movie of movies) {
+    counts[movie.obscurity] += 1;
+    if (movie.en) english += 1;
+  }
   await writeFile(outPath, JSON.stringify({ source: "dataset", movies }));
   console.log(`Wrote ${outPath} with ${movies.length} movies`);
+  console.log(`English-dialogue (orig_lang en or spoken English): ${english}`);
+  console.log(`Obscurity buckets 1–5: ${counts[1]} / ${counts[2]} / ${counts[3]} / ${counts[4]} / ${counts[5]}`);
 }
 
 await main();

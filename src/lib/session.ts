@@ -1,5 +1,5 @@
 import { resolveTitle, titlesFor, withReleaseYear } from "@/data/catalog";
-import { defaultFilters, decadesFor, matchesFilters, pathKey, sanitizeFilters } from "@/lib/filters";
+import { defaultFilters, decadesFor, matchesFilters, pathKey, sanitizeFilters, stackSizeOf } from "@/lib/filters";
 import { parseMpaaList } from "@/lib/mpaa";
 import type {
   CatalogTitle,
@@ -139,15 +139,17 @@ function catalogWithYears(session: StoredSession, medium: Medium): CatalogTitle[
   return [...primary, ...extras].map((item) => withReleaseYear(item, session.releaseYears));
 }
 
-const LIVE_TITLE_CAP = 240;
-
-export function mergeLiveTitles(existing: CatalogTitle[], incoming: CatalogTitle[]): CatalogTitle[] {
+export function mergeLiveTitles(
+  existing: CatalogTitle[],
+  incoming: CatalogTitle[],
+  cap = 50
+): CatalogTitle[] {
   const next = new Map<string, CatalogTitle>();
   for (const item of incoming) next.set(item.id, item);
   for (const item of existing) {
     if (!next.has(item.id)) next.set(item.id, item);
   }
-  return [...next.values()].slice(0, LIVE_TITLE_CAP);
+  return [...next.values()].slice(0, cap);
 }
 
 export function eligibleFor(session: StoredSession, medium: Medium, playMode: PlayMode): CatalogTitle[] {
@@ -175,8 +177,9 @@ export function dealtQueue(
   const fresh = pool.filter((item) => item.id !== pinnedId && !recent.has(item.id));
   const stale = pool.filter((item) => item.id !== pinnedId && recent.has(item.id));
   const rest = [...shuffleIds(fresh.map((item) => item.id)), ...shuffleIds(stale.map((item) => item.id))];
-  if (pinnedId && !used.has(pinnedId)) return [pinnedId, ...rest.filter((id) => id !== pinnedId)];
-  return rest;
+  const ordered = pinnedId && !used.has(pinnedId) ? [pinnedId, ...rest.filter((id) => id !== pinnedId)] : rest;
+  if (session.queueOnly) return ordered;
+  return ordered.slice(0, stackSizeOf(filtersFor(session, medium, playMode).stackSize));
 }
 
 export function enqueueUserTitles(session: StoredSession, titles: CatalogTitle[]): StoredSession {
@@ -259,6 +262,8 @@ function parsePathFilters(value: unknown): StoredSession["pathFilters"] {
         ? raw.obscurity.filter((n) => typeof n === "number")
         : [],
       mpaa: parseMpaaList(raw.mpaa, medium),
+      includeForeign: raw.includeForeign !== false,
+      stackSize: stackSizeOf(typeof raw.stackSize === "number" ? raw.stackSize : undefined),
     };
   }
   return next;

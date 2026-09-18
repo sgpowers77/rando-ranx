@@ -13,6 +13,7 @@ import { PathSettings } from "@/components/path-settings";
 import { QueueModal } from "@/components/queue-modal";
 import { TitleSearch } from "@/components/title-search";
 import { Button } from "@/components/ui/button";
+import { SlidersHorizontal } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -357,7 +358,7 @@ export function RandoRanxApp() {
               again right away. Back undoes the last Select, up to three times.
             </p>
             <p className="text-muted-foreground">
-              Path settings stay available above the cards. Star and bookmark sit on each poster.
+              Filters stay available above the cards. Star and bookmark sit on each poster.
             </p>
           </div>
         </DialogContent>
@@ -407,8 +408,9 @@ function StageMeta({
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
       <p className={compactMobile ? "hidden lg:block" : undefined}>{label}</p>
       <div className="flex flex-wrap gap-1">
-        <Button type="button" variant="ghost" size="sm" onClick={onOpenSettings}>
-          Path settings
+        <Button type="button" variant="ghost" size="sm" className="gap-1.5" aria-label="Filters" onClick={onOpenSettings}>
+          <SlidersHorizontal className="size-4" />
+          Filters
         </Button>
         <Button
           type="button"

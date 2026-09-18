@@ -2,7 +2,8 @@
 
 import { resolveTitle } from "@/data/catalog";
 import { loadMovieCatalog, sampleClientPool } from "@/lib/client-pool";
-import { matchesFilters, pathKey } from "@/lib/filters";
+import { matchesFilters, pathKey, stackSizeOf } from "@/lib/filters";
+import { preloadPosterStack } from "@/lib/poster";
 import {
   applyTourneyOutcome,
   clearStoredSession,
@@ -98,6 +99,11 @@ export function useRandoRanx() {
     return visibleQueue[0] ?? null;
   }, [session.playMode, visibleQueue]);
 
+  useEffect(() => {
+    if (visibleQueue.length === 0) return;
+    void preloadPosterStack(visibleQueue);
+  }, [visibleQueue]);
+
   const pendingWinner = useMemo<CatalogTitle | null>(() => {
     const pending = session.pendingTourney;
     if (!pending) return null;
@@ -133,13 +139,17 @@ export function useRandoRanx() {
         medium: snapshot.medium,
         filters,
         excludeIds: [...usedTitleIds(snapshot, snapshot.medium, snapshot.playMode), ...recent],
-        limit: snapshot.playMode === "tourney" ? 40 : 36,
+        limit: stackSizeOf(filters.stackSize),
       });
       const titles = data.titles;
       setPoolSource(data.source);
       persist((prev) => {
         if (!prev.medium || !prev.playMode) return prev;
-        const liveTitles = mergeLiveTitles(prev.liveTitles ?? [], titles);
+        const liveTitles = mergeLiveTitles(
+          prev.liveTitles ?? [],
+          titles,
+          stackSizeOf(filtersFor(prev, prev.medium, prev.playMode).stackSize)
+        );
         const next: StoredSession = { ...prev, liveTitles, pendingTourney: prev.finalRound ? prev.pendingTourney : null };
         if (prev.finalRound) return next;
         if (

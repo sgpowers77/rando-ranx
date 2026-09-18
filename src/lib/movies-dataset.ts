@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
-import { MOVIE_GENRES, matchesFilters } from "@/lib/filters";
+import { MOVIE_GENRES, matchesFilters, stackSizeOf } from "@/lib/filters";
 import { ensureMoviesMetadata, moviesMetadataPath } from "@/lib/dataset-file";
 import { titlesFor } from "@/data/catalog";
+import { isEnglishDialogueFilm } from "@/lib/language";
+import { obscurityFromSignals } from "@/lib/obscurity";
 import type { CatalogTitle, Medium, PathFilters } from "@/lib/types";
 
 export type PoolSource = "dataset" | "catalog";
@@ -95,12 +97,18 @@ function parseGenres(raw: string): string[] {
   return [...new Set(mapped)];
 }
 
-function obscurityFrom(popularity: number, voteCount: number): CatalogTitle["obscurity"] {
-  if (voteCount >= 4000 || popularity >= 25) return 1;
-  if (voteCount >= 1200 || popularity >= 12) return 2;
-  if (voteCount >= 300 || popularity >= 6) return 3;
-  if (voteCount >= 60 || popularity >= 2) return 4;
-  return 5;
+function obscurityFrom(popularity: number, voteCount: number, extra?: {
+  budget?: number;
+  revenue?: number;
+  voteAverage?: number;
+}): CatalogTitle["obscurity"] {
+  return obscurityFromSignals({
+    popularity,
+    voteCount,
+    budget: extra?.budget,
+    revenue: extra?.revenue,
+    voteAverage: extra?.voteAverage,
+  });
 }
 
 function headerIndex(header: string[], name: string): number {
@@ -118,6 +126,11 @@ function buildIndex(csvText: string): MovieRow[] {
   const iDate = headerIndex(header, "release_date");
   const iTitle = headerIndex(header, "title");
   const iVotes = headerIndex(header, "vote_count");
+  const iBudget = headerIndex(header, "budget");
+  const iRevenue = headerIndex(header, "revenue");
+  const iVoteAvg = headerIndex(header, "vote_average");
+  const iOrigLang = headerIndex(header, "original_language");
+  const iSpoken = headerIndex(header, "spoken_languages");
   if (iTitle < 0 || iDate < 0 || iId < 0) {
     throw new Error("movies_metadata.csv is missing title, release_date, or id");
   }
@@ -141,6 +154,11 @@ function buildIndex(csvText: string): MovieRow[] {
     if (genres.length === 0) genres.push("Drama");
     const popularity = Number(cols[iPop] ?? 0) || 0;
     const voteCount = Number(cols[iVotes] ?? 0) || 0;
+    const budget = Number(cols[iBudget] ?? 0) || 0;
+    const revenue = Number(cols[iRevenue] ?? 0) || 0;
+    const voteAverage = Number(cols[iVoteAvg] ?? 0) || 0;
+    const originalLanguage = (cols[iOrigLang] ?? "").trim() || undefined;
+    const englishDialogue = isEnglishDialogueFilm(originalLanguage, cols[iSpoken] ?? "");
     const imdbId = (cols[iImdb] ?? "").trim();
     index.push({
       id,
@@ -148,12 +166,14 @@ function buildIndex(csvText: string): MovieRow[] {
       title,
       year,
       genres,
-      obscurity: obscurityFrom(popularity, voteCount),
+      obscurity: obscurityFrom(popularity, voteCount, { budget, revenue, voteAverage }),
       source: "dataset",
       popularity,
       voteCount,
       imdbId: /^tt\d+$/.test(imdbId) ? imdbId : undefined,
       mpaa: "Not Rated",
+      originalLanguage,
+      englishDialogue,
     });
   }
   return index;
@@ -202,7 +222,7 @@ export async function sampleTitlePool(options: {
   excludeIds?: string[];
   limit?: number;
 }): Promise<{ titles: CatalogTitle[]; source: PoolSource; available: number; error?: string }> {
-  const limit = Math.min(Math.max(options.limit ?? 36, 8), 80);
+  const limit = stackSizeOf(options.limit);
   const exclude = new Set(options.excludeIds ?? []);
   const filters = options.filters;
 
@@ -230,6 +250,8 @@ export async function sampleTitlePool(options: {
       source: "dataset" as const,
       imdbId: item.imdbId,
       mpaa: item.mpaa,
+      originalLanguage: item.originalLanguage,
+      englishDialogue: item.englishDialogue,
     }));
     return { titles: sampled, source: "dataset", available: eligible.length };
   } catch (error) {

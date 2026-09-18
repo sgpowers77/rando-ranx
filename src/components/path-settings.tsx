@@ -11,9 +11,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { defaultFilters, decadesFor, filtersComplete, GAME_GENRES, MOVIE_GENRES, OBSCURITY_LEVELS, sanitizeFilters } from "@/lib/filters";
+import { defaultFilters, decadesFor, filtersComplete, GAME_GENRES, MOVIE_GENRES, OBSCURITY_LEVELS, STACK_SIZES, sanitizeFilters } from "@/lib/filters";
 import { MPAA_RATINGS } from "@/lib/mpaa";
-import type { Medium, PathFilters, PlayMode } from "@/lib/types";
+import { GAME_OBSCURITY_COPY, MOVIE_OBSCURITY_COPY } from "@/lib/obscurity";
+import type { Medium, PathFilters, PlayMode, StackSize } from "@/lib/types";
 import { useState } from "react";
 
 type PathSettingsProps = {
@@ -22,22 +23,6 @@ type PathSettingsProps = {
   medium: Medium;
   filtersByMode: Record<PlayMode, PathFilters>;
   onSave: (playMode: PlayMode, filters: PathFilters) => void;
-};
-
-const MOVIE_OBSCURITY_COPY: Record<number, string> = {
-  1: "1 · Blockbuster / household name",
-  2: "2 · Widely seen",
-  3: "3 · Known if you follow the medium",
-  4: "4 · Cult / limited release",
-  5: "5 · Extremely obscure indie",
-};
-
-const GAME_OBSCURITY_COPY: Record<number, string> = {
-  1: "1 · AAA+ Blockbuster",
-  2: "2 · AA Mid-Market Production",
-  3: "3 · A • Independent Studio",
-  4: "4 · Cult / Niche Release",
-  5: "5 · Micro-Indie / Ultra Obscure",
 };
 
 export function PathSettings({
@@ -94,7 +79,7 @@ export function PathSettings({
     >
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={canClose}>
         <DialogHeader>
-          <DialogTitle>Path settings</DialogTitle>
+          <DialogTitle>Filters</DialogTitle>
           <DialogDescription>
             Filters apply separately to Ranx and Tourney for{" "}
             {medium === "movie" ? "Movies" : "Games"}. Each of Year, Genre, Obscurity
@@ -176,6 +161,23 @@ export function PathSettings({
               </div>
             </fieldset>
 
+            {medium === "movie" ? (
+              <label className="flex items-start gap-3 rounded-lg border border-border/70 px-3 py-3 text-sm">
+                <Checkbox
+                  checked={current.includeForeign !== false}
+                  onCheckedChange={(value) => applyMode(mode, { includeForeign: value === true })}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="font-medium">Include foreign / non-English films</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    On by default. Turn off to deal only English-dialogue films (original language
+                    English, or English listed in spoken languages from The Movies Dataset).
+                  </span>
+                </span>
+              </label>
+            ) : null}
+
             <fieldset className="space-y-2">
               <legend className="w-full">
                 <GroupControls
@@ -187,7 +189,7 @@ export function PathSettings({
               <p className="text-xs text-muted-foreground">
                 {medium === "game"
                   ? "1 is an AAA+ blockbuster. 5 is a micro-indie / ultra obscure release."
-                  : "1 is a Hollywood-scale blockbuster. 5 is extremely obscure indie / low exposure."}
+                  : "1 is wide-release / high exposure. 5 is little-seen. Ranked from The Movies Dataset: production budget, marketing/exposure (popularity and box-office revenue), public sentiment (vote average), and attention (vote count). Director names are not in the catalog, so vote volume stands in for prestige."}
               </p>
               <div className="grid gap-2">
                 {OBSCURITY_LEVELS.map((level) => {
@@ -204,6 +206,37 @@ export function PathSettings({
                         }
                       />
                       {obscurityCopy[level]}
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">Stack size</legend>
+              <p className="text-xs text-muted-foreground">
+                How many titles to sample into this path’s deal. Default is 50 (nearest to the old
+                ~40-title Tourney stack).
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {STACK_SIZES.map((size) => {
+                  const id = `${mode}-stack-${size}`;
+                  const checked = current.stackSize === size;
+                  return (
+                    <label
+                      key={size}
+                      htmlFor={id}
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-border/70 px-3 py-2 text-sm"
+                    >
+                      <input
+                        id={id}
+                        type="radio"
+                        name={`${mode}-stack-size`}
+                        className="accent-primary"
+                        checked={checked}
+                        onChange={() => applyMode(mode, { stackSize: size as StackSize })}
+                      />
+                      {size}
                     </label>
                   );
                 })}

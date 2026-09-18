@@ -14,16 +14,22 @@ export type CatalogTitle = {
   mpaa?: string;
   source?: "catalog" | "search" | "dataset";
   imdbId?: string;
+  originalLanguage?: string;
+  englishDialogue?: boolean;
   imageUrl?: string;
   imageCreditLabel?: string;
   imageCreditHref?: string;
 };
+
+export type StackSize = 10 | 25 | 50;
 
 export type PathFilters = {
   decades: number[];
   genres: string[];
   obscurity: number[];
   mpaa: string[];
+  includeForeign: boolean;
+  stackSize: StackSize;
 };
 
 export type ResponseKind = "rated" | "skipped" | "queued" | "winner";

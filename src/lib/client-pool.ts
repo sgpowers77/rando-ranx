@@ -1,5 +1,5 @@
 import { SEARCH_FALLBACK, titlesFor } from "@/data/catalog";
-import { matchesFilters } from "@/lib/filters";
+import { matchesFilters, stackSizeOf } from "@/lib/filters";
 import { publicUrl } from "@/lib/public-url";
 import type { CatalogTitle, Medium, PathFilters } from "@/lib/types";
 
@@ -13,6 +13,9 @@ type IndexFile = {
     obscurity: CatalogTitle["obscurity"];
     imdbId?: string;
     mpaa?: string;
+    en?: boolean;
+    englishDialogue?: boolean;
+    originalLanguage?: string;
   }>;
 };
 
@@ -44,6 +47,8 @@ export async function loadMovieCatalog(): Promise<{ titles: CatalogTitle[]; sour
       source: "dataset" as const,
       imdbId: item.imdbId,
       mpaa: item.mpaa,
+      originalLanguage: item.originalLanguage,
+      englishDialogue: item.en ?? item.englishDialogue,
     }));
     if (movies.length === 0) throw new Error("empty index");
     movieCache = movies;
@@ -62,7 +67,7 @@ export async function sampleClientPool(options: {
   excludeIds?: string[];
   limit?: number;
 }): Promise<{ titles: CatalogTitle[]; source: "dataset" | "catalog"; available: number }> {
-  const limit = Math.min(Math.max(options.limit ?? 36, 8), 80);
+  const limit = stackSizeOf(options.limit);
   const exclude = new Set(options.excludeIds ?? []);
   if (options.medium === "game") {
     const eligible = titlesFor("game").filter(
