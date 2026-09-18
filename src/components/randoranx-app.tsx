@@ -5,14 +5,14 @@ import { EmptyCatalog } from "@/components/empty-catalog";
 import { EntryEditor } from "@/components/entry-editor";
 import { Landing } from "@/components/landing";
 import { ModePicker } from "@/components/mode-picker";
-import { ResultsLog, ResultsTable } from "@/components/results-log";
+import { ResultsTable } from "@/components/results-log";
 import { SessionLog } from "@/components/session-log";
 import { TitleStage } from "@/components/title-stage";
 import { TourneyStage } from "@/components/tourney-stage";
 import { PathSettings } from "@/components/path-settings";
 import { QueueModal } from "@/components/queue-modal";
 import { TitleSearch } from "@/components/title-search";
-import { AppSettingsSheet } from "@/components/app-settings";
+import { AppSettingsMenu } from "@/components/app-settings";
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
 import {
@@ -64,8 +64,6 @@ export function RandoRanxApp() {
     tourneyUndoCount,
     contenderCount,
   } = useRandoRanx();
-  const [printOpen, setPrintOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileLogOpen, setMobileLogOpen] = useState(false);
   const [queueOpen, setQueueOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -137,7 +135,18 @@ export function RandoRanxApp() {
           stopEditing();
           goHome();
         }}
-        onOpenSettings={() => setSettingsOpen(true)}
+        settings={
+          <AppSettingsMenu
+            responses={logs.responses}
+            discards={logs.discards}
+            watchTags={logs.watchTags}
+            resultCount={logs.responses.length + logs.discards.length}
+            onResetAll={() => {
+              clearSession();
+              setEditingId(null);
+            }}
+          />
+        }
         onOpenMobileLog={() => setMobileLogOpen(true)}
         onOpenTourneyHelp={() => setTourneyHelpOpen(true)}
         resultCount={logs.responses.length + logs.discards.length}
@@ -358,27 +367,6 @@ export function RandoRanxApp() {
           </div>
         </DialogContent>
       </Dialog>
-
-      <AppSettingsSheet
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        responses={logs.responses}
-        discards={logs.discards}
-        watchTags={logs.watchTags}
-        onResetAll={() => {
-          clearSession();
-          setEditingId(null);
-        }}
-        onViewTable={() => setPrintOpen(true)}
-      />
-
-      <ResultsLog
-        open={printOpen}
-        onOpenChange={setPrintOpen}
-        responses={logs.responses}
-        discards={logs.discards}
-        watchTags={logs.watchTags}
-      />
 
       <section className="print-only hidden p-6 text-black print:block">
         <h1 className="mb-1 text-2xl font-semibold">RandoRanx results</h1>

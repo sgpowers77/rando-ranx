@@ -94,13 +94,6 @@ export function PathSettings({
                 onUncheckAll={() => apply({ decades: [] })}
               />
             </legend>
-            <p className="text-xs text-muted-foreground">
-              Decade uses the Wikipedia / Wikidata release year (same source as search and blurbs).
-              {medium === "game"
-                ? " Games start at the 1970s — there is no 1960s or earlier bucket."
-                : " Local catalog years are only a fallback."}{" "}
-              Unchecked decades are left out of Ranx and Tourney. Keep at least one decade checked.
-            </p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {decades.map((decade) => {
                 const id = `filter-decade-${decade}`;

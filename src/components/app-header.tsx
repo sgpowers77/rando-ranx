@@ -1,11 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Info, List, Settings } from "lucide-react";
+import { ArrowLeft, Info, List } from "lucide-react";
+import type { ReactNode } from "react";
 
 type AppHeaderProps = {
   onHome: () => void;
-  onOpenSettings: () => void;
+  settings: ReactNode;
   onOpenMobileLog: () => void;
   onOpenTourneyHelp?: () => void;
   resultCount: number;
@@ -15,7 +16,7 @@ type AppHeaderProps = {
 
 export function AppHeader({
   onHome,
-  onOpenSettings,
+  settings,
   onOpenMobileLog,
   onOpenTourneyHelp,
   resultCount,
@@ -70,21 +71,7 @@ export function AppHeader({
             <Info />
           </Button>
         ) : null}
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-lg"
-          aria-label="Open settings"
-          onClick={onOpenSettings}
-          className="relative"
-        >
-          <Settings />
-          {resultCount > 0 ? (
-            <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
-              {resultCount}
-            </span>
-          ) : null}
-        </Button>
+        {settings}
       </div>
     </header>
   );
