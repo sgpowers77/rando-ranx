@@ -73,7 +73,8 @@ export function AppSettingsSheet({
             <section className="space-y-3">
               <h2 className="text-sm font-medium">Export</h2>
               <p className="text-xs text-muted-foreground">
-                Print or download the session table (results, discards, and Watch).
+                Print or download this catalog’s table (results, discards, and Watch). Movies and
+                Games stay on separate logs.
               </p>
               <div className="flex flex-col gap-2">
                 <Button

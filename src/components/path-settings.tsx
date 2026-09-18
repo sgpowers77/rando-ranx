@@ -80,11 +80,8 @@ export function PathSettings({
         <DialogHeader>
           <DialogTitle>Filters</DialogTitle>
           <DialogDescription>
-            These filters apply to both Ranx and Tourney for{" "}
-            {medium === "movie" ? "Movies" : "Games"}. Each of Year, Genre, Obscurity
-            {medium === "movie" ? ", and MPAA Rating" : ""} needs at least one box checked.
-            Unchecked boxes drop those titles from the deal right away. Done stays off until every
-            group has a selection.
+            Filters apply to both Ranx and Tourney for {medium === "movie" ? "Movies" : "Games"}.
+            Filter categories must have at least one selection.
           </DialogDescription>
         </DialogHeader>
 
@@ -92,7 +89,7 @@ export function PathSettings({
           <fieldset className="space-y-2">
             <legend className="w-full">
               <GroupControls
-                label="Year"
+                label="Decades"
                 onCheckAll={() => apply({ decades: [...decades] })}
                 onUncheckAll={() => apply({ decades: [] })}
               />
@@ -160,8 +157,7 @@ export function PathSettings({
               <span>
                 <span className="font-medium">Include foreign / non-English films</span>
                 <span className="mt-1 block text-xs text-muted-foreground">
-                  On by default. Turn off to deal only English-dialogue films (original language
-                  English, or English listed in spoken languages from The Movies Dataset).
+                  Turn off for English-dialogue films only.
                 </span>
               </span>
             </label>
@@ -175,11 +171,6 @@ export function PathSettings({
                 onUncheckAll={() => apply({ obscurity: [] })}
               />
             </legend>
-            <p className="text-xs text-muted-foreground">
-              {medium === "game"
-                ? "1 is an AAA+ blockbuster. 5 is a micro-indie / ultra obscure release."
-                : "1 is wide-release / high exposure. 5 is little-seen. Ranked from The Movies Dataset: production budget, marketing/exposure (popularity and box-office revenue), public sentiment (vote average), and attention (vote count). Director names are not in the catalog, so vote volume stands in for prestige."}
-            </p>
             <div className="grid gap-2">
               {OBSCURITY_LEVELS.map((level) => {
                 const id = `filter-obscurity-${level}`;
@@ -239,8 +230,7 @@ export function PathSettings({
                 />
               </legend>
               <p className="text-xs text-muted-foreground">
-                Uses Wikidata MPA film ratings when known. Titles without a listed rating count as
-                Not Rated.
+                Titles without a listed rating count as Not Rated.
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {MPAA_RATINGS.map((rating) => {
@@ -291,7 +281,7 @@ export function PathSettings({
 
 function missingGroups(filters: PathFilters, medium: Medium): string[] {
   const missing: string[] = [];
-  if ((filters.decades?.length ?? 0) === 0) missing.push("Year");
+  if ((filters.decades?.length ?? 0) === 0) missing.push("Decades");
   if ((filters.genres?.length ?? 0) === 0) missing.push("Genre");
   if ((filters.obscurity?.length ?? 0) === 0) missing.push("Obscurity");
   if (medium === "movie" && (filters.mpaa?.length ?? 0) === 0) missing.push("MPAA Rating");

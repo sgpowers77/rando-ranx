@@ -98,6 +98,6 @@ export type StoredSession = {
   recentlyShown: Record<Medium, string[]>;
   releaseYears: Record<string, number>;
   liveTitles: CatalogTitle[];
-  finalRound: FinalRound | null;
-  tourneyUndo: TourneyUndoFrame[];
+  finalRounds: Record<Medium, FinalRound | null>;
+  tourneyUndos: Record<Medium, TourneyUndoFrame[]>;
 };

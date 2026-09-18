@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { resultLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
-import type { DiscardEntry, PlayMode, SessionResponse, WatchTag } from "@/lib/types";
+import type { DiscardEntry, Medium, PlayMode, SessionResponse, WatchTag } from "@/lib/types";
 import { ListPlus } from "lucide-react";
 
 type SessionLogProps = {
@@ -21,6 +21,7 @@ type SessionLogProps = {
   contenderCount?: number;
   hideDiscard?: boolean;
   playMode?: PlayMode | null;
+  medium?: Medium | null;
   queueCount?: number;
   onOpenQueue?: () => void;
 };
@@ -37,6 +38,7 @@ export function SessionLog({
   contenderCount = 0,
   hideDiscard = false,
   playMode = null,
+  medium = null,
   queueCount = 0,
   onOpenQueue,
 }: SessionLogProps) {
@@ -49,7 +51,9 @@ export function SessionLog({
     <Tabs key={hideDiscard ? "ranx" : "all"} defaultValue="results" className="flex h-full min-h-0 flex-col gap-0">
       <div className="border-b px-3 py-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="font-heading text-sm font-medium">Session log</p>
+          <p className="font-heading text-sm font-medium">
+            {medium === "game" ? "Games log" : medium === "movie" ? "Movies log" : "Session log"}
+          </p>
           {queueCount > 0 && onOpenQueue ? (
             <Button
               type="button"
@@ -88,7 +92,9 @@ export function SessionLog({
         <ul aria-label="Session results">
           {newestResults.length === 0 ? (
             <li className="px-3 py-8 text-sm text-muted-foreground">
-              {playMode === "rank"
+              {!medium
+                ? "Choose Movies or Games to see that catalog’s Results. Each catalog keeps its own log."
+                : playMode === "rank"
                 ? "Rated titles, skips, and the want list land here. Titles already in Results will not be dealt again in Ranx."
                 : "Ranx titles, skips, and the want list land here. Tourney Contenders show up after you pick them."}
             </li>
@@ -154,7 +160,9 @@ export function SessionLog({
         <ul aria-label="Discarded titles">
           {newestDiscards.length === 0 ? (
             <li className="px-3 py-8 text-sm text-muted-foreground">
-              Titles that lose a Tourney matchup appear here. They are not scored.
+              {!medium
+                ? "Choose Movies or Games to see that catalog’s discards."
+                : "Titles that lose a Tourney matchup appear here. They are not scored."}
             </li>
           ) : (
             newestDiscards.map((entry) => (
@@ -199,7 +207,9 @@ export function SessionLog({
         <ul aria-label="Watch tags">
           {newestWatch.length === 0 ? (
             <li className="px-3 py-8 text-sm text-muted-foreground">
-              Bookmark a Ranx or Tourney card, or drop it on WTF?? and choose Watchlist.
+              {!medium
+                ? "Choose Movies or Games to see that catalog’s Watch list."
+                : "Bookmark a Ranx or Tourney card, or drop it on WTF?? and choose Watchlist."}
             </li>
           ) : (
             newestWatch.map((entry) => (

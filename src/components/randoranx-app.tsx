@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { defaultFilters } from "@/lib/filters";
-import { queuedForMedium } from "@/lib/session";
+import { logsForMedium } from "@/lib/session";
 import { useRandoRanx } from "@/hooks/use-randoranx";
 import { useMemo, useState } from "react";
 
@@ -72,12 +72,13 @@ export function RandoRanxApp() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [tourneyHelpOpen, setTourneyHelpOpen] = useState(false);
 
-  const mediumQueue = session.medium ? queuedForMedium(session, session.medium) : session.userQueue;
-  const showQueueIcon = (session.userQueue?.length ?? 0) > 0;
+  const logs = logsForMedium(session, session.medium);
+  const mediumQueue = logs.userQueue;
+  const showQueueIcon = Boolean(session.medium) && mediumQueue.length > 0;
 
   const editingEntry = useMemo(
-    () => session.responses.find((entry) => entry.id === editingId) ?? null,
-    [editingId, session.responses]
+    () => logs.responses.find((entry) => entry.id === editingId) ?? null,
+    [editingId, logs.responses]
   );
 
   const selectEntry = (id: string) => {
@@ -89,9 +90,9 @@ export function RandoRanxApp() {
 
   const log = (
     <SessionLog
-      responses={session.responses}
-      discards={session.discards}
-      watchTags={session.watchTags}
+      responses={logs.responses}
+      discards={logs.discards}
+      watchTags={logs.watchTags}
       selectedId={editingId}
       onSelect={selectEntry}
       onFinalRound={() => {
@@ -104,7 +105,8 @@ export function RandoRanxApp() {
       contenderCount={contenderCount}
       hideDiscard={session.playMode === "rank"}
       playMode={session.playMode}
-      queueCount={session.userQueue?.length ?? 0}
+      medium={session.medium}
+      queueCount={mediumQueue.length}
       onOpenQueue={showQueueIcon ? () => setQueueOpen(true) : undefined}
     />
   );
@@ -138,7 +140,7 @@ export function RandoRanxApp() {
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenMobileLog={() => setMobileLogOpen(true)}
         onOpenTourneyHelp={() => setTourneyHelpOpen(true)}
-        resultCount={session.responses.length + session.discards.length}
+        resultCount={logs.responses.length + logs.discards.length}
         showHome={session.medium !== null || editingEntry !== null}
         showTourneyHelp={Boolean(showTourney)}
       />
@@ -228,7 +230,7 @@ export function RandoRanxApp() {
               <TitleStage
                 key={currentTitle.id}
                 title={currentTitle}
-                watched={session.watchTags.some((tag) => tag.titleId === currentTitle.id)}
+                watched={logs.watchTags.some((tag) => tag.titleId === currentTitle.id)}
                 onToggleWatch={() => toggleWatchTag(currentTitle)}
                 onWatchlist={addWatchTag}
                 onRated={(rating, comments) => recordAndAdvance("rated", { rating, comments })}
@@ -258,7 +260,7 @@ export function RandoRanxApp() {
                 onPick={pickTourneyWinner}
                 onWatchlist={addWatchTag}
                 onToggleWatch={toggleWatchTag}
-                watchedIds={session.watchTags.map((tag) => tag.titleId)}
+                watchedIds={logs.watchTags.map((tag) => tag.titleId)}
                 onReshufflePair={skipTourneyMatchup}
                 onUndo={undoTourneyPick}
                 undoCount={tourneyUndoCount}
@@ -360,9 +362,9 @@ export function RandoRanxApp() {
       <AppSettingsSheet
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        responses={session.responses}
-        discards={session.discards}
-        watchTags={session.watchTags}
+        responses={logs.responses}
+        discards={logs.discards}
+        watchTags={logs.watchTags}
         onResetAll={() => {
           clearSession();
           setEditingId(null);
@@ -373,19 +375,31 @@ export function RandoRanxApp() {
       <ResultsLog
         open={printOpen}
         onOpenChange={setPrintOpen}
-        responses={session.responses}
-        discards={session.discards}
-        watchTags={session.watchTags}
+        responses={logs.responses}
+        discards={logs.discards}
+        watchTags={logs.watchTags}
       />
 
       <section className="print-only hidden p-6 text-black print:block">
         <h1 className="mb-1 text-2xl font-semibold">RandoRanx results</h1>
-        <p className="mb-6 text-sm">Session log printed from this browser.</p>
+        <p className="mb-6 text-sm">
+          {session.medium === "game"
+            ? "Games session log printed from this browser."
+            : session.medium === "movie"
+              ? "Movies session log printed from this browser."
+              : "Session log printed from this browser."}
+        </p>
         <ResultsTable
-          responses={session.responses}
-          discards={session.discards}
-          watchTags={session.watchTags}
-          caption="Rated titles, skips, the want list, Tourney discards, and Watch tags"
+          responses={logs.responses}
+          discards={logs.discards}
+          watchTags={logs.watchTags}
+          caption={
+            session.medium === "game"
+              ? "Games — rated titles, skips, the want list, Tourney discards, and Watch tags"
+              : session.medium === "movie"
+                ? "Movies — rated titles, skips, the want list, Tourney discards, and Watch tags"
+                : "Pick Movies or Games to print that catalog’s log"
+          }
         />
       </section>
     </div>

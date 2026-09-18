@@ -8,6 +8,7 @@ import {
   applyTourneyOutcome,
   clearStoredSession,
   dismissHydrateError,
+  activeFinalRound,
   eligibleFor,
   enqueueUserTitles,
   filtersFor,
@@ -60,8 +61,9 @@ export function useRandoRanx() {
 
   const visibleQueue = useMemo(() => {
     if (!session.medium || !session.playMode) return [];
-    if (session.finalRound) {
-      return session.finalRound.remainingIds
+    const round = activeFinalRound(session);
+    if (round) {
+      return round.remainingIds
         .map((id) => titleLookup(session, id))
         .filter((title): title is CatalogTitle => title != null);
     }
@@ -119,7 +121,7 @@ export function useRandoRanx() {
     if (!snapshot.medium || !snapshot.playMode || fetching.current) return;
     if (snapshot.queueOnly) {
       persist((prev) => {
-        if (!prev.medium || !prev.playMode || prev.finalRound) return prev;
+        if (!prev.medium || !prev.playMode || activeFinalRound(prev)) return prev;
         return withDealtQueue(prev, prev.medium, prev.playMode);
       });
       setPoolStatus("ready");
@@ -150,8 +152,9 @@ export function useRandoRanx() {
           titles,
           stackSizeOf(filtersFor(prev, prev.medium, prev.playMode).stackSize)
         );
-        const next: StoredSession = { ...prev, liveTitles, pendingTourney: prev.finalRound ? prev.pendingTourney : null };
-        if (prev.finalRound) return next;
+        const inFinal = Boolean(activeFinalRound(prev));
+        const next: StoredSession = { ...prev, liveTitles, pendingTourney: inFinal ? prev.pendingTourney : null };
+        if (inFinal) return next;
         if (
           opts?.silent &&
           prev.playMode === "tourney" &&
@@ -195,8 +198,6 @@ export function useRandoRanx() {
         medium,
         playMode: null,
         pendingTourney: null,
-        finalRound: null,
-        tourneyUndo: [],
       }));
       setPoolStatus("idle");
       setPoolError(null);
@@ -212,8 +213,6 @@ export function useRandoRanx() {
           ...prev,
           playMode,
           pendingTourney: null,
-          finalRound: null,
-          tourneyUndo: [],
           remainingIds: { ...prev.remainingIds, [prev.medium]: [] },
         };
       });
@@ -223,12 +222,12 @@ export function useRandoRanx() {
   );
 
   const goHome = useCallback(() => {
-    persist((prev) => ({ ...prev, medium: null, playMode: null, pendingTourney: null, finalRound: null, tourneyUndo: [] }));
+    persist((prev) => ({ ...prev, medium: null, playMode: null, pendingTourney: null }));
     setPoolStatus("idle");
   }, [persist]);
 
   const goToModePick = useCallback(() => {
-    persist((prev) => ({ ...prev, playMode: null, pendingTourney: null, finalRound: null, tourneyUndo: [] }));
+    persist((prev) => ({ ...prev, playMode: null, pendingTourney: null }));
   }, [persist]);
 
   const recordAndAdvance = useCallback(
@@ -449,11 +448,9 @@ export function useRandoRanx() {
     poolStatus,
     poolError,
     poolSource,
-    finalRoundActive: Boolean(session.finalRound),
-    tourneyUndoCount: session.tourneyUndo?.length ?? 0,
-    contenderCount: session.medium
-      ? tourneyContenderIds(session, session.medium).length
-      : Math.max(tourneyContenderIds(session, "movie").length, tourneyContenderIds(session, "game").length),
+    finalRoundActive: Boolean(activeFinalRound(session)),
+    tourneyUndoCount: session.medium ? (session.tourneyUndos?.[session.medium]?.length ?? 0) : 0,
+    contenderCount: session.medium ? tourneyContenderIds(session, session.medium).length : 0,
     chooseMedium,
     choosePlayMode,
     goHome,
