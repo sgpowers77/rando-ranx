@@ -203,7 +203,7 @@ function MatchupCard({
       className="relative h-full overflow-visible border-none bg-card/80 ring-1 ring-white/10"
       draggable
       onDragStart={(event) => {
-        if ((event.target as HTMLElement).closest("[data-card-chrome]")) {
+        if ((event.target as HTMLElement).closest("[data-card-chrome], button, a")) {
           event.preventDefault();
           return;
         }
@@ -215,8 +215,8 @@ function MatchupCard({
       }}
       onDragEnd={onDragEnd}
     >
-      <div className="relative mx-auto w-fit">
-        <TitlePoster catalog={title} size="tourney" />
+      <div className="relative mx-auto w-[6.67rem] shrink-0 lg:w-64">
+        <TitlePoster catalog={title} size="tourney" className="block w-full" />
         <CardIconBar>
           <StarIconButton
             active={Boolean(notes)}

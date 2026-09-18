@@ -22,11 +22,10 @@ type TitlePosterProps = {
 };
 
 const frame: Record<PosterSize, string> = {
-  lg: "relative aspect-[2/3] w-full max-w-[18rem] sm:max-w-[20rem]",
-  md: "relative aspect-[2/3] w-full max-w-[16rem] sm:max-w-[18rem]",
-  sm: "relative aspect-[2/3] h-28 w-[4.67rem] shrink-0",
-  tourney:
-    "relative aspect-[2/3] h-40 w-[6.67rem] max-h-40 shrink-0 lg:h-auto lg:w-full lg:max-h-none lg:max-w-[16rem]",
+  lg: "relative isolate aspect-[2/3] w-full max-w-[18rem] sm:max-w-[20rem]",
+  md: "relative isolate aspect-[2/3] w-full max-w-[16rem] sm:max-w-[18rem]",
+  sm: "relative isolate aspect-[2/3] h-28 w-[4.67rem] shrink-0",
+  tourney: "relative isolate aspect-[2/3] h-40 w-[6.67rem] shrink-0 lg:h-auto lg:w-64 lg:max-h-none",
 };
 
 const POSTER_WAIT_MS = 3000;
@@ -71,7 +70,7 @@ export function TitlePoster(props: TitlePosterProps) {
   }, [subject?.id, subject?.title, subject?.year, subject?.medium, subject?.imdbId]);
 
   return (
-    <figure className={cn("min-w-0 shrink-0", props.className)}>
+    <figure className={cn("shrink-0", props.className)}>
       <div
         className={cn(
           "overflow-hidden rounded-lg bg-muted/40 ring-1 ring-white/10",
@@ -86,7 +85,7 @@ export function TitlePoster(props: TitlePosterProps) {
             src={poster.url}
             alt=""
             className={cn(
-              "absolute inset-0 h-full w-full object-contain object-center",
+              "absolute inset-0 z-0 h-full w-full object-contain object-center",
               imageReady ? "opacity-100" : "opacity-0"
             )}
             onLoad={() => {
@@ -100,29 +99,39 @@ export function TitlePoster(props: TitlePosterProps) {
           />
         ) : null}
         {!showImage ? (
-          <div
-            className={cn(
-              "absolute inset-0 flex items-center justify-center px-2 text-center",
-              size === "sm" ? "text-[9px] leading-tight" : "text-xs",
-              waiting ? "text-muted-foreground" : "text-foreground"
-            )}
-          >
-            {waiting ? (
+          waiting ? (
+            <div
+              className={cn(
+                "absolute inset-0 z-[1] flex items-center justify-center px-2 text-center text-muted-foreground",
+                size === "sm" ? "text-[9px] leading-tight" : "text-xs"
+              )}
+            >
               <span aria-hidden>Finding poster…</span>
-            ) : imdbHref ? (
-              <a
-                href={imdbHref}
-                target="_blank"
-                rel="noreferrer"
-                className="max-w-full px-1 text-primary underline underline-offset-2"
-                onClick={(event) => event.stopPropagation()}
-              >
-                Open on IMDb
-              </a>
-            ) : (
-              <span className="text-muted-foreground">No poster found</span>
-            )}
-          </div>
+            </div>
+          ) : imdbHref ? (
+            <a
+              href={imdbHref}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Open ${subject?.title ?? "title"} on IMDb`}
+              className={cn(
+                "absolute inset-0 z-[1] flex items-center justify-center px-2 text-center text-primary underline underline-offset-2",
+                size === "sm" ? "text-[9px] leading-tight" : "text-xs"
+              )}
+              onClick={(event) => event.stopPropagation()}
+            >
+              Open on IMDb
+            </a>
+          ) : (
+            <div
+              className={cn(
+                "absolute inset-0 z-[1] flex items-center justify-center px-2 text-center text-muted-foreground",
+                size === "sm" ? "text-[9px] leading-tight" : "text-xs"
+              )}
+            >
+              No poster found
+            </div>
+          )
         ) : null}
       </div>
       {showImage && showCredit && poster ? (
