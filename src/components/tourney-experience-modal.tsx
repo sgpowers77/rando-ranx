@@ -84,8 +84,8 @@ export function TourneyExperienceModal({
           })}
         </div>
 
-        <DialogFooter className="flex-col gap-3 sm:flex-col">
-          <label className="flex items-center gap-2 self-start text-sm">
+        <DialogFooter className="flex-col gap-3 sm:items-end">
+          <label className="flex items-center gap-2 text-sm">
             <Switch
               nativeButton
               checked={hideNextTime}
@@ -94,7 +94,7 @@ export function TourneyExperienceModal({
             />
             Do not show again
           </label>
-          <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:justify-end">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Back
             </Button>
