@@ -18,13 +18,22 @@ export const MOVIE_GENRES = [
 export const GAME_GENRES = [
   "Action",
   "Adventure",
+  "Casual",
   "Fighting",
+  "Horror",
   "Indie",
+  "Open World",
   "Platformer",
   "Puzzle",
+  "Racing",
   "RPG",
+  "Roguelike",
+  "Shooter",
   "Simulation",
+  "Sports",
   "Strategy",
+  "Survival",
+  "Visual Novel",
 ] as const;
 
 export const MUSIC_GENRES = [
@@ -138,23 +147,22 @@ export function titlePlatforms(title: CatalogTitle): string[] {
 export function sanitizeFilters(filters: PathFilters, medium: Medium): PathFilters {
   const defaults = defaultFilters(medium);
   const allowedDecades = new Set(decadesFor(medium));
+  const allowedGenres = new Set(genresFor(medium));
   const decades = (filters.decades ?? []).filter((decade) => allowedDecades.has(decade));
+  const genres = (filters.genres ?? []).filter((genre) => allowedGenres.has(genre));
+  const obscurity = (filters.obscurity ?? []).filter((level) =>
+    (OBSCURITY_LEVELS as readonly number[]).includes(level)
+  );
   return {
     ...defaults,
     ...filters,
-    decades: decades.length > 0 ? decades : [...defaults.decades],
-    genres: (filters.genres?.length ?? 0) > 0 ? filters.genres : [...defaults.genres],
-    obscurity: (filters.obscurity?.length ?? 0) > 0 ? filters.obscurity : [...defaults.obscurity],
-    mpaa: medium === "movie" ? ((filters.mpaa?.length ?? 0) > 0 ? filters.mpaa : [...defaults.mpaa]) : [],
+    decades,
+    genres,
+    obscurity,
+    mpaa: medium === "movie" ? (filters.mpaa ?? []) : [],
     includeForeign: filters.includeForeign !== false,
     stackSize: stackSizeOf(filters.stackSize),
-    platforms:
-      medium === "game"
-        ? (() => {
-            const platforms = validGamePlatforms(filters);
-            return platforms.length > 0 ? platforms : [...GAME_PLATFORMS];
-          })()
-        : [],
+    platforms: medium === "game" ? validGamePlatforms(filters) : [],
   };
 }
 

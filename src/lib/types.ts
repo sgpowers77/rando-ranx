@@ -96,6 +96,8 @@ export type TourneyUndoFrame = {
   responses: SessionResponse[];
   discards: DiscardEntry[];
   recentlyShown: Record<Medium, string[]>;
+  /** Catalog rows needed to resolve remainingIds (MusicBrainz / OpenGameDB ids are not in the baked fallback). */
+  liveTitles: CatalogTitle[];
 };
 
 export type StoredSession = {

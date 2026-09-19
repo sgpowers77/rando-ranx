@@ -240,12 +240,18 @@ export function skipTourneyPair(session: StoredSession, replacements: CatalogTit
   }
   const keepCap = Math.max(
     stackSizeOf(filtersFor(session, medium, "tourney").stackSize) * 4,
-    (session.liveTitles?.length ?? 0) + extra.length
+    extra.length + nextRemaining.length
   );
   return {
     ...session,
     pendingTourney: null,
-    liveTitles: mergeLiveTitles(session.liveTitles ?? [], extra, keepCap),
+    liveTitles: replaceLiveTitlesForMedium(
+      session.liveTitles ?? [],
+      extra,
+      medium,
+      keepCap,
+      nextRemaining
+    ),
     remainingIds: { ...session.remainingIds, [medium]: nextRemaining },
     recentlyShown: {
       ...shownMap(session),
@@ -293,6 +299,27 @@ export function mergeLiveTitles(
     if (!next.has(item.id)) next.set(item.id, item);
   }
   return uniqueTitles([...next.values()]).slice(0, cap);
+}
+
+/** Replace one catalog’s live sample without dropping other media or ids still in the deal / undo stack. */
+export function replaceLiveTitlesForMedium(
+  existing: CatalogTitle[],
+  incoming: CatalogTitle[],
+  medium: Medium,
+  cap: number,
+  keepIds: Iterable<string> = []
+): CatalogTitle[] {
+  const keep = new Set(keepIds);
+  const others = existing.filter((item) => item.medium !== medium);
+  const sampled = uniqueTitles(incoming.filter((item) => item.medium === medium)).slice(
+    0,
+    Math.max(0, cap)
+  );
+  const sampledIds = new Set(sampled.map((item) => item.id));
+  const retained = existing.filter(
+    (item) => item.medium === medium && keep.has(item.id) && !sampledIds.has(item.id)
+  );
+  return uniqueTitles([...sampled, ...retained, ...others]);
 }
 
 export function eligibleFor(session: StoredSession, medium: Medium, playMode: PlayMode): CatalogTitle[] {
@@ -419,9 +446,9 @@ function parseOnePathFilters(raw: unknown, medium: Medium): PathFilters | null {
   const allowedDecades = new Set(decadesFor(medium));
   const decades = Array.isArray(data.decades)
     ? data.decades.filter((n) => typeof n === "number" && allowedDecades.has(n))
-    : [];
+    : [...decadesFor(medium)];
   return {
-    decades: decades.length > 0 ? decades : [...decadesFor(medium)],
+    decades,
     genres: Array.isArray(data.genres) ? data.genres.filter((n) => typeof n === "string") : [],
     obscurity: Array.isArray(data.obscurity)
       ? data.obscurity.filter((n) => typeof n === "number")
@@ -575,6 +602,7 @@ function parseTourneyUndo(value: unknown): TourneyUndoFrame[] {
         game: parseIdList(frame.recentlyShown?.game),
         music: parseIdList(frame.recentlyShown?.music),
       },
+      liveTitles: parseCustomTitles(frame.liveTitles),
     });
   }
   return frames;
@@ -610,9 +638,17 @@ function captureTourneyUndo(session: StoredSession): TourneyUndoFrame {
   const medium = session.medium ?? "movie";
   const round = finalRoundsOf(session)[medium];
   const logs = logsForMedium(session, medium);
+  const remainingIds = [...(session.remainingIds[medium] ?? [])];
+  const roundIds = round ? [...round.remainingIds] : [];
+  const needed = new Set([...remainingIds, ...roundIds]);
+  const liveForMedium = (session.liveTitles ?? []).filter((item) => item.medium === medium);
+  const liveTitles = uniqueTitles([
+    ...liveForMedium.filter((item) => needed.has(item.id)),
+    ...liveForMedium,
+  ]);
   return {
-    remainingIds: [...(session.remainingIds[medium] ?? [])],
-    finalRound: round ? { medium: round.medium, remainingIds: [...round.remainingIds] } : null,
+    remainingIds,
+    finalRound: round ? { medium: round.medium, remainingIds: roundIds } : null,
     responses: logs.responses,
     discards: logs.discards,
     recentlyShown: shownMap({
@@ -622,6 +658,7 @@ function captureTourneyUndo(session: StoredSession): TourneyUndoFrame {
         music: medium === "music" ? [...(session.recentlyShown?.music ?? [])] : [],
       },
     }),
+    liveTitles,
   };
 }
 
@@ -698,7 +735,7 @@ export function applyTourneyOutcome(
       prev.remainingIds[medium].filter((id) => {
         if (id === winnerId || id === loserId) return false;
         const item = resolveTitle(id, prev.customTitles, prev.releaseYears, prev.liveTitles);
-        if (!item) return false;
+        if (!item) return true;
         return matchesFilters(item, filtersFor(prev, medium, prev.playMode ?? "tourney"));
       })
     )
@@ -725,37 +762,52 @@ export function undoTourneySelect(session: StoredSession): StoredSession {
   const stack = tourneyUndosOf(session)[medium] ?? [];
   if (stack.length === 0) return session;
   const frame = stack[stack.length - 1];
-  const round = activeFinalRound(session);
-  const restoredRound = frame.finalRound?.medium === medium
-    ? {
-        ...frame.finalRound,
-        remainingIds: arrangeDistinctPair(
-          session,
-          uniqueTitleIds(session, frame.finalRound.remainingIds)
-        ),
-      }
-    : null;
+  const liveTitles = uniqueTitles([
+    ...(frame.liveTitles ?? []),
+    ...(session.liveTitles ?? []),
+  ]);
+  const restored: StoredSession = {
+    ...session,
+    pendingTourney: null,
+    liveTitles,
+    remainingIds: {
+      ...session.remainingIds,
+      [medium]: [...frame.remainingIds],
+    },
+    responses: [
+      ...session.responses.filter((entry) => entry.medium !== medium),
+      ...frame.responses.filter((entry) => entry.medium === medium),
+    ],
+    discards: [
+      ...session.discards.filter((entry) => entry.medium !== medium),
+      ...frame.discards.filter((entry) => entry.medium === medium),
+    ],
+    recentlyShown: {
+      ...shownMap(session),
+      [medium]: frame.recentlyShown?.[medium] ?? session.recentlyShown?.[medium] ?? [],
+    },
+  };
+  const restoredRound =
+    frame.finalRound?.medium === medium
+      ? {
+          ...frame.finalRound,
+          remainingIds: arrangeDistinctPair(
+            restored,
+            uniqueTitleIds(restored, frame.finalRound.remainingIds)
+          ),
+        }
+      : null;
+  const remaining = restoredRound
+    ? restored.remainingIds
+    : {
+        ...restored.remainingIds,
+        [medium]: arrangeDistinctPair(restored, uniqueTitleIds(restored, frame.remainingIds)),
+      };
   return withMediumTourneyUndo(
     withMediumFinalRound(
       {
-        ...session,
-        pendingTourney: null,
-        remainingIds:
-          round || restoredRound
-            ? session.remainingIds
-            : { ...session.remainingIds, [medium]: arrangeDistinctPair(session, uniqueTitleIds(session, frame.remainingIds)) },
-        responses: [
-          ...session.responses.filter((entry) => entry.medium !== medium),
-          ...frame.responses.filter((entry) => entry.medium === medium),
-        ],
-        discards: [
-          ...session.discards.filter((entry) => entry.medium !== medium),
-          ...frame.discards.filter((entry) => entry.medium === medium),
-        ],
-        recentlyShown: {
-          ...shownMap(session),
-          [medium]: frame.recentlyShown?.[medium] ?? session.recentlyShown?.[medium] ?? [],
-        },
+        ...restored,
+        remainingIds: remaining,
       },
       medium,
       restoredRound

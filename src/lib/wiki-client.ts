@@ -32,6 +32,15 @@ function guessGenres(text: string, medium: Medium): string[] {
     drama: "Drama",
   };
   const gameMap: Record<string, string> = {
+    "visual novel": "Visual Novel",
+    roguelike: "Roguelike",
+    "open world": "Open World",
+    survival: "Survival",
+    horror: "Horror",
+    shooter: "Shooter",
+    fps: "Shooter",
+    sports: "Sports",
+    racing: "Racing",
     rpg: "RPG",
     "role-playing": "RPG",
     puzzle: "Puzzle",
@@ -39,6 +48,7 @@ function guessGenres(text: string, medium: Medium): string[] {
     fighting: "Fighting",
     platform: "Platformer",
     simulation: "Simulation",
+    casual: "Casual",
     indie: "Indie",
     adventure: "Adventure",
     action: "Action",

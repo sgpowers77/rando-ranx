@@ -134,7 +134,7 @@ export function PathSettings({
                 onUncheckAll={() => apply({ genres: [] })}
               />
             </legend>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {genres.map((genre) => {
                 const id = `filter-genre-${genre}`;
                 return (

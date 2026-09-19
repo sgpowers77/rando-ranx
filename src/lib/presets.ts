@@ -647,35 +647,35 @@ function gamePreset(id: string): PathFilters {
     case "nintendo-direct":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Platformer", "Adventure", "Simulation", "Action"],
+        genres: ["Platformer", "Adventure", "Simulation", "Action", "Casual"],
         obscurity: [1, 2],
         platforms: ["Nintendo"],
       });
     case "playstation-prestige":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Action", "Adventure", "RPG"],
+        genres: ["Action", "Adventure", "RPG", "Shooter", "Open World"],
         obscurity: [1, 2],
         platforms: ["PlayStation"],
       });
     case "xbox-launch-night":
       return gameFilters({
         decades: [2000, 2010],
-        genres: ["Action", "Adventure"],
+        genres: ["Action", "Shooter", "Adventure"],
         obscurity: [1, 2],
         platforms: ["Xbox"],
       });
     case "pc-master-race":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Action", "Adventure", "Indie", "RPG", "Simulation"],
+        genres: ["Action", "Adventure", "Indie", "RPG", "Simulation", "Strategy", "Shooter"],
         obscurity: [1, 2, 3],
         platforms: ["PC"],
       });
     case "handheld-back-seat":
       return gameFilters({
         decades: [1990],
-        genres: ["RPG", "Adventure", "Action"],
+        genres: ["RPG", "Adventure", "Action", "Platformer"],
         obscurity: [1, 2, 3],
         platforms: ["Nintendo"],
       });
@@ -689,14 +689,14 @@ function gamePreset(id: string): PathFilters {
     case "souls-borne":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Action", "RPG"],
+        genres: ["Action", "RPG", "Survival"],
         obscurity: [1, 2, 3],
         platforms: ["PlayStation", "Xbox", "PC"],
       });
     case "itch-until-dawn":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Indie", "Adventure", "Puzzle"],
+        genres: ["Indie", "Adventure", "Puzzle", "Casual"],
         obscurity: [3, 4, 5],
         platforms: ["PC"],
       });
@@ -710,7 +710,7 @@ function gamePreset(id: string): PathFilters {
     case "cozy-stardew":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Simulation", "Indie"],
+        genres: ["Simulation", "Indie", "Casual"],
         obscurity: [1, 2, 3],
         platforms: ["PC", "Nintendo"],
       });
@@ -731,28 +731,28 @@ function gamePreset(id: string): PathFilters {
     case "cartridge-era":
       return gameFilters({
         decades: [1990],
-        genres: ["Action", "Adventure", "RPG", "Platformer"],
+        genres: ["Action", "Adventure", "RPG", "Platformer", "Puzzle"],
         obscurity: [2, 3, 4],
         platforms: ["Nintendo"],
       });
     case "split-screen":
       return gameFilters({
         decades: [2000, 2010, 2020],
-        genres: ["Action", "Fighting"],
+        genres: ["Action", "Fighting", "Shooter"],
         obscurity: [1, 2],
         platforms: ["Xbox", "PlayStation", "Nintendo"],
       });
     case "one-more-run":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Indie", "Strategy", "Action"],
+        genres: ["Roguelike", "Indie", "Strategy"],
         obscurity: [2, 3, 4],
         platforms: ["PC"],
       });
     case "open-world-hangover":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Action", "Adventure", "RPG"],
+        genres: ["Open World", "Action", "Adventure", "RPG"],
         obscurity: [1, 2],
         platforms: ["PlayStation", "Xbox", "PC"],
         stackSize: 25,
@@ -760,7 +760,7 @@ function gamePreset(id: string): PathFilters {
     case "phone-battery-tax":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Indie", "Simulation", "Puzzle"],
+        genres: ["Casual", "Indie", "Simulation", "Puzzle"],
         obscurity: [1, 2, 3],
         platforms: ["Mobile"],
       });
@@ -774,21 +774,21 @@ function gamePreset(id: string): PathFilters {
     case "trophy-hunting":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Action", "Adventure"],
+        genres: ["Action", "Adventure", "Shooter", "RPG"],
         obscurity: [1, 2],
         platforms: ["PlayStation"],
       });
     case "gamerscore":
       return gameFilters({
         decades: [2000, 2010],
-        genres: ["Action", "Adventure"],
+        genres: ["Action", "Shooter", "Adventure"],
         obscurity: [1, 2],
         platforms: ["Xbox"],
       });
     case "couch-co-op":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Platformer", "Adventure", "Puzzle"],
+        genres: ["Platformer", "Adventure", "Puzzle", "Casual"],
         obscurity: [1, 2, 3],
         platforms: ["Nintendo", "PlayStation", "Xbox"],
         stackSize: 25,
@@ -796,7 +796,7 @@ function gamePreset(id: string): PathFilters {
     case "day-one-patch":
       return gameFilters({
         decades: [2020],
-        genres: ["Action", "Adventure", "RPG"],
+        genres: ["Action", "Adventure", "RPG", "Shooter", "Open World"],
         obscurity: [1, 2],
         platforms: ["PlayStation", "Xbox", "PC"],
         stackSize: 100,

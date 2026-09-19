@@ -1,5 +1,5 @@
 import { SEARCH_FALLBACK, titlesFor } from "@/data/catalog";
-import { matchesFilters, stackSizeOf } from "@/lib/filters";
+import { matchesFilters, sanitizeFilters, stackSizeOf } from "@/lib/filters";
 import { publicUrl } from "@/lib/public-url";
 import { mergeCatalogTitles, uniqueTitles } from "@/lib/title-identity";
 import type { CatalogTitle, Medium, PathFilters } from "@/lib/types";
@@ -169,10 +169,11 @@ export async function sampleClientPool(options: {
       ? Math.floor(options.count)
       : stackSizeOf(options.limit);
   const exclude = new Set(options.excludeIds ?? []);
+  const filters = sanitizeFilters(options.filters, options.medium);
   if (options.medium === "game") {
     const loaded = await loadGameCatalog();
     const eligible = uniqueTitles(
-      loaded.titles.filter((item) => !exclude.has(item.id) && matchesFilters(item, options.filters))
+      loaded.titles.filter((item) => !exclude.has(item.id) && matchesFilters(item, filters))
     );
     return {
       titles: shuffle(eligible).slice(0, take),
@@ -183,7 +184,7 @@ export async function sampleClientPool(options: {
   if (options.medium === "music") {
     const loaded = await loadMusicCatalog();
     const eligible = uniqueTitles(
-      loaded.titles.filter((item) => !exclude.has(item.id) && matchesFilters(item, options.filters))
+      loaded.titles.filter((item) => !exclude.has(item.id) && matchesFilters(item, filters))
     );
     return {
       titles: shuffle(eligible).slice(0, take),
@@ -193,7 +194,7 @@ export async function sampleClientPool(options: {
   }
   const loaded = await loadMovieCatalog();
   const eligible = loaded.titles.filter(
-    (item) => !exclude.has(item.id) && matchesFilters(item, options.filters)
+    (item) => !exclude.has(item.id) && matchesFilters(item, filters)
   );
   const sampled = shuffle(eligible).slice(0, take);
   return {

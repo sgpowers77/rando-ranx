@@ -16,9 +16,9 @@ import {
   getHydrateError,
   getServerSessionSnapshot,
   getSessionSnapshot,
-  mergeLiveTitles,
   rememberShown,
   removeQueuedTitle,
+  replaceLiveTitlesForMedium,
   setQueueOnlyMode,
   skipTourneyPair,
   returnHomeClearingPlayLog,
@@ -60,9 +60,9 @@ export function useRandoRanx() {
   const [poolStatus, setPoolStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [poolError, setPoolError] = useState<string | null>(null);
   const [poolSource, setPoolSource] = useState<"dataset" | "catalog" | "none">("none");
-  const fetching = useRef(false);
   const skippingPair = useRef(false);
   const posterAdvances = useRef(0);
+  const refreshGen = useRef(0);
 
   const visibleQueue = useMemo(() => {
     if (!session.medium || !session.playMode) return [];
@@ -133,7 +133,7 @@ export function useRandoRanx() {
 
   const refreshPool = useCallback(async (opts?: { silent?: boolean }) => {
     const snapshot = getSessionSnapshot();
-    if (!snapshot.medium || !snapshot.playMode || fetching.current) return;
+    if (!snapshot.medium || !snapshot.playMode) return;
     if (snapshot.queueOnly) {
       persist((prev) => {
         if (!prev.medium || !prev.playMode || activeFinalRound(prev)) return prev;
@@ -144,28 +144,42 @@ export function useRandoRanx() {
       setPoolError(null);
       return;
     }
-    fetching.current = true;
+    const gen = ++refreshGen.current;
+    const requestedMedium = snapshot.medium;
+    const requestedMode = snapshot.playMode;
     if (!opts?.silent) {
       setPoolStatus("loading");
       setPoolError(null);
     }
     try {
-      const filters = filtersFor(snapshot, snapshot.medium, snapshot.playMode);
-      const recent = snapshot.recentlyShown?.[snapshot.medium] ?? [];
+      const filters = filtersFor(snapshot, requestedMedium, requestedMode);
+      const recent = snapshot.recentlyShown?.[requestedMedium] ?? [];
       const data = await sampleClientPool({
-        medium: snapshot.medium,
+        medium: requestedMedium,
         filters,
-        excludeIds: [...usedTitleIds(snapshot, snapshot.medium, snapshot.playMode), ...recent],
+        excludeIds: [...usedTitleIds(snapshot, requestedMedium, requestedMode), ...recent],
         limit: stackSizeOf(filters.stackSize),
       });
+      if (gen !== refreshGen.current) return;
       const titles = data.titles;
       setPoolSource(data.source);
       persist((prev) => {
         if (!prev.medium || !prev.playMode) return prev;
-        const liveTitles = mergeLiveTitles(
+        if (prev.medium !== requestedMedium) return prev;
+        const cap = stackSizeOf(filtersFor(prev, prev.medium, prev.playMode).stackSize);
+        const keepIds = [
+          ...(prev.remainingIds[prev.medium] ?? []),
+          ...(prev.tourneyUndos?.[prev.medium] ?? []).flatMap((frame) => [
+            ...frame.remainingIds,
+            ...(frame.finalRound?.remainingIds ?? []),
+          ]),
+        ];
+        const liveTitles = replaceLiveTitlesForMedium(
           prev.liveTitles ?? [],
           titles,
-          stackSizeOf(filtersFor(prev, prev.medium, prev.playMode).stackSize)
+          prev.medium,
+          cap,
+          keepIds
         );
         const inFinal = Boolean(activeFinalRound(prev));
         const next: StoredSession = { ...prev, liveTitles, pendingTourney: inFinal ? prev.pendingTourney : null };
@@ -180,19 +194,19 @@ export function useRandoRanx() {
         return withDealtQueue(next, prev.medium, prev.playMode);
       });
       setPoolStatus("ready");
-      if (data.source === "catalog" && snapshot.medium === "movie") {
+      if (data.source === "catalog" && requestedMedium === "movie") {
         setPoolError(null);
       }
     } catch {
+      if (gen !== refreshGen.current) return;
       persist((prev) => {
         if (!prev.medium || !prev.playMode) return prev;
+        if (prev.medium !== requestedMedium) return prev;
         return withDealtQueue({ ...prev, pendingTourney: null }, prev.medium, prev.playMode);
       });
       setPoolStatus("error");
       setPoolError("Could not reach the title pool. Using a local fallback if anything is available.");
       setPoolSource("catalog");
-    } finally {
-      fetching.current = false;
     }
   }, [persist]);
 

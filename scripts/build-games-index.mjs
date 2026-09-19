@@ -9,13 +9,22 @@ const outPath = path.join(process.cwd(), "public", "games-index.json");
 const GAME_GENRES = [
   "Action",
   "Adventure",
+  "Casual",
   "Fighting",
+  "Horror",
   "Indie",
+  "Open World",
   "Platformer",
   "Puzzle",
+  "Racing",
   "RPG",
+  "Roguelike",
+  "Shooter",
   "Simulation",
+  "Sports",
   "Strategy",
+  "Survival",
+  "Visual Novel",
 ];
 
 const FILE_PLATFORM = {
@@ -136,16 +145,34 @@ function mapGenres(raw) {
   const add = (genre) => {
     if (GAME_GENRES.includes(genre) && !found.includes(genre)) found.push(genre);
   };
-  if (/role[\s-]*play|\brpg\b|jrpg/.test(blob)) add("RPG");
+  if (/visual novel/.test(blob)) add("Visual Novel");
+  if (/roguelike|roguelite|deck[\s]*build/.test(blob)) add("Roguelike");
+  if (/open[\s]*world/.test(blob)) add("Open World");
+  if (/\bsurvival\b/.test(blob)) add("Survival");
+  if (/\bhorror\b/.test(blob)) add("Horror");
+  if (/shooter|\bfps\b|\btps\b|shoot[\s']*em[\s']*up/.test(blob)) add("Shooter");
+  if (
+    /\bsports?\b|football|soccer|basketball|baseball|hockey|tennis|golf|wrestling|fifa|\bnba\b|\bnfl\b|madden/.test(
+      blob
+    )
+  ) {
+    add("Sports");
+  }
+  if (/racing|driving|\brally\b/.test(blob)) add("Racing");
   if (/platform/.test(blob)) add("Platformer");
   if (/puzzle|match 3|hidden object/.test(blob)) add("Puzzle");
-  if (/fight|beat[\s'-]*em|brawler/.test(blob)) add("Fighting");
-  if (/strateg|tactics|4x|card game|deck[\s-]*build|roguelike/.test(blob)) add("Strategy");
-  if (/simulat|life sim|management|tycoon|farm|sport|racing|driving/.test(blob)) add("Simulation");
-  if (/\bindie\b|casual|experimental/.test(blob)) add("Indie");
-  if (/adventure|metroidvania|point[\s-]*and[\s-]*click|visual novel|sandbox/.test(blob)) add("Adventure");
-  if (/action|shooter|\bfps\b|\btps\b|stealth|arcade|horror/.test(blob)) add("Action");
-  return found.length > 0 ? found : ["Adventure"];
+  if (/fight|beat[\s']*em|brawler/.test(blob)) add("Fighting");
+  if (/role[\s]*play|\brpg\b|jrpg/.test(blob)) add("RPG");
+  if (/simulat|tycoon|life sim|management|\bfarm\b/.test(blob)) add("Simulation");
+  if (/strateg|tactics|\b4x\b|\brts\b/.test(blob)) add("Strategy");
+  if (/\bcasual\b/.test(blob)) add("Casual");
+  if (/\bindie\b|experimental/.test(blob)) add("Indie");
+  if (/point[\s]*and[\s]*click|metroidvania|\badventure\b/.test(blob)) add("Adventure");
+  const specificCombat = found.some((genre) =>
+    ["Shooter", "Fighting", "Platformer", "Sports", "Racing"].includes(genre)
+  );
+  if (/\baction\b|stealth|arcade/.test(blob) && !specificCombat) add("Action");
+  return found;
 }
 
 function mapPlatforms(...rawValues) {
@@ -250,6 +277,7 @@ async function loadOpenGameDb(byKey) {
       const year = parseYear(cols[iReleased]);
       if (!year) continue;
       const genres = mapGenres(cols[iGenre] ?? "");
+      if (genres.length === 0) continue;
       const metascore = Number(cols[iMeta]);
       const gfScore = Number(cols[iGf]);
       const steamId = iSteam >= 0 ? (cols[iSteam] ?? "").trim() : "";
@@ -343,6 +371,8 @@ async function loadGameDex(byKey) {
       const genreName =
         genreById.get(String(row.genre ?? "")) ??
         (typeof row.genre === "string" ? row.genre : "");
+      const genres = mapGenres(genreName);
+      if (genres.length === 0) continue;
       const consoleNames = [];
       const consoles = row.consoles;
       if (Array.isArray(consoles)) {
@@ -359,7 +389,7 @@ async function loadGameDex(byKey) {
         id,
         title,
         year,
-        genres: mapGenres(genreName),
+        genres,
         platforms: mapPlatforms(...consoleNames),
         obscurity: obscurityFromScores({ platformCount: consoleNames.length }),
         sourceIds: [id, row.pk ? `gdx-pk-${row.pk}` : ""].filter(Boolean),
@@ -380,6 +410,7 @@ async function main() {
   const games = [];
   const seenIds = new Set();
   for (const row of byKey.values()) {
+    if (!row.genres || row.genres.length === 0) continue;
     let id = row.id;
     if (seenIds.has(id)) {
       id = `${id}-${row.year}`;
@@ -398,7 +429,7 @@ async function main() {
       id,
       title: row.title,
       year: row.year,
-      genres: row.genres.length > 0 ? row.genres : ["Adventure"],
+      genres: row.genres,
       obscurity: row.obscurity,
       platforms: platforms.length > 0 ? platforms : ["Other"],
       ...(row.steamAppId || steamFromIds ? { steamAppId: row.steamAppId || steamFromIds } : {}),
