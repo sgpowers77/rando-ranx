@@ -77,6 +77,7 @@ export function SessionLog({
         <div className="mb-2 px-1">
           <Button
             type="button"
+            variant="outline"
             className="h-10 w-full"
             disabled={!canFinalRound || !onFinalRound}
             onClick={onFinalRound}

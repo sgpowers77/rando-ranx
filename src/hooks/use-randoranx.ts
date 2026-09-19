@@ -21,6 +21,7 @@ import {
   removeQueuedTitle,
   setQueueOnlyMode,
   skipTourneyPair,
+  returnHomeClearingPlayLog,
   startFinalRound,
   subscribeSession,
   tourneyContenderIds,
@@ -227,6 +228,17 @@ export function useRandoRanx() {
   const goHome = useCallback(() => {
     persist((prev) => ({ ...prev, medium: null, playMode: null, pendingTourney: null }));
     setPoolStatus("idle");
+  }, [persist]);
+
+  const returnHomeFromPlay = useCallback(() => {
+    persist((prev) => {
+      if (!prev.medium) {
+        return { ...prev, medium: null, playMode: null, pendingTourney: null };
+      }
+      return returnHomeClearingPlayLog(prev, prev.medium);
+    });
+    setPoolStatus("idle");
+    setPoolError(null);
   }, [persist]);
 
   const goToModePick = useCallback(() => {
@@ -531,6 +543,7 @@ export function useRandoRanx() {
     chooseMedium,
     choosePlayMode,
     goHome,
+    returnHomeFromPlay,
     goToModePick,
     recordAndAdvance,
     pickTourneyWinner,

@@ -16,6 +16,16 @@ import { AppSettingsMenu } from "@/components/app-settings";
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -44,6 +54,7 @@ export function RandoRanxApp() {
     chooseMedium,
     choosePlayMode,
     goHome,
+    returnHomeFromPlay,
     goToModePick,
     recordAndAdvance,
     pickTourneyWinner,
@@ -70,6 +81,7 @@ export function RandoRanxApp() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [tourneyHelpOpen, setTourneyHelpOpen] = useState(false);
+  const [returnHomeOpen, setReturnHomeOpen] = useState(false);
 
   const logs = logsForMedium(session, session.medium);
   const movieLogs = logsForMedium(session, "movie");
@@ -318,9 +330,16 @@ export function RandoRanxApp() {
                 filterEmpty={eligibleCount === 0 && !finalRoundActive}
                 poolError={poolStatus === "error" && eligibleCount === 0 ? poolError : null}
                 poolSource={poolSource}
+                canFinalRound={contenderCount >= 2}
+                contenderCount={contenderCount}
                 onHome={goHome}
                 onChangeMode={goToModePick}
                 onReshuffle={reshuffleMedium}
+                onFinalRound={() => {
+                  stopEditing();
+                  beginFinalRound();
+                }}
+                onReturnHome={() => setReturnHomeOpen(true)}
                 onUndo={undoTourneyPick}
                 undoCount={tourneyUndoCount}
               />
@@ -394,6 +413,33 @@ export function RandoRanxApp() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={returnHomeOpen} onOpenChange={setReturnHomeOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Return Home?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {session.medium === "game" ? "The Games" : "The Movies"}{" "}
+              {session.playMode === "rank" ? "Ranx" : "Tourney"} log will be cleared: Contenders,
+              skips, wants, and Discard for this catalog only. Watch, ratings, review comments, and
+              notes stay.{" "}
+              {session.medium === "game" ? "Movies" : "Games"} logs are not touched.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay here</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                returnHomeFromPlay();
+                setReturnHomeOpen(false);
+                setEditingId(null);
+              }}
+            >
+              Return Home
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <section className="print-only hidden p-6 text-black print:block">
         <h1 className="mb-1 text-2xl font-semibold">RandoRanx results</h1>

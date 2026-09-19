@@ -769,6 +769,43 @@ export function tourneyContenderIds(session: StoredSession, medium: Medium): str
   return ids;
 }
 
+/** Ratings, comments, watch dates, and Seen/Played results survive Return Home. */
+export function isPersistentJournalEntry(entry: SessionResponse): boolean {
+  if (entry.kind === "rated") return true;
+  if (entry.rating != null) return true;
+  if ((entry.comments ?? "").trim().length > 0) return true;
+  if ((entry.watchedDate ?? "").trim().length > 0) return true;
+  return false;
+}
+
+/**
+ * Leaves the current catalog’s play session. Watch tags stay. Rated titles,
+ * comments, and notes stay. Unscored Results (Contenders, skips, wants) and
+ * Discard for that catalog are cleared. The other catalog is untouched.
+ */
+export function returnHomeClearingPlayLog(session: StoredSession, medium: Medium): StoredSession {
+  const rounds = finalRoundsOf(session);
+  const undos = tourneyUndosOf(session);
+  return {
+    ...session,
+    medium: null,
+    playMode: null,
+    pendingTourney: session.medium === medium ? null : session.pendingTourney,
+    remainingIds: { ...session.remainingIds, [medium]: [] },
+    recentlyShown: {
+      movie: session.recentlyShown?.movie ?? [],
+      game: session.recentlyShown?.game ?? [],
+      [medium]: [],
+    },
+    responses: session.responses.filter(
+      (entry) => entry.medium !== medium || isPersistentJournalEntry(entry)
+    ),
+    discards: session.discards.filter((entry) => entry.medium !== medium),
+    finalRounds: { ...rounds, [medium]: null },
+    tourneyUndos: { ...undos, [medium]: [] },
+  };
+}
+
 export function startFinalRound(session: StoredSession): StoredSession {
   const medium = session.medium;
   if (!medium) return session;
