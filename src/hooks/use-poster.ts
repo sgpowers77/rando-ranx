@@ -46,6 +46,7 @@ export function usePoster(subject: PosterSubject | null) {
     subject?.steamAppId,
     subject?.imageUrl,
     subject?.musicbrainzId,
+    subject?.artist,
   ]);
 
   return { poster, status };

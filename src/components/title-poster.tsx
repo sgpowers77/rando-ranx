@@ -57,10 +57,12 @@ export function TitlePoster(props: TitlePosterProps) {
         medium: subject.medium,
         imdbId: subject.imdbId ?? catalog?.imdbId,
         musicbrainzId: subject.musicbrainzId ?? catalog?.musicbrainzId,
+        artist: subject.artist ?? catalog?.artist,
       })
     : null;
-  const imdbHref = pageLink?.href ?? null;
-  const pageLabel = pageLink?.label ?? "IMDb";
+  const pageHref =
+    subject?.medium === "music" && poster?.credit.href ? poster.credit.href : (pageLink?.href ?? null);
+  const pageLabel = subject?.medium === "music" ? "Wikipedia" : (pageLink?.label ?? "IMDb");
   const waiting = !showImage && !timedOut && status !== "missing" && !broken;
   const missing = !showImage && (timedOut || status === "missing" || broken);
 
@@ -71,7 +73,7 @@ export function TitlePoster(props: TitlePosterProps) {
     if (!subject) return;
     const timer = window.setTimeout(() => setTimedOut(true), POSTER_WAIT_MS);
     return () => window.clearTimeout(timer);
-  }, [subject?.id, subject?.title, subject?.year, subject?.medium, subject?.imdbId, subject?.steamAppId, subject?.imageUrl, subject?.musicbrainzId]);
+  }, [subject?.id, subject?.title, subject?.year, subject?.medium, subject?.imdbId, subject?.steamAppId, subject?.imageUrl, subject?.musicbrainzId, subject?.artist]);
 
   return (
     <figure className={cn("shrink-0", props.className)}>
@@ -82,9 +84,9 @@ export function TitlePoster(props: TitlePosterProps) {
         )}
       >
         {poster && !broken ? (
-          imdbHref ? (
+          pageHref ? (
             <a
-              href={imdbHref}
+              href={pageHref}
               target="_blank"
               rel="noreferrer"
               aria-label={`Open ${subject?.title ?? "title"} on ${pageLabel}`}
@@ -149,9 +151,9 @@ export function TitlePoster(props: TitlePosterProps) {
             >
               <span aria-hidden>Finding poster…</span>
             </div>
-          ) : imdbHref ? (
+          ) : pageHref ? (
             <a
-              href={imdbHref}
+              href={pageHref}
               target="_blank"
               rel="noreferrer"
               aria-label={`Open ${subject?.title ?? "title"} on ${pageLabel}`}
@@ -202,7 +204,7 @@ export function TitlePoster(props: TitlePosterProps) {
           )}
           aria-hidden={!missing}
         >
-          {missing && !imdbHref ? "No Wikipedia or Wikimedia image" : null}
+          {missing && !pageHref ? "No Wikipedia or Wikimedia image" : null}
         </figcaption>
       ) : null}
     </figure>

@@ -1,4 +1,5 @@
 import { wikiHint } from "@/lib/medium";
+import { wikipediaAlbumUrl } from "@/lib/imdb";
 import type { CatalogTitle, Medium } from "@/lib/types";
 
 export type PosterCredit = {
@@ -20,6 +21,7 @@ export type PosterSubject = {
   imageUrl?: string;
   musicbrainzId?: string;
   steamAppId?: string;
+  artist?: string;
 };
 
 const memory = new Map<string, PosterInfo | null>();
@@ -52,6 +54,7 @@ function cacheKey(subject: PosterSubject): string {
     subject.steamAppId ?? "",
     subject.musicbrainzId ?? "",
     subject.imageUrl ?? "",
+    subject.artist ?? "",
   ].join("|");
 }
 
@@ -505,8 +508,12 @@ async function fetchMusicPoster(subject: PosterSubject): Promise<PosterInfo | nu
   return {
     url: coverUrl,
     credit: {
-      label: "Cover Art Archive",
-      href: mbid ? `https://musicbrainz.org/release-group/${mbid}` : coverUrl,
+      label: "Wikipedia",
+      href: wikipediaAlbumUrl({
+        title: subject.title,
+        year: subject.year,
+        artist: subject.artist,
+      }),
     },
   };
 }
@@ -582,6 +589,7 @@ export function catalogPosterSubject(title: CatalogTitle): PosterSubject {
     imageUrl: title.imageUrl,
     musicbrainzId: title.musicbrainzId,
     steamAppId: title.steamAppId,
+    artist: title.artist,
   };
 }
 

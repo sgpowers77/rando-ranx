@@ -7,20 +7,27 @@ export function imdbUrlFor(title: Pick<CatalogTitle, "title" | "year" | "imdbId"
   return `https://www.imdb.com/find/?q=${encodeURIComponent(q)}`;
 }
 
-export function titlePageLink(title: Pick<CatalogTitle, "title" | "year" | "imdbId" | "medium" | "musicbrainzId">): {
+/** Wikipedia album / release-group search that prefers an exact article hit. */
+export function wikipediaAlbumUrl(title: {
+  title: string;
+  year: number;
+  artist?: string;
+}): string {
+  const q = [title.title, title.artist, String(title.year), "album"]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
+  return `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(q)}&go=Go`;
+}
+
+export function titlePageLink(
+  title: Pick<CatalogTitle, "title" | "year" | "imdbId" | "medium" | "musicbrainzId" | "artist">
+): {
   href: string;
   label: string;
 } {
   if (title.medium === "music") {
-    const mbid = title.musicbrainzId?.trim() ?? "";
-    if (mbid) {
-      return { href: `https://musicbrainz.org/release-group/${mbid}`, label: "MusicBrainz" };
-    }
-    const q = `${title.title} ${title.year}`.trim();
-    return {
-      href: `https://musicbrainz.org/search?query=${encodeURIComponent(q)}&type=release_group&method=indexed`,
-      label: "MusicBrainz",
-    };
+    return { href: wikipediaAlbumUrl(title), label: "Wikipedia" };
   }
   return { href: imdbUrlFor(title), label: "IMDb" };
 }
