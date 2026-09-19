@@ -4,7 +4,7 @@ import { resolveTitle } from "@/data/catalog";
 import { loadGameCatalog, loadMovieCatalog, loadMusicCatalog, sampleClientPool } from "@/lib/client-pool";
 import { matchesFilters, randomizeFilters as rollPathFilters, stackSizeOf } from "@/lib/filters";
 import { distinctTourneyPair, pickDistinctTitles, uniqueTitles } from "@/lib/title-identity";
-import { preloadPosterStack } from "@/lib/poster";
+import { POSTER_PRELOAD_EVERY, scheduleStackPosters } from "@/lib/poster";
 import {
   applyTourneyOutcome,
   clearStoredSession,
@@ -62,6 +62,7 @@ export function useRandoRanx() {
   const [poolSource, setPoolSource] = useState<"dataset" | "catalog" | "none">("none");
   const fetching = useRef(false);
   const skippingPair = useRef(false);
+  const posterAdvances = useRef(0);
 
   const visibleQueue = useMemo(() => {
     if (!session.medium || !session.playMode) return [];
@@ -106,7 +107,7 @@ export function useRandoRanx() {
 
   useEffect(() => {
     if (visibleQueue.length === 0) return;
-    void preloadPosterStack(visibleQueue);
+    scheduleStackPosters(visibleQueue, false);
   }, [visibleQueue]);
 
   const pendingWinner = useMemo<CatalogTitle | null>(() => {
@@ -117,6 +118,17 @@ export function useRandoRanx() {
 
   const persist = useCallback((updater: (prev: StoredSession) => StoredSession) => {
     writeSession(updater(getSessionSnapshot()));
+  }, []);
+
+  const notePosterAdvance = useCallback(() => {
+    posterAdvances.current += 1;
+    const extra = posterAdvances.current % POSTER_PRELOAD_EVERY === 0;
+    const snapshot = getSessionSnapshot();
+    if (!snapshot.medium) return;
+    const titles = (snapshot.remainingIds[snapshot.medium] ?? [])
+      .map((id) => titleLookup(snapshot, id))
+      .filter((title): title is CatalogTitle => title != null);
+    scheduleStackPosters(titles, extra);
   }, []);
 
   const refreshPool = useCallback(async (opts?: { silent?: boolean }) => {
@@ -212,6 +224,7 @@ export function useRandoRanx() {
 
   const choosePlayMode = useCallback(
     (playMode: PlayMode) => {
+      posterAdvances.current = 0;
       persist((prev) => {
         if (!prev.medium) return prev;
         return {
@@ -290,15 +303,17 @@ export function useRandoRanx() {
           responses: [...prev.responses, response],
         };
       });
+      notePosterAdvance();
     },
-    [persist]
+    [persist, notePosterAdvance]
   );
 
   const pickTourneyWinner = useCallback(
     (winnerId: string, loserId: string, extras?: RatingExtras) => {
       persist((prev) => applyTourneyOutcome(prev, winnerId, loserId, extras));
+      notePosterAdvance();
     },
-    [persist]
+    [persist, notePosterAdvance]
   );
 
   useEffect(() => {
@@ -446,6 +461,7 @@ export function useRandoRanx() {
     if (!snapshot.medium || snapshot.playMode !== "tourney") return;
     if (activeFinalRound(snapshot)) {
       persist((prev) => skipTourneyPair(prev));
+      notePosterAdvance();
       return;
     }
     if (skippingPair.current) return;
@@ -481,13 +497,15 @@ export function useRandoRanx() {
           if (currentPair[0] !== pairIds[0] || currentPair[1] !== pairIds[1]) return prev;
           return skipTourneyPair(prev, extras);
         });
+        notePosterAdvance();
       } catch {
         persist((prev) => skipTourneyPair(prev, []));
+        notePosterAdvance();
       } finally {
         skippingPair.current = false;
       }
     })();
-  }, [persist]);
+  }, [persist, notePosterAdvance]);
 
   const beginFinalRound = useCallback(() => {
     persist((prev) => startFinalRound(prev));
@@ -498,6 +516,7 @@ export function useRandoRanx() {
   }, [persist]);
 
   const reshuffleMedium = useCallback(() => {
+    posterAdvances.current = 0;
     void refreshPool();
   }, [refreshPool]);
 

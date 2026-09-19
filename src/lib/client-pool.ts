@@ -1,7 +1,7 @@
 import { SEARCH_FALLBACK, titlesFor } from "@/data/catalog";
 import { matchesFilters, stackSizeOf } from "@/lib/filters";
 import { publicUrl } from "@/lib/public-url";
-import { uniqueTitles } from "@/lib/title-identity";
+import { mergeCatalogTitles, uniqueTitles } from "@/lib/title-identity";
 import type { CatalogTitle, Medium, PathFilters } from "@/lib/types";
 
 type MovieIndexFile = {
@@ -30,6 +30,8 @@ type GameIndexFile = {
     genres: string[];
     obscurity: CatalogTitle["obscurity"];
     platforms?: string[];
+    steamAppId?: string;
+    imageUrl?: string;
   }>;
 };
 
@@ -109,8 +111,10 @@ export async function loadGameCatalog(): Promise<{ titles: CatalogTitle[]; sourc
       obscurity: item.obscurity,
       source: "dataset" as const,
       platforms: item.platforms ?? ["Other"],
+      steamAppId: item.steamAppId,
+      imageUrl: item.imageUrl,
     }));
-    const games = uniqueTitles([...titlesFor("game"), ...fromIndex]);
+    const games = mergeCatalogTitles([...titlesFor("game"), ...fromIndex]);
     if (games.length === 0) throw new Error("empty index");
     gameCache = games;
     gameSource = fromIndex.length > 0 ? "dataset" : "catalog";
@@ -140,7 +144,7 @@ export async function loadMusicCatalog(): Promise<{ titles: CatalogTitle[]; sour
       musicbrainzId: item.musicbrainzId,
       imageUrl: item.imageUrl,
     }));
-    const albums = uniqueTitles([...titlesFor("music"), ...fromIndex]);
+    const albums = mergeCatalogTitles([...titlesFor("music"), ...fromIndex]);
     if (albums.length === 0) throw new Error("empty index");
     musicCache = albums;
     musicSource = fromIndex.length > 0 ? "dataset" : "catalog";

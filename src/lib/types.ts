@@ -21,6 +21,8 @@ export type CatalogTitle = {
   /** Recording artist / band. Music albums. */
   artist?: string;
   musicbrainzId?: string;
+  /** Steam store app id. Games. */
+  steamAppId?: string;
   /** First-release platform families. Games only. */
   platforms?: string[];
 };

@@ -19,9 +19,11 @@ export type PosterSubject = {
   imdbId?: string;
   imageUrl?: string;
   musicbrainzId?: string;
+  steamAppId?: string;
 };
 
 const memory = new Map<string, PosterInfo | null>();
+const inflight = new Map<string, Promise<PosterInfo | null>>();
 
 const FILM_INSTANCE_IDS = new Set([
   "Q11424",
@@ -32,11 +34,25 @@ const FILM_INSTANCE_IDS = new Set([
   "Q29168811",
 ]);
 
-const GAME_INSTANCE_IDS = new Set(["Q7889"]);
+const GAME_INSTANCE_IDS = new Set([
+  "Q7889",
+  "Q7058673",
+  "Q1607015",
+  "Q21125433",
+]);
 const ALBUM_INSTANCE_IDS = new Set(["Q482994", "Q208569", "Q222910"]);
 
 function cacheKey(subject: PosterSubject): string {
-  return ["cinema-v2", subject.medium, subject.title, subject.year, subject.imdbId ?? ""].join("|");
+  return [
+    "poster-v3",
+    subject.medium,
+    subject.title,
+    subject.year,
+    subject.imdbId ?? "",
+    subject.steamAppId ?? "",
+    subject.musicbrainzId ?? "",
+    subject.imageUrl ?? "",
+  ].join("|");
 }
 
 function commonsFileUrl(fileName: string): string {
@@ -250,7 +266,13 @@ function templatesLookLikeCinema(templates: string[], medium: Medium): boolean {
   if (medium === "music") {
     return templates.some((name) => name === "template:infobox album" || name === "template:infobox studio album");
   }
-  return templates.some((name) => name === "template:infobox video game");
+  return templates.some(
+    (name) =>
+      name === "template:infobox video game" ||
+      name === "template:infobox vg" ||
+      name === "template:infobox windows game" ||
+      name === "template:infobox macintosh game"
+  );
 }
 
 export async function isCinemaWikiPage(
@@ -264,6 +286,8 @@ export async function isCinemaWikiPage(
     return meta.title;
   }
   if (meta.qid && (await entityIsCinema(meta.qid, medium, signal))) return meta.title;
+  if (medium === "game" && templatesLookLikeCinema(meta.templates, "movie")) return null;
+  if (medium === "game" && titleLooksLikeCinema(meta.title, "movie")) return null;
   const summary = await wikipediaSummary(meta.title, signal);
   if (!summary || summary.type === "disambiguation") return null;
   const blob = `${summary.description ?? ""} ${summary.extract ?? ""}`.toLowerCase();
@@ -281,7 +305,7 @@ export async function isCinemaWikiPage(
     }
     return null;
   }
-  if (/\bvideo game\b/.test(blob) && !/\b(film|novel|album)\b/.test(`${summary.description ?? ""}`.toLowerCase())) {
+  if (/\bvideo game\b/.test(blob) && !/\b(film|movie|novel|album|television series)\b/.test(`${summary.description ?? ""}`.toLowerCase())) {
     return meta.title;
   }
   return null;
@@ -322,68 +346,230 @@ async function posterFromCommonsFile(value: string, articleUrl: string): Promise
   };
 }
 
+function parseSteamAppId(subject: PosterSubject): string | null {
+  const direct = subject.steamAppId?.trim() ?? "";
+  if (/^\d+$/.test(direct)) return direct;
+  const fromId = subject.id?.match(/(?:steam|ogdb-steam)[-_]?(\d+)/i)?.[1];
+  return fromId && /^\d+$/.test(fromId) ? fromId : null;
+}
+
+function steamCoverUrls(appId: string): { url: string; credit: PosterCredit }[] {
+  const hosts = ["https://cdn.cloudflare.steamstatic.com", "https://cdn.akamai.steamstatic.com"];
+  const files = ["library_600x900.jpg", "library_600x900_2x.jpg", "portrait.png"];
+  const credit: PosterCredit = {
+    label: "Steam",
+    href: `https://store.steampowered.com/app/${appId}`,
+  };
+  const urls: { url: string; credit: PosterCredit }[] = [];
+  for (const host of hosts) {
+    for (const file of files) {
+      urls.push({ url: `${host}/steam/apps/${appId}/${file}`, credit });
+    }
+  }
+  return urls;
+}
+
+function probeImage(url: string, timeoutMs = 5000): Promise<boolean> {
+  if (typeof Image === "undefined") return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const img = new Image();
+    const timer = window.setTimeout(() => {
+      img.src = "";
+      resolve(false);
+    }, timeoutMs);
+    img.onload = () => {
+      window.clearTimeout(timer);
+      resolve(img.naturalWidth > 2 && img.naturalHeight > 2);
+    };
+    img.onerror = () => {
+      window.clearTimeout(timer);
+      resolve(false);
+    };
+    img.src = url;
+  });
+}
+
+async function firstWorkingPoster(
+  candidates: { url: string; credit: PosterCredit }[],
+  signal?: AbortSignal
+): Promise<PosterInfo | null> {
+  for (const candidate of candidates) {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    if (await probeImage(candidate.url)) return { url: candidate.url, credit: candidate.credit };
+  }
+  return null;
+}
+
+async function fetchGameWikidataCover(
+  title: string,
+  year: number,
+  signal?: AbortSignal
+): Promise<PosterInfo | null> {
+  const escaped = title.replaceAll('"', '\\"');
+  const rows = await sparql(
+    `SELECT ?image ?steam ?article WHERE {
+      ?item rdfs:label "${escaped}"@en .
+      ?item wdt:P31/wdt:P279* wd:Q7889 .
+      OPTIONAL { ?item wdt:P577 ?date . }
+      FILTER(!BOUND(?date) || YEAR(?date) >= ${year - 1} && YEAR(?date) <= ${year + 1})
+      OPTIONAL { ?item wdt:P18 ?image . }
+      OPTIONAL { ?item wdt:P1733 ?steam . }
+      OPTIONAL { ?article schema:about ?item ; schema:isPartOf <https://en.wikipedia.org/> . }
+    } LIMIT 5`,
+    signal
+  );
+  for (const row of rows) {
+    const steam = row.steam?.value?.trim();
+    if (steam && /^\d+$/.test(steam)) {
+      const fromSteam = await firstWorkingPoster(steamCoverUrls(steam), signal);
+      if (fromSteam) return fromSteam;
+    }
+  }
+  for (const row of rows) {
+    const image = row.image?.value;
+    const article = row.article?.value;
+    if (!image) continue;
+    const poster = await posterFromCommonsFile(
+      image,
+      article ? article.replace("http://", "https://") : articleUrlFromTitle(title)
+    );
+    if (poster && (await probeImage(poster.url))) return poster;
+  }
+  return null;
+}
+
+async function fetchGamePoster(subject: PosterSubject, signal?: AbortSignal): Promise<PosterInfo | null> {
+  if (subject.imageUrl) {
+    const baked = await firstWorkingPoster(
+      [
+        {
+          url: subject.imageUrl,
+          credit: {
+            label: subject.imageUrl.includes("wikimedia") ? "Wikimedia Commons" : "Game catalog",
+            href: subject.imageUrl,
+          },
+        },
+      ],
+      signal
+    );
+    if (baked) return baked;
+  }
+
+  const steamId = parseSteamAppId(subject);
+  if (steamId) {
+    const fromSteam = await firstWorkingPoster(steamCoverUrls(steamId), signal);
+    if (fromSteam) return fromSteam;
+  }
+
+  const fromData = await fetchGameWikidataCover(subject.title, subject.year, signal);
+  if (fromData) return fromData;
+
+  const pageTitle = await resolveCinemaWikiPage(subject.title, subject.year, "game", undefined, signal);
+  if (!pageTitle) return null;
+  const summary = await wikipediaSummary(pageTitle, signal);
+  const fromPage = posterFromSummary(summary, pageTitle);
+  if (fromPage && (await probeImage(fromPage.url))) return fromPage;
+  return null;
+}
+
+async function fetchMoviePoster(subject: PosterSubject, signal?: AbortSignal): Promise<PosterInfo | null> {
+  const pageTitle = await resolveCinemaWikiPage(
+    subject.title,
+    subject.year,
+    subject.medium,
+    subject.imdbId,
+    signal
+  );
+  if (!pageTitle) return null;
+  const summary = await wikipediaSummary(pageTitle, signal);
+  const fromPage = posterFromSummary(summary, pageTitle);
+  if (fromPage) return fromPage;
+  if (subject.imdbId && /^tt\d+$/.test(subject.imdbId) && subject.medium === "movie") {
+    const rows = await sparql(
+      `SELECT ?image WHERE { ?item wdt:P345 "${subject.imdbId}" . ?item wdt:P31/wdt:P279* wd:Q11424 . ?item wdt:P18 ?image . } LIMIT 1`,
+      signal
+    );
+    const image = rows[0]?.image?.value;
+    if (image) {
+      const poster = await posterFromCommonsFile(image, articleUrlFromTitle(pageTitle));
+      if (poster) return poster;
+    }
+  }
+  return null;
+}
+
+async function fetchMusicPoster(subject: PosterSubject): Promise<PosterInfo | null> {
+  const mbid = subject.musicbrainzId ?? subject.id?.replace(/^mbid-/, "");
+  const coverUrl = subject.imageUrl ?? (mbid ? `https://coverartarchive.org/release-group/${mbid}/front-250` : "");
+  if (!coverUrl) return null;
+  return {
+    url: coverUrl,
+    credit: {
+      label: "Cover Art Archive",
+      href: mbid ? `https://musicbrainz.org/release-group/${mbid}` : coverUrl,
+    },
+  };
+}
+
+async function resolvePoster(subject: PosterSubject, signal?: AbortSignal): Promise<PosterInfo | null> {
+  if (subject.medium === "music") return fetchMusicPoster(subject);
+  if (subject.medium === "game") return fetchGamePoster(subject, signal);
+  return fetchMoviePoster(subject, signal);
+}
+
+export function peekPoster(subject: PosterSubject): PosterInfo | null | undefined {
+  const key = cacheKey(subject);
+  if (!memory.has(key)) return undefined;
+  return memory.get(key) ?? null;
+}
+
+export function hasReadyPoster(title: CatalogTitle): boolean {
+  return peekPoster(catalogPosterSubject(title)) != null;
+}
+
 export async function fetchPoster(
   subject: PosterSubject,
   signal?: AbortSignal
 ): Promise<PosterInfo | null> {
   const key = cacheKey(subject);
   if (memory.has(key)) return memory.get(key) ?? null;
-
-  if (subject.medium === "music") {
-    const mbid = subject.musicbrainzId ?? subject.id?.replace(/^mbid-/, "");
-    const coverUrl = subject.imageUrl ?? (mbid ? `https://coverartarchive.org/release-group/${mbid}/front-250` : "");
-    if (coverUrl) {
-      const info: PosterInfo = {
-        url: coverUrl,
-        credit: {
-          label: "Cover Art Archive",
-          href: mbid ? `https://musicbrainz.org/release-group/${mbid}` : coverUrl,
-        },
-      };
-      memory.set(key, info);
-      return info;
-    }
-  }
-
-  try {
-    const pageTitle = await resolveCinemaWikiPage(
-      subject.title,
-      subject.year,
-      subject.medium,
-      subject.imdbId,
-      signal
-    );
-    if (!pageTitle) {
-      memory.set(key, null);
-      return null;
-    }
-    const summary = await wikipediaSummary(pageTitle, signal);
-    const fromPage = posterFromSummary(summary, pageTitle);
-    if (fromPage) {
-      memory.set(key, fromPage);
-      return fromPage;
-    }
-    if (subject.imdbId && /^tt\d+$/.test(subject.imdbId) && subject.medium === "movie") {
-      const rows = await sparql(
-        `SELECT ?image WHERE { ?item wdt:P345 "${subject.imdbId}" . ?item wdt:P31/wdt:P279* wd:Q11424 . ?item wdt:P18 ?image . } LIMIT 1`,
-        signal
-      );
-      const image = rows[0]?.image?.value;
-      if (image) {
-        const poster = await posterFromCommonsFile(image, articleUrlFromTitle(pageTitle));
-        if (poster) {
-          memory.set(key, poster);
-          return poster;
-        }
+  const existing = inflight.get(key);
+  const work =
+    existing ??
+    (async () => {
+      try {
+        const info = await resolvePoster(subject);
+        if (info) memory.set(key, info);
+        return info;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") throw error;
+        return null;
+      } finally {
+        inflight.delete(key);
       }
+    })();
+  if (!existing) inflight.set(key, work);
+
+  if (!signal) return work;
+  return new Promise((resolve, reject) => {
+    const onAbort = () => reject(new DOMException("Aborted", "AbortError"));
+    if (signal.aborted) {
+      onAbort();
+      return;
     }
-    memory.set(key, null);
-    return null;
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    memory.set(key, null);
-    return null;
-  }
+    signal.addEventListener("abort", onAbort, { once: true });
+    work.then(
+      (info) => {
+        signal.removeEventListener("abort", onAbort);
+        if (!signal.aborted) resolve(info);
+      },
+      (error: unknown) => {
+        signal.removeEventListener("abort", onAbort);
+        if (signal.aborted) return;
+        reject(error);
+      }
+    );
+  });
 }
 
 export function catalogPosterSubject(title: CatalogTitle): PosterSubject {
@@ -395,34 +581,24 @@ export function catalogPosterSubject(title: CatalogTitle): PosterSubject {
     imdbId: title.imdbId,
     imageUrl: title.imageUrl,
     musicbrainzId: title.musicbrainzId,
+    steamAppId: title.steamAppId,
   };
 }
 
 function warmupImage(url: string): Promise<void> {
-  if (typeof Image === "undefined") return Promise.resolve();
-  return new Promise((resolve) => {
-    const img = new Image();
-    const done = () => resolve();
-    img.onload = done;
-    img.onerror = done;
-    const timer = window.setTimeout(done, 8000);
-    img.onload = () => {
-      window.clearTimeout(timer);
-      resolve();
-    };
-    img.onerror = () => {
-      window.clearTimeout(timer);
-      resolve();
-    };
-    img.src = url;
-  });
+  return probeImage(url, 8000).then(() => undefined);
 }
 
-/** Resolve and decode posters for the current dealt stack so the next card is not a first-paint wait. */
-export async function preloadPosterStack(titles: CatalogTitle[]): Promise<void> {
-  const subjects = titles.map(catalogPosterSubject);
+const PRELOAD_WINDOW = 10;
+
+/** Resolve and decode a small window of posters. Never blocks the current pair. */
+export async function preloadPosterStack(
+  titles: CatalogTitle[],
+  options?: { concurrency?: number }
+): Promise<void> {
+  const subjects = titles.map(catalogPosterSubject).filter((subject) => peekPoster(subject) === undefined);
   let cursor = 0;
-  const workers = Math.min(4, Math.max(1, subjects.length));
+  const workers = Math.min(options?.concurrency ?? 2, Math.max(1, subjects.length));
   await Promise.all(
     Array.from({ length: workers }, async () => {
       while (cursor < subjects.length) {
@@ -439,3 +615,19 @@ export async function preloadPosterStack(titles: CatalogTitle[]): Promise<void> 
     })
   );
 }
+
+export function titlesNeedingPosters(titles: CatalogTitle[]): CatalogTitle[] {
+  return titles.filter((title) => !hasReadyPoster(title));
+}
+
+/** Keep the next 10 unloaded titles warming. Extra batches come from further down the stack. */
+export function scheduleStackPosters(queue: CatalogTitle[], extraWindow = false): void {
+  const need = titlesNeedingPosters(queue);
+  const lead = need.slice(0, PRELOAD_WINDOW);
+  void preloadPosterStack(lead, { concurrency: 2 });
+  if (extraWindow) {
+    void preloadPosterStack(need.slice(PRELOAD_WINDOW, PRELOAD_WINDOW * 2), { concurrency: 2 });
+  }
+}
+
+export const POSTER_PRELOAD_EVERY = PRELOAD_WINDOW;

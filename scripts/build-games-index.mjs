@@ -201,6 +201,8 @@ function mergeInto(byKey, row) {
       platforms: [...new Set(row.platforms)],
       obscurity: row.obscurity,
       sourceIds: [...(row.sourceIds ?? [])],
+      steamAppId: row.steamAppId,
+      imageUrl: row.imageUrl,
     });
     return;
   }
@@ -209,6 +211,8 @@ function mergeInto(byKey, row) {
   existing.sourceIds = [...new Set([...(existing.sourceIds ?? []), ...(row.sourceIds ?? [])])];
   if (row.obscurity < existing.obscurity) existing.obscurity = row.obscurity;
   if (row.id?.startsWith("gdx-") && existing.id.startsWith("ogdb-")) existing.id = row.id;
+  if (!existing.steamAppId && row.steamAppId) existing.steamAppId = row.steamAppId;
+  if (!existing.imageUrl && row.imageUrl) existing.imageUrl = row.imageUrl;
 }
 
 async function exists(filePath) {
@@ -237,6 +241,7 @@ async function loadOpenGameDb(byKey) {
     const iMeta = idx("metascore");
     const iGenre = idx("genre");
     const iSteam = idx("steam_id");
+    const iCover = idx("cover_art_url");
     for (let r = 1; r < table.length; r += 1) {
       const cols = table[r];
       if (!cols) continue;
@@ -261,6 +266,8 @@ async function loadOpenGameDb(byKey) {
           platformCount: 1,
         }),
         sourceIds: [id, steamId ? `steam-${steamId}` : ""].filter(Boolean),
+        steamAppId: steamId && /^\d+$/.test(steamId) ? steamId : undefined,
+        imageUrl: iCover >= 0 ? (cols[iCover] ?? "").trim() || undefined : undefined,
       });
       rows += 1;
     }
@@ -347,6 +354,7 @@ async function loadGameDex(byKey) {
         consoleNames.push(...consoles.split(/[,/|]/).map((part) => part.trim()));
       }
       const id = `gdx-${row.slug || slug(title)}`;
+      const cover = String(row.cover_url ?? row.cover ?? "").trim();
       mergeInto(byKey, {
         id,
         title,
@@ -355,6 +363,7 @@ async function loadGameDex(byKey) {
         platforms: mapPlatforms(...consoleNames),
         obscurity: obscurityFromScores({ platformCount: consoleNames.length }),
         sourceIds: [id, row.pk ? `gdx-pk-${row.pk}` : ""].filter(Boolean),
+        imageUrl: cover || undefined,
       });
       games += 1;
     }
@@ -382,6 +391,9 @@ async function main() {
     }
     seenIds.add(id);
     const platforms = row.platforms.filter(Boolean);
+    const steamFromIds = (row.sourceIds ?? [])
+      .map((value) => String(value).match(/^steam-(\d+)$/)?.[1])
+      .find(Boolean);
     games.push({
       id,
       title: row.title,
@@ -389,6 +401,8 @@ async function main() {
       genres: row.genres.length > 0 ? row.genres : ["Adventure"],
       obscurity: row.obscurity,
       platforms: platforms.length > 0 ? platforms : ["Other"],
+      ...(row.steamAppId || steamFromIds ? { steamAppId: row.steamAppId || steamFromIds } : {}),
+      ...(row.imageUrl ? { imageUrl: row.imageUrl } : {}),
     });
   }
 

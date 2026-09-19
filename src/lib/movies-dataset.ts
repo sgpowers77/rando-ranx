@@ -3,7 +3,7 @@ import path from "node:path";
 import { MOVIE_GENRES, matchesFilters, stackSizeOf } from "@/lib/filters";
 import { ensureMoviesMetadata, moviesMetadataPath } from "@/lib/dataset-file";
 import { titlesFor } from "@/data/catalog";
-import { uniqueTitles } from "@/lib/title-identity";
+import { mergeCatalogTitles, uniqueTitles } from "@/lib/title-identity";
 import { isEnglishDialogueFilm } from "@/lib/language";
 import { obscurityFromSignals } from "@/lib/obscurity";
 import type { CatalogTitle, Medium, PathFilters } from "@/lib/types";
@@ -261,6 +261,8 @@ function loadGamesIndexSync(): CatalogTitle[] {
         genres: string[];
         obscurity: CatalogTitle["obscurity"];
         platforms?: string[];
+        steamAppId?: string;
+        imageUrl?: string;
       }>;
     };
     return (data.games ?? []).map((item) => ({
@@ -272,6 +274,8 @@ function loadGamesIndexSync(): CatalogTitle[] {
       obscurity: item.obscurity,
       source: "dataset" as const,
       platforms: item.platforms ?? ["Other"],
+      steamAppId: item.steamAppId,
+      imageUrl: item.imageUrl,
     }));
   } catch {
     return [];
@@ -290,7 +294,7 @@ export async function sampleTitlePool(options: {
 
   if (options.medium === "game") {
     const fromIndex = loadGamesIndexSync();
-    const pool = uniqueTitles([...titlesFor("game"), ...fromIndex]);
+    const pool = mergeCatalogTitles([...titlesFor("game"), ...fromIndex]);
     const eligible = uniqueTitles(
       pool.filter((item) => !exclude.has(item.id) && matchesFilters(item, filters))
     );
@@ -303,7 +307,7 @@ export async function sampleTitlePool(options: {
 
   if (options.medium === "music") {
     const fromIndex = loadMusicIndexSync();
-    const pool = uniqueTitles([...titlesFor("music"), ...fromIndex]);
+    const pool = mergeCatalogTitles([...titlesFor("music"), ...fromIndex]);
     const eligible = uniqueTitles(
       pool.filter((item) => !exclude.has(item.id) && matchesFilters(item, filters))
     );

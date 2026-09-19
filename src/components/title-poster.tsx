@@ -71,7 +71,7 @@ export function TitlePoster(props: TitlePosterProps) {
     if (!subject) return;
     const timer = window.setTimeout(() => setTimedOut(true), POSTER_WAIT_MS);
     return () => window.clearTimeout(timer);
-  }, [subject?.id, subject?.title, subject?.year, subject?.medium, subject?.imdbId]);
+  }, [subject?.id, subject?.title, subject?.year, subject?.medium, subject?.imdbId, subject?.steamAppId, subject?.imageUrl, subject?.musicbrainzId]);
 
   return (
     <figure className={cn("shrink-0", props.className)}>

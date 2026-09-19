@@ -30,9 +30,20 @@ function game(
   year: number,
   genres: string[],
   obscurity: CatalogTitle["obscurity"],
-  platforms: string[]
+  platforms: string[],
+  steamAppId?: string
 ): CatalogTitle {
-  return { id, medium: "game", title, year, genres, obscurity, source: "catalog", platforms };
+  return {
+    id,
+    medium: "game",
+    title,
+    year,
+    genres,
+    obscurity,
+    source: "catalog",
+    platforms,
+    ...(steamAppId ? { steamAppId } : {}),
+  };
 }
 
 export const MOVIES: CatalogTitle[] = [

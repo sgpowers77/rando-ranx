@@ -38,6 +38,37 @@ export function uniqueTitles<T extends { id: string; title: string; year: number
   return next;
 }
 
+/** Keep the first identity, but copy later cover/Steam fields onto it. */
+export function mergeCatalogTitles<T extends CatalogTitle>(titles: T[]): T[] {
+  const byId = new Map<string, T>();
+  const byKey = new Map<string, T>();
+  const order: string[] = [];
+  for (const title of titles) {
+    const key = titleIdentity(title);
+    const existing = byId.get(title.id) ?? byKey.get(key);
+    if (!existing) {
+      byId.set(title.id, title);
+      byKey.set(key, title);
+      order.push(title.id);
+      continue;
+    }
+    const merged = {
+      ...existing,
+      steamAppId: existing.steamAppId || title.steamAppId,
+      imageUrl: existing.imageUrl || title.imageUrl,
+      imageCreditLabel: existing.imageCreditLabel || title.imageCreditLabel,
+      imageCreditHref: existing.imageCreditHref || title.imageCreditHref,
+      musicbrainzId: existing.musicbrainzId || title.musicbrainzId,
+      imdbId: existing.imdbId || title.imdbId,
+      platforms:
+        existing.platforms && existing.platforms.length > 0 ? existing.platforms : title.platforms,
+    };
+    byId.set(existing.id, merged);
+    byKey.set(key, merged);
+  }
+  return order.map((id) => byId.get(id)).filter((item): item is T => item != null);
+}
+
 export function pickDistinctTitles(
   candidates: CatalogTitle[],
   blocked: CatalogTitle[],
