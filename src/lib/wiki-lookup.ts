@@ -1,9 +1,10 @@
+import { wikiHint } from "@/lib/medium";
 import type { Medium } from "@/lib/types";
 
 export const WIKI_UA = "RandoRanx/1.0 (https://github.com/sgpowers77/rando-ranx; film years)";
 
 export function extractYearFromWikiText(text: string, timestamp?: string): number | null {
-  const titled = text.match(/\((\d{4})\s+(?:[a-z]+\s+)*(?:film|movie|video game)/i);
+  const titled = text.match(/\((\d{4})\s+(?:[a-z]+\s+)*(?:film|movie|video game|album)/i);
   if (titled) return clampYear(Number(titled[1]));
   const isA = text.match(/\bis an?\s+(\d{4})\b/i);
   if (isA) return clampYear(Number(isA[1]));
@@ -47,7 +48,7 @@ export async function releaseYearForPage(pageTitle: string): Promise<number | nu
 }
 
 async function searchWikipediaPage(title: string, medium: Medium): Promise<string | null> {
-  const hint = medium === "movie" ? "film" : "video game";
+  const hint = wikiHint(medium);
   const api = new URL("https://en.wikipedia.org/w/api.php");
   api.searchParams.set("action", "query");
   api.searchParams.set("list", "search");

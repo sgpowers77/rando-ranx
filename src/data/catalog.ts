@@ -13,6 +13,17 @@ function movie(
   return { id, medium: "movie", title, year, genres, obscurity, source: "catalog", englishDialogue };
 }
 
+function album(
+  id: string,
+  title: string,
+  year: number,
+  genres: string[],
+  obscurity: CatalogTitle["obscurity"],
+  artist: string
+): CatalogTitle {
+  return { id, medium: "music", title, year, genres, obscurity, source: "catalog", artist };
+}
+
 function game(
   id: string,
   title: string,
@@ -136,12 +147,52 @@ export const GAMES: CatalogTitle[] = [
   game("game-metaphor", "Metaphor: ReFantazio", 2024, ["RPG"], 3, ["PlayStation", "Xbox", "PC"]),
 ];
 
-export const CATALOG: CatalogTitle[] = [...MOVIES, ...GAMES];
+export const ALBUMS: CatalogTitle[] = [
+  album("music-kind-of-blue", "Kind of Blue", 1959, ["Jazz"], 1, "Miles Davis"),
+  album("music-abbey-road", "Abbey Road", 1969, ["Rock"], 1, "The Beatles"),
+  album("music-whats-going-on", "What's Going On", 1971, ["R&B"], 1, "Marvin Gaye"),
+  album("music-blue", "Blue", 1971, ["Folk"], 2, "Joni Mitchell"),
+  album("music-songs-in-the-key", "Songs in the Key of Life", 1976, ["R&B", "Pop"], 1, "Stevie Wonder"),
+  album("music-rumours", "Rumours", 1977, ["Rock", "Pop"], 1, "Fleetwood Mac"),
+  album("music-off-the-wall", "Off the Wall", 1979, ["Pop", "R&B"], 1, "Michael Jackson"),
+  album("music-remain-in-light", "Remain in Light", 1980, ["Rock"], 2, "Talking Heads"),
+  album("music-thriller", "Thriller", 1982, ["Pop"], 1, "Michael Jackson"),
+  album("music-purple-rain", "Purple Rain", 1984, ["Pop", "Rock"], 1, "Prince"),
+  album("music-it-takes-a-nation", "It Takes a Nation of Millions to Hold Us Back", 1988, ["Hip-Hop"], 2, "Public Enemy"),
+  album("music-the-chronic", "The Chronic", 1992, ["Hip-Hop"], 1, "Dr. Dre"),
+  album("music-enter-the-wu", "Enter the Wu-Tang (36 Chambers)", 1993, ["Hip-Hop"], 2, "Wu-Tang Clan"),
+  album("music-dummy", "Dummy", 1994, ["Electronic"], 3, "Portishead"),
+  album("music-ok-computer", "OK Computer", 1997, ["Rock"], 1, "Radiohead"),
+  album("music-homework", "Homework", 1997, ["Electronic"], 2, "Daft Punk"),
+  album("music-the-miseducation", "The Miseducation of Lauryn Hill", 1998, ["R&B", "Hip-Hop"], 1, "Lauryn Hill"),
+  album("music-kid-a", "Kid A", 2000, ["Electronic", "Rock"], 2, "Radiohead"),
+  album("music-is-this-it", "Is This It", 2001, ["Rock"], 2, "The Strokes"),
+  album("music-yankee-hotel", "Yankee Hotel Foxtrot", 2002, ["Rock", "Folk"], 3, "Wilco"),
+  album("music-speakerboxxx", "Speakerboxxx/The Love Below", 2003, ["Hip-Hop"], 2, "OutKast"),
+  album("music-funeral", "Funeral", 2004, ["Rock"], 2, "Arcade Fire"),
+  album("music-late-registration", "Late Registration", 2005, ["Hip-Hop"], 1, "Kanye West"),
+  album("music-sound-of-silver", "Sound of Silver", 2007, ["Electronic"], 3, "LCD Soundsystem"),
+  album("music-in-rainbows", "In Rainbows", 2007, ["Rock"], 2, "Radiohead"),
+  album("music-my-beautiful", "My Beautiful Dark Twisted Fantasy", 2010, ["Hip-Hop"], 1, "Kanye West"),
+  album("music-channel-orange", "Channel Orange", 2012, ["R&B"], 2, "Frank Ocean"),
+  album("music-to-pimp-a-butterfly", "To Pimp a Butterfly", 2015, ["Hip-Hop", "Jazz"], 1, "Kendrick Lamar"),
+  album("music-blonde", "Blonde", 2016, ["R&B", "Pop"], 2, "Frank Ocean"),
+  album("music-lemonade", "Lemonade", 2016, ["R&B", "Pop"], 1, "Beyoncé"),
+  album("music-melodrama", "Melodrama", 2017, ["Pop"], 2, "Lorde"),
+  album("music-fetch-the-bolt", "Fetch the Bolt Cutters", 2020, ["Pop", "Folk"], 3, "Fiona Apple"),
+  album("music-call-me-if", "Call Me If You Get Lost", 2021, ["Hip-Hop"], 2, "Tyler, the Creator"),
+  album("music-dawn-fm", "Dawn FM", 2022, ["Pop", "R&B"], 2, "The Weeknd"),
+  album("music-cowboy-carter", "Cowboy Carter", 2024, ["Country", "Pop"], 1, "Beyoncé"),
+];
+
+export const CATALOG: CatalogTitle[] = [...MOVIES, ...GAMES, ...ALBUMS];
 
 export const CATALOG_BY_ID = new Map(CATALOG.map((item) => [item.id, item]));
 
 export function titlesFor(medium: CatalogTitle["medium"]): CatalogTitle[] {
-  return medium === "movie" ? MOVIES : GAMES;
+  if (medium === "game") return GAMES;
+  if (medium === "music") return ALBUMS;
+  return MOVIES;
 }
 
 export function withReleaseYear(
@@ -174,4 +225,6 @@ export const SEARCH_FALLBACK: CatalogTitle[] = [
   movie("search-aftersun", "Aftersun", 2022, ["Drama"], 4),
   game("search-hades", "Hades", 2020, ["Action", "Indie"], 2, ["PC"]),
   game("search-outer-wilds", "Outer Wilds", 2019, ["Adventure"], 4, ["PC", "Xbox"]),
+  album("search-ok-computer", "OK Computer", 1997, ["Rock"], 1, "Radiohead"),
+  album("search-kind-of-blue", "Kind of Blue", 1959, ["Jazz"], 1, "Miles Davis"),
 ];

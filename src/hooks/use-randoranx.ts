@@ -1,7 +1,7 @@
 "use client";
 
 import { resolveTitle } from "@/data/catalog";
-import { loadGameCatalog, loadMovieCatalog, sampleClientPool } from "@/lib/client-pool";
+import { loadGameCatalog, loadMovieCatalog, loadMusicCatalog, sampleClientPool } from "@/lib/client-pool";
 import { matchesFilters, randomizeFilters as rollPathFilters, stackSizeOf } from "@/lib/filters";
 import { distinctTourneyPair, pickDistinctTitles, uniqueTitles } from "@/lib/title-identity";
 import { preloadPosterStack } from "@/lib/poster";
@@ -188,6 +188,7 @@ export function useRandoRanx() {
     if (!mounted) return;
     if (session.medium === "movie") void loadMovieCatalog();
     if (session.medium === "game") void loadGameCatalog();
+    if (session.medium === "music") void loadMusicCatalog();
   }, [mounted, session.medium]);
 
   const eligibleCount = useMemo(() => {
@@ -283,6 +284,7 @@ export function useRandoRanx() {
           recentlyShown: {
             movie: prev.recentlyShown?.movie ?? [],
             game: prev.recentlyShown?.game ?? [],
+            music: prev.recentlyShown?.music ?? [],
             [prev.medium]: rememberShown(prev, prev.medium, rest.slice(0, 1)),
           },
           responses: [...prev.responses, response],
@@ -341,6 +343,7 @@ export function useRandoRanx() {
         randomizeFilters: {
           movie: prev.randomizeFilters?.movie === true,
           game: prev.randomizeFilters?.game === true,
+          music: prev.randomizeFilters?.music === true,
           [medium]: false,
         },
       }));
@@ -358,6 +361,7 @@ export function useRandoRanx() {
         const flags = {
           movie: prev.randomizeFilters?.movie === true,
           game: prev.randomizeFilters?.game === true,
+          music: prev.randomizeFilters?.music === true,
           [medium]: on,
         };
         if (!on) return { ...prev, randomizeFilters: flags };

@@ -27,8 +27,22 @@ export const GAME_GENRES = [
   "Strategy",
 ] as const;
 
+export const MUSIC_GENRES = [
+  "Rock",
+  "Pop",
+  "Hip-Hop",
+  "Jazz",
+  "Electronic",
+  "Classical",
+  "Country",
+  "R&B",
+  "Folk",
+  "Metal",
+] as const;
+
 export const DECADES = [1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020] as const;
 export const GAME_DECADES = [1970, 1980, 1990, 2000, 2010, 2020] as const;
+export const MUSIC_DECADES = [1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020] as const;
 
 /** First-release families that match the current game catalog (handhelds roll into Nintendo / PlayStation). */
 export const GAME_PLATFORMS = [
@@ -54,7 +68,21 @@ export function stackSizeOf(value: number | undefined): StackSize {
 }
 
 export function decadesFor(medium: Medium): readonly number[] {
-  return medium === "game" ? GAME_DECADES : DECADES;
+  if (medium === "game") return GAME_DECADES;
+  if (medium === "music") return MUSIC_DECADES;
+  return DECADES;
+}
+
+export function genresFor(medium: Medium): readonly string[] {
+  if (medium === "game") return GAME_GENRES;
+  if (medium === "music") return MUSIC_GENRES;
+  return MOVIE_GENRES;
+}
+
+export function decadeFloor(medium: Medium): number {
+  if (medium === "game") return 1970;
+  if (medium === "music") return 1950;
+  return 1940;
 }
 
 export function decadeOf(year: number): number {
@@ -64,7 +92,7 @@ export function decadeOf(year: number): number {
 export function defaultFilters(medium: Medium): PathFilters {
   return {
     decades: [...decadesFor(medium)],
-    genres: [...(medium === "movie" ? MOVIE_GENRES : GAME_GENRES)],
+    genres: [...genresFor(medium)],
     obscurity: [...OBSCURITY_LEVELS],
     mpaa: medium === "movie" ? [...MPAA_RATINGS] : [],
     includeForeign: true,
@@ -81,7 +109,7 @@ export function matchesFilters(title: CatalogTitle, filters: PathFilters): boole
     return false;
   }
   const decade = decadeOf(title.year);
-  const floor = title.medium === "game" ? 1970 : 1940;
+  const floor = decadeFloor(title.medium);
   const decadeOk = decades.includes(decade) || (decade < floor && decades.includes(floor));
   const genreOk = title.genres.some((genre) => genres.includes(genre));
   const obscurityOk = obscurity.includes(title.obscurity);
@@ -159,7 +187,7 @@ function shufflePick<T>(items: readonly T[]): T[] {
 export function randomizeFilters(medium: Medium): PathFilters {
   const next: PathFilters = {
     decades: shufflePick(decadesFor(medium)),
-    genres: shufflePick(medium === "movie" ? MOVIE_GENRES : GAME_GENRES),
+    genres: shufflePick(genresFor(medium)),
     obscurity: shufflePick([...OBSCURITY_LEVELS]),
     stackSize: STACK_SIZES[Math.floor(Math.random() * STACK_SIZES.length)] as StackSize,
     mpaa: medium === "movie" ? shufflePick([...MPAA_RATINGS]) : [],

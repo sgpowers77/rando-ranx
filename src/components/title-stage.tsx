@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { TitleDirector } from "@/hooks/use-director";
 import { useWtfDropReveal } from "@/hooks/use-wtf-drop-reveal";
 import { decadeOf } from "@/lib/filters";
+import { heardItLabel, skippedItLabel, wantItLabel, unitLabel } from "@/lib/medium";
 import type { CatalogTitle, Medium } from "@/lib/types";
 import { useRef, useState } from "react";
 
@@ -38,9 +39,9 @@ export function TitleStage({
   const dragged = useRef(false);
   const wtfDrop = useWtfDropReveal();
   const medium: Medium = title.medium;
-  const seenLabel = medium === "movie" ? "Seen It" : "Played It";
-  const skipLabel = medium === "movie" ? "Haven't Seen It" : "Haven't Played It";
-  const wantLabel = medium === "movie" ? "Want to See It" : "Want to Play It";
+  const seenLabel = heardItLabel(medium);
+  const skipLabel = skippedItLabel(medium);
+  const wantLabel = wantItLabel(medium);
 
   const endDrag = () => {
     wtfDrop.hide();
@@ -77,7 +78,7 @@ export function TitleStage({
             <div className="min-w-0 flex-1 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <p className="text-xs font-medium tracking-widest text-primary uppercase">
-                  {medium === "movie" ? "Movie" : "Game"}
+                  {unitLabel(medium)}
                 </p>
                 {onToggleWatch ? (
                   <CardIconBar placement="inline">

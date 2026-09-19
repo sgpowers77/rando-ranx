@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { unitLabel } from "@/lib/medium";
 import { TitleDirector } from "@/hooks/use-director";
 import { useWtfDropReveal } from "@/hooks/use-wtf-drop-reveal";
 import { decadeOf } from "@/lib/filters";
@@ -236,7 +237,7 @@ function MatchupCard({
       </div>
       <CardHeader className="flex min-h-0 flex-1 flex-col gap-1 px-2 pt-2 lg:gap-2 lg:px-4 lg:pr-4">
         <p className="hidden text-xs font-medium tracking-widest text-primary uppercase lg:block">
-          {title.medium === "movie" ? "Movie" : "Game"}
+          {unitLabel(title.medium)}
         </p>
         <CardTitle className="font-heading line-clamp-2 min-h-[2.5rem] text-sm leading-tight text-balance lg:min-h-[4.5rem] lg:text-3xl">
           {title.title}

@@ -5,8 +5,13 @@ export function titleIdentity(title: {
   title: string;
   year: number;
   medium: string;
+  artist?: string;
 }): string {
   const name = title.title.trim().toLowerCase().replace(/\s+/g, " ");
+  const artist = (title.artist ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (title.medium === "music" && artist) {
+    return `${title.medium}|${name}|${title.year}|${artist}`;
+  }
   return `${title.medium}|${name}|${title.year}`;
 }
 

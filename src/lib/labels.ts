@@ -1,3 +1,4 @@
+import { resultHeardLabel, resultSkippedLabel, resultWantLabel } from "@/lib/medium";
 import type { PlayMode, SessionResponse } from "@/lib/types";
 
 export function playModeLabel(mode: PlayMode | null | undefined): string {
@@ -12,10 +13,10 @@ export function resultLabel(entry: SessionResponse): string {
     return "Contender";
   }
   if (entry.kind === "rated") {
-    return entry.medium === "movie" ? "Seen it" : "Played it";
+    return resultHeardLabel(entry.medium);
   }
   if (entry.kind === "queued") {
-    return entry.medium === "movie" ? "Want to see it" : "Want to play it";
+    return resultWantLabel(entry.medium);
   }
-  return entry.medium === "movie" ? "Haven't seen it" : "Haven't played it";
+  return resultSkippedLabel(entry.medium);
 }

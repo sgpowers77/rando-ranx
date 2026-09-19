@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { defaultFilters } from "@/lib/filters";
 import { setExperienceHidden, experienceHidden } from "@/lib/tourney-experience";
 import type { Medium, PathFilters, PlayMode } from "@/lib/types";
+import { catalogLabel, catalogNoun } from "@/lib/medium";
 import { Dices, ListOrdered } from "lucide-react";
 import { useState } from "react";
 
@@ -28,7 +29,7 @@ export function ModePicker({
   onFullRandoChange,
   onBack,
 }: ModePickerProps) {
-  const catalog = medium === "movie" ? "movies" : "games";
+  const catalog = catalogNoun(medium);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [experienceOpen, setExperienceOpen] = useState(false);
   const [pendingMode, setPendingMode] = useState<PlayMode | null>(null);
@@ -46,7 +47,7 @@ export function ModePicker({
     <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-8 px-4 py-10 sm:px-6">
       <div>
         <p className="text-sm font-medium tracking-wide text-primary uppercase">
-          {medium === "movie" ? "Movies" : "Games"}
+          {catalogLabel(medium)}
         </p>
         <h1 className="mt-2 max-w-xl font-heading text-4xl leading-tight tracking-tight text-balance sm:text-5xl">
           Ranx one at a time, or run a Tourney.
@@ -72,7 +73,7 @@ export function ModePicker({
         </Button>
       </div>
       <Button type="button" variant="ghost" className="self-start" onClick={onBack}>
-        Back to Movies or Games
+        Back to catalog pick
       </Button>
       <PathSettings
         open={settingsOpen}

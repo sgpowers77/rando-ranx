@@ -206,7 +206,8 @@ export function AppSettingsMenu({
             <AlertDialogTitle>Clear Session?</AlertDialogTitle>
             <AlertDialogDescription>
               This clears your results log, Discard pile, Watch tags, Queue, remembered Tourney skip,
-              path filters, and searched titles. The built-in catalog stays. This cannot be undone.
+              path filters, and searched titles across Movies, Games, and Music. The built-in catalog
+              stays. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

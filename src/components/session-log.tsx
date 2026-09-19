@@ -4,6 +4,7 @@ import { TitlePoster } from "@/components/title-poster";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { catalogLabel } from "@/lib/medium";
 import { resultLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import type { DiscardEntry, Medium, PlayMode, SessionResponse, WatchTag } from "@/lib/types";
@@ -52,7 +53,7 @@ export function SessionLog({
       <div className="shrink-0 border-b px-3 py-3">
         <div className="flex items-center justify-between gap-2">
           <p className="font-heading text-sm font-medium">
-            {medium === "game" ? "Games log" : medium === "movie" ? "Movies log" : "Session log"}
+            {medium ? `${catalogLabel(medium)} log` : "Session log"}
           </p>
           {queueCount > 0 && onOpenQueue ? (
             <Button
@@ -94,7 +95,7 @@ export function SessionLog({
           {newestResults.length === 0 ? (
             <li className="px-3 py-8 text-sm text-muted-foreground">
               {!medium
-                ? "Choose Movies or Games to see that catalog’s Results. Each catalog keeps its own log."
+                ? "Choose Movies, Games, or Music to see that catalog’s Results. Each catalog keeps its own log."
                 : playMode === "rank"
                 ? "Rated titles, skips, and the want list land here. Titles already in Results will not be dealt again in Ranx."
                 : "Ranx titles, skips, and the want list land here. Tourney Contenders show up after you pick them."}
@@ -162,7 +163,7 @@ export function SessionLog({
           {newestDiscards.length === 0 ? (
             <li className="px-3 py-8 text-sm text-muted-foreground">
               {!medium
-                ? "Choose Movies or Games to see that catalog’s discards."
+                ? "Choose Movies, Games, or Music to see that catalog’s discards."
                 : "Titles that lose a Tourney matchup appear here. They are not scored."}
             </li>
           ) : (
@@ -209,7 +210,7 @@ export function SessionLog({
           {newestWatch.length === 0 ? (
             <li className="px-3 py-8 text-sm text-muted-foreground">
               {!medium
-                ? "Choose Movies or Games to see that catalog’s Watch list."
+                ? "Choose Movies, Games, or Music to see that catalog’s Watch list."
                 : "Bookmark a Ranx or Tourney card, or drop it on WTF?? and choose Watchlist."}
             </li>
           ) : (

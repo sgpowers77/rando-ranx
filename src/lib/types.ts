@@ -1,4 +1,4 @@
-export type Medium = "movie" | "game";
+export type Medium = "movie" | "game" | "music";
 
 export type PlayMode = "rank" | "tourney";
 
@@ -18,6 +18,9 @@ export type CatalogTitle = {
   imageCreditLabel?: string;
   imageCreditHref?: string;
   director?: string;
+  /** Recording artist / band. Music albums. */
+  artist?: string;
+  musicbrainzId?: string;
   /** First-release platform families. Games only. */
   platforms?: string[];
 };

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import type { DiscardEntry, SessionResponse, WatchTag } from "@/lib/types";
 import { downloadSessionCsv } from "@/lib/csv";
+import { catalogLabel } from "@/lib/medium";
 import { resultLabel } from "@/lib/labels";
 import { Download, Printer } from "lucide-react";
 
@@ -70,7 +71,7 @@ export function ResultsTable({
         {empty ? (
           <TableRow>
             <TableCell colSpan={7} className="py-8 text-muted-foreground">
-              No answers yet. Pick Movies or Games, then Ranx or Tourney.
+              No answers yet. Pick Movies, Games, or Music, then Ranx or Tourney.
             </TableCell>
           </TableRow>
         ) : (
@@ -79,7 +80,7 @@ export function ResultsTable({
               <TableRow key={entry.id}>
                 <TableCell className="font-medium">{entry.title}</TableCell>
                 <TableCell>{entry.year}</TableCell>
-                <TableCell>{entry.medium === "movie" ? "Movies" : "Games"}</TableCell>
+                <TableCell>{catalogLabel(entry.medium)}</TableCell>
                 <TableCell>{resultLabel(entry)}</TableCell>
                 <TableCell>{entry.kind === "rated" ? entry.rating : "—"}</TableCell>
                 <TableCell className="max-w-xs whitespace-pre-wrap">
@@ -92,7 +93,7 @@ export function ResultsTable({
               <TableRow key={entry.id}>
                 <TableCell className="font-medium">{entry.title}</TableCell>
                 <TableCell>{entry.year}</TableCell>
-                <TableCell>{entry.medium === "movie" ? "Movies" : "Games"}</TableCell>
+                <TableCell>{catalogLabel(entry.medium)}</TableCell>
                 <TableCell>Discarded vs {entry.lostToTitle}</TableCell>
                 <TableCell>—</TableCell>
                 <TableCell>—</TableCell>
@@ -103,7 +104,7 @@ export function ResultsTable({
               <TableRow key={`watch-${tag.titleId}-${tag.taggedAt}`}>
                 <TableCell className="font-medium">{tag.title}</TableCell>
                 <TableCell>{tag.year}</TableCell>
-                <TableCell>{tag.medium === "movie" ? "Movies" : "Games"}</TableCell>
+                <TableCell>{catalogLabel(tag.medium)}</TableCell>
                 <TableCell>Watchlist</TableCell>
                 <TableCell>—</TableCell>
                 <TableCell>—</TableCell>

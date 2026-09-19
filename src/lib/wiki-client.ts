@@ -1,10 +1,11 @@
 import { localSearchFallback } from "@/lib/client-pool";
 import { directorFromExtract } from "@/lib/director";
+import { wikiHint } from "@/lib/medium";
 import { isCinemaWikiPage } from "@/lib/poster";
 import type { CatalogTitle, Medium } from "@/lib/types";
 
 function extractYearFromWikiText(text: string, timestamp?: string): number | null {
-  const titled = text.match(/\((\d{4})\s+(?:[a-z]+\s+)*(?:film|movie|video game)/i);
+  const titled = text.match(/\((\d{4})\s+(?:[a-z]+\s+)*(?:film|movie|video game|album)/i);
   if (titled) {
     const year = Number(titled[1]);
     if (year >= 1900) return year;
@@ -42,12 +43,27 @@ function guessGenres(text: string, medium: Medium): string[] {
     adventure: "Adventure",
     action: "Action",
   };
-  const map = medium === "movie" ? movieMap : gameMap;
+  const musicMap: Record<string, string> = {
+    jazz: "Jazz",
+    hip: "Hip-Hop",
+    rap: "Hip-Hop",
+    soul: "R&B",
+    "r&b": "R&B",
+    country: "Country",
+    folk: "Folk",
+    metal: "Metal",
+    electronic: "Electronic",
+    techno: "Electronic",
+    classical: "Classical",
+    pop: "Pop",
+    rock: "Rock",
+  };
+  const map = medium === "movie" ? movieMap : medium === "music" ? musicMap : gameMap;
   const found = Object.entries(map)
     .filter(([key]) => blob.includes(key))
     .map(([, genre]) => genre);
   if (found.length > 0) return [...new Set(found)].slice(0, 3);
-  return [medium === "movie" ? "Drama" : "Adventure"];
+  return [medium === "movie" ? "Drama" : medium === "music" ? "Rock" : "Adventure"];
 }
 
 function guessPlatforms(text: string): string[] {
@@ -66,6 +82,7 @@ function guessPlatforms(text: string): string[] {
 function looksLikeMedium(text: string, medium: Medium, title: string): boolean {
   const blob = `${title} ${text}`.toLowerCase();
   if (medium === "movie") return /film|movie|cinema|directed by|screenplay/.test(blob);
+  if (medium === "music") return /album|studio album|lp\b|record label|discography/.test(blob);
   return /video game|videogame|developer|publisher|platform/.test(blob);
 }
 
@@ -86,7 +103,7 @@ export async function searchWikipediaClient(
   medium: Medium
 ): Promise<{ results: CatalogTitle[]; source: "wikipedia" | "local" | "none" }> {
   if (q.trim().length < 2) return { results: [], source: "none" };
-  const hint = medium === "movie" ? "film" : "video game";
+  const hint = wikiHint(medium);
   try {
     const api = new URL("https://en.wikipedia.org/w/api.php");
     api.searchParams.set("action", "query");
@@ -119,6 +136,7 @@ export async function searchWikipediaClient(
         const cinemaPage = await isCinemaWikiPage(summary.title ?? hit.title, medium);
         if (!cinemaPage) return null;
         const year = extractYearFromWikiText(blob, summary.timestamp) ?? 2000;
+        const directed = directorFromExtract(blob);
         const title: CatalogTitle = {
           id: `wiki-${medium}-${slug(cinemaPage)}`,
           medium,
@@ -128,9 +146,9 @@ export async function searchWikipediaClient(
           obscurity: 3,
           source: "search",
           ...(medium === "game" ? { platforms: guessPlatforms(blob) } : {}),
+          ...(medium === "music" && directed ? { artist: directed } : {}),
         };
-        const directed = directorFromExtract(blob);
-        if (directed) title.director = directed;
+        if (directed && medium === "movie") title.director = directed;
         return title;
       })
     );
@@ -150,7 +168,7 @@ export async function fetchWikipediaBlurbClient(
   imdb?: string,
   signal?: AbortSignal
 ) {
-  const hint = medium === "movie" ? "film" : "video game";
+  const hint = wikiHint(medium);
   const query = [title, year, imdb, hint].filter(Boolean).join(" ");
   const api = new URL("https://en.wikipedia.org/w/api.php");
   api.searchParams.set("action", "query");

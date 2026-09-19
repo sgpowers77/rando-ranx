@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { catalogNoun } from "@/lib/medium";
 import type { CatalogTitle, Medium } from "@/lib/types";
 import { X } from "lucide-react";
 
@@ -35,7 +36,7 @@ export function QueueModal({
   onRemove,
   onQueueOnlyChange,
 }: QueueModalProps) {
-  const noun = medium === "game" ? "games" : "movies";
+  const noun = catalogNoun(medium);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -49,7 +50,7 @@ export function QueueModal({
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-auto px-1 py-3">
           {!medium ? (
-            <p className="text-sm text-muted-foreground">Choose Movies or Games to see that catalog’s queue.</p>
+            <p className="text-sm text-muted-foreground">Choose a catalog to see that catalog’s queue.</p>
           ) : titles.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No queued {noun} yet. Search below and tap Queue.

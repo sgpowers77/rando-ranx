@@ -34,6 +34,13 @@ import {
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { defaultFilters } from "@/lib/filters";
+import {
+  catalogLabel,
+  otherCatalogsLabel,
+  poolSourceBadge,
+  samplingBody,
+  samplingHeadline,
+} from "@/lib/medium";
 import { logsForMedium, queuedForMedium } from "@/lib/session";
 import { useRandoRanx } from "@/hooks/use-randoranx";
 import { useMemo, useState } from "react";
@@ -241,27 +248,15 @@ export function RandoRanxApp() {
                 Live catalog
               </p>
               <h1 className="mt-2 font-heading text-3xl">
-                {session.medium === "movie"
-                  ? "Sampling The Movies Dataset…"
-                  : "Sampling OpenGameDB + GameDex…"}
+                {samplingHeadline(session.medium)}
               </h1>
-              <p className="mt-2 text-muted-foreground">
-                {session.medium === "movie"
-                  ? "Dealing films from movies_metadata.csv using release date, genres, and vote/popularity. Wikipedia stays on search and WTF blurbs."
-                  : "Dealing games from the baked OpenGameDB and GameDex index using year, genre, platform, and obscurity."}
-              </p>
+              <p className="mt-2 text-muted-foreground">{samplingBody(session.medium)}</p>
             </div>
           ) : null}
           {showRank && currentTitle ? (
             <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-4">
               <StageMeta
-                label={`Ranx · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} in this deal${
-                  poolSource === "dataset"
-                    ? session.medium === "movie"
-                      ? " · Movies Dataset"
-                      : " · OpenGameDB + GameDex"
-                    : ""
-                }`}
+                label={`Ranx · ${catalogLabel(session.medium)} · ${remainingCount} in this deal${poolSourceBadge(session.medium, poolSource)}`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
               />
@@ -288,7 +283,7 @@ export function RandoRanxApp() {
           {showTourney && tourneyPair ? (
             <div className="flex flex-1 flex-col justify-center gap-4">
               <StageMeta
-                label={`${finalRoundActive ? "Final Round" : "Tourney"} · ${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left in this stack`}
+                label={`${finalRoundActive ? "Final Round" : "Tourney"} · ${catalogLabel(session.medium)} · ${remainingCount} left in this stack`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
                 compactMobile
@@ -316,7 +311,7 @@ export function RandoRanxApp() {
           {showEmpty && session.medium && session.playMode ? (
             <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-4">
               <StageMeta
-                label={`${session.playMode === "tourney" ? (finalRoundActive ? "Final Round" : "Tourney") : "Ranx"} · ${session.medium === "movie" ? "Movies" : "Games"}`}
+                label={`${session.playMode === "tourney" ? (finalRoundActive ? "Final Round" : "Tourney") : "Ranx"} · ${catalogLabel(session.medium)}`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
                 onOpenSettings={() => setFiltersOpen(true)}
@@ -392,8 +387,8 @@ export function RandoRanxApp() {
             <DialogTitle>{finalRoundActive ? "Final Round" : "Tourney"}</DialogTitle>
             <DialogDescription>
               {finalRoundActive
-                ? `${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left. Vote among logged Contenders until one champion remains. Losers still go to Discard.`
-                : `${session.medium === "movie" ? "Movies" : "Games"} · ${remainingCount} left in this stack.`}
+                ? `${catalogLabel(session.medium)} · ${remainingCount} left. Vote among logged Contenders until one champion remains. Losers still go to Discard.`
+                : `${catalogLabel(session.medium)} · ${remainingCount} left in this stack.`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm">
@@ -419,11 +414,11 @@ export function RandoRanxApp() {
           <AlertDialogHeader>
             <AlertDialogTitle>Return Home?</AlertDialogTitle>
             <AlertDialogDescription>
-              {session.medium === "game" ? "The Games" : "The Movies"}{" "}
+              The {catalogLabel(session.medium)}{" "}
               {session.playMode === "rank" ? "Ranx" : "Tourney"} log will be cleared: Contenders,
               skips, wants, and Discard for this catalog only. Watch, ratings, review comments, and
-              notes stay.{" "}
-              {session.medium === "game" ? "Movies" : "Games"} logs are not touched.
+              notes stay. {session.medium ? otherCatalogsLabel(session.medium) : "Other"} logs are
+              not touched.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -444,22 +439,18 @@ export function RandoRanxApp() {
       <section className="print-only hidden p-6 text-black print:block">
         <h1 className="mb-1 text-2xl font-semibold">RandoRanx results</h1>
         <p className="mb-6 text-sm">
-          {session.medium === "game"
-            ? "Games session log printed from this browser."
-            : session.medium === "movie"
-              ? "Movies session log printed from this browser."
-              : "Session log printed from this browser."}
+          {session.medium
+            ? `${catalogLabel(session.medium)} session log printed from this browser.`
+            : "Session log printed from this browser."}
         </p>
         <ResultsTable
           responses={logs.responses}
           discards={logs.discards}
           watchTags={logs.watchTags}
           caption={
-            session.medium === "game"
-              ? "Games — rated titles, skips, the want list, Tourney discards, and Watch tags"
-              : session.medium === "movie"
-                ? "Movies — rated titles, skips, the want list, Tourney discards, and Watch tags"
-                : "Pick Movies or Games to print that catalog’s log"
+            session.medium
+              ? `${catalogLabel(session.medium)} — rated titles, skips, the want list, Tourney discards, and Watch tags`
+              : "Pick Movies, Games, or Music to print that catalog’s log"
           }
         />
       </section>

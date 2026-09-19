@@ -1,4 +1,5 @@
 import { resultLabel } from "@/lib/labels";
+import { catalogLabel } from "@/lib/medium";
 import type { DiscardEntry, SessionResponse, WatchTag } from "@/lib/types";
 
 export function csvCell(value: string | number | boolean | null | undefined): string {
@@ -36,7 +37,7 @@ export function sessionCsv(
       "result",
       entry.title,
       String(entry.year),
-      entry.medium === "movie" ? "Movies" : "Games",
+      catalogLabel(entry.medium),
       resultLabel(entry),
       entry.kind === "rated" && entry.rating != null ? String(entry.rating) : "",
       entry.comments?.trim() ?? "",
@@ -54,7 +55,7 @@ export function sessionCsv(
       "discard",
       entry.title,
       String(entry.year),
-      entry.medium === "movie" ? "Movies" : "Games",
+      catalogLabel(entry.medium),
       `Discarded vs ${entry.lostToTitle}`,
       "",
       "",
@@ -71,7 +72,7 @@ export function sessionCsv(
       "watch",
       tag.title,
       String(tag.year),
-      tag.medium === "movie" ? "Movies" : "Games",
+      catalogLabel(tag.medium),
       "Watchlist",
       "",
       "",

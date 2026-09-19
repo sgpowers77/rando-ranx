@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TitleDirector } from "@/hooks/use-director";
 import { playModeLabel } from "@/lib/labels";
+import { catalogLabel, catalogNoun } from "@/lib/medium";
 import type { CatalogTitle, Medium, PlayMode } from "@/lib/types";
 
 type EmptyCatalogProps = {
@@ -45,8 +46,8 @@ export function EmptyCatalog({
   onUndo,
   undoCount = 0,
 }: EmptyCatalogProps) {
-  const noun = medium === "movie" ? "movies" : "games";
-  const catalog = medium === "movie" ? "Movies" : "Games";
+  const noun = catalogNoun(medium);
+  const catalog = catalogLabel(medium);
   const modeLabel = playModeLabel(playMode);
   const champion = Boolean(playMode === "tourney" && leftoverTitle && isFinalRound);
 
@@ -59,7 +60,9 @@ export function EmptyCatalog({
             {poolError}{" "}
             {medium === "movie"
               ? "Ranx still works from a small local fallback if the Kaggle movies file is missing. Drop movies_metadata.csv into data/ or retry the fetch."
-              : "Ranx still works from a small local games list if the OpenGameDB / GameDex index is missing. Run npm run fetch-games and npm run build-games-index, then retry."}
+              : medium === "game"
+                ? "Ranx still works from a small local games list if the OpenGameDB / GameDex index is missing. Run npm run fetch-games and npm run build-games-index, then retry."
+                : "Ranx still works from a small local album list if the MusicBrainz index is missing. Run npm run fetch-music and npm run build-music-index, then retry."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -85,7 +88,9 @@ export function EmptyCatalog({
             {medium === "game" ? " and platform family" : ""}.{" "}
             {medium === "movie"
               ? "Movie years and genres come from The Movies Dataset (release_date, genres, vote/popularity)."
-              : "Game years, genres, platforms, and obscurity come from OpenGameDB and GameDex."}
+              : medium === "game"
+                ? "Game years, genres, platforms, and obscurity come from OpenGameDB and GameDex."
+                : "Album years, genres, and obscurity come from MusicBrainz release groups."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -93,7 +98,7 @@ export function EmptyCatalog({
             Ranx or Tourney
           </Button>
           <Button type="button" variant="outline" onClick={onHome} className="h-11">
-            Back to Movies or Games
+            Back to catalog pick
           </Button>
         </CardContent>
       </Card>
@@ -173,9 +178,13 @@ export function EmptyCatalog({
           Start Final Round with your Contenders, or fetch another sample from the{" "}
           {medium === "movie"
             ? "movies dataset"
-            : poolSource === "dataset"
-              ? "OpenGameDB + GameDex catalog"
-              : "games list"}
+            : medium === "game"
+              ? poolSource === "dataset"
+                ? "OpenGameDB + GameDex catalog"
+                : "games list"
+              : poolSource === "dataset"
+                ? "MusicBrainz album catalog"
+                : "album list"}
           .
         </CardDescription>
       </CardHeader>

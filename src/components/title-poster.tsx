@@ -1,7 +1,7 @@
 "use client";
 
 import { usePoster } from "@/hooks/use-poster";
-import { imdbUrlFor } from "@/lib/imdb";
+import { titlePageLink } from "@/lib/imdb";
 import { catalogPosterSubject } from "@/lib/poster";
 import type { CatalogTitle, Medium } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -50,13 +50,17 @@ export function TitlePoster(props: TitlePosterProps) {
   const size = props.size ?? "md";
   const showCredit = props.showCredit ?? size !== "sm";
   const showImage = Boolean(poster) && !broken && imageReady;
-  const imdbHref = subject
-    ? imdbUrlFor({
+  const pageLink = subject
+    ? titlePageLink({
         title: subject.title,
         year: subject.year,
+        medium: subject.medium,
         imdbId: subject.imdbId ?? catalog?.imdbId,
+        musicbrainzId: subject.musicbrainzId ?? catalog?.musicbrainzId,
       })
     : null;
+  const imdbHref = pageLink?.href ?? null;
+  const pageLabel = pageLink?.label ?? "IMDb";
   const waiting = !showImage && !timedOut && status !== "missing" && !broken;
   const missing = !showImage && (timedOut || status === "missing" || broken);
 
@@ -83,7 +87,7 @@ export function TitlePoster(props: TitlePosterProps) {
               href={imdbHref}
               target="_blank"
               rel="noreferrer"
-              aria-label={`Open ${subject?.title ?? "title"} on IMDb`}
+              aria-label={`Open ${subject?.title ?? "title"} on ${pageLabel}`}
               className={cn(
                 "absolute inset-0 z-0",
                 imageReady ? "pointer-events-auto" : "pointer-events-none"
@@ -150,14 +154,14 @@ export function TitlePoster(props: TitlePosterProps) {
               href={imdbHref}
               target="_blank"
               rel="noreferrer"
-              aria-label={`Open ${subject?.title ?? "title"} on IMDb`}
+              aria-label={`Open ${subject?.title ?? "title"} on ${pageLabel}`}
               className={cn(
                 "absolute inset-0 z-[1] flex items-center justify-center px-2 text-center text-primary underline underline-offset-2",
                 size === "sm" ? "text-[9px] leading-tight" : "text-xs"
               )}
               onClick={(event) => event.stopPropagation()}
             >
-              Open on IMDb
+              Open on {pageLabel}
             </a>
           ) : (
             <div

@@ -218,6 +218,38 @@ function shuffleInPlace<T>(items: T[]): T[] {
   return items;
 }
 
+function loadMusicIndexSync(): CatalogTitle[] {
+  try {
+    const filePath = path.join(process.cwd(), "public", "music-index.json");
+    const data = JSON.parse(readFileSync(filePath, "utf8")) as {
+      albums?: Array<{
+        id: string;
+        title: string;
+        year: number;
+        genres: string[];
+        obscurity: CatalogTitle["obscurity"];
+        artist?: string;
+        musicbrainzId?: string;
+        imageUrl?: string;
+      }>;
+    };
+    return (data.albums ?? []).map((item) => ({
+      id: item.id,
+      medium: "music" as const,
+      title: item.title,
+      year: item.year,
+      genres: item.genres,
+      obscurity: item.obscurity,
+      source: "dataset" as const,
+      artist: item.artist,
+      musicbrainzId: item.musicbrainzId,
+      imageUrl: item.imageUrl,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 function loadGamesIndexSync(): CatalogTitle[] {
   try {
     const filePath = path.join(process.cwd(), "public", "games-index.json");
@@ -259,6 +291,19 @@ export async function sampleTitlePool(options: {
   if (options.medium === "game") {
     const fromIndex = loadGamesIndexSync();
     const pool = uniqueTitles([...titlesFor("game"), ...fromIndex]);
+    const eligible = uniqueTitles(
+      pool.filter((item) => !exclude.has(item.id) && matchesFilters(item, filters))
+    );
+    return {
+      titles: shuffleInPlace([...eligible]).slice(0, limit),
+      source: fromIndex.length > 0 ? "dataset" : "catalog",
+      available: eligible.length,
+    };
+  }
+
+  if (options.medium === "music") {
+    const fromIndex = loadMusicIndexSync();
+    const pool = uniqueTitles([...titlesFor("music"), ...fromIndex]);
     const eligible = uniqueTitles(
       pool.filter((item) => !exclude.has(item.id) && matchesFilters(item, filters))
     );

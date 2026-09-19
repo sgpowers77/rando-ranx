@@ -14,15 +14,15 @@ import {
   defaultFilters,
   decadesFor,
   filtersComplete,
-  GAME_GENRES,
   GAME_PLATFORMS,
-  MOVIE_GENRES,
+  genresFor,
   OBSCURITY_LEVELS,
   STACK_SIZES,
   sanitizeFilters,
 } from "@/lib/filters";
 import { MPAA_RATINGS } from "@/lib/mpaa";
-import { GAME_OBSCURITY_COPY, MOVIE_OBSCURITY_COPY } from "@/lib/obscurity";
+import { GAME_OBSCURITY_COPY, MOVIE_OBSCURITY_COPY, MUSIC_OBSCURITY_COPY } from "@/lib/obscurity";
+import { catalogLabel } from "@/lib/medium";
 import type { Medium, PathFilters, StackSize } from "@/lib/types";
 import { useEffect, useRef, useState } from "react";
 
@@ -51,9 +51,10 @@ export function PathSettings({
     wasOpen.current = open;
   }, [open, filters, medium]);
 
-  const genres = medium === "movie" ? MOVIE_GENRES : GAME_GENRES;
+  const genres = genresFor(medium);
   const decades = decadesFor(medium);
-  const obscurityCopy = medium === "game" ? GAME_OBSCURITY_COPY : MOVIE_OBSCURITY_COPY;
+  const obscurityCopy =
+    medium === "game" ? GAME_OBSCURITY_COPY : medium === "music" ? MUSIC_OBSCURITY_COPY : MOVIE_OBSCURITY_COPY;
   const canClose = filtersComplete(draft, medium);
   const missing = missingGroups(draft, medium);
 
@@ -92,7 +93,7 @@ export function PathSettings({
         <DialogHeader>
           <DialogTitle>Filters</DialogTitle>
           <DialogDescription>
-            Filters apply to both Ranx and Tourney for {medium === "movie" ? "Movies" : "Games"}.
+            Filters apply to both Ranx and Tourney for {catalogLabel(medium)}.
             Filter categories must have at least one selection.
           </DialogDescription>
         </DialogHeader>

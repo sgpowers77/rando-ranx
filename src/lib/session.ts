@@ -2,6 +2,7 @@ import { resolveTitle, titlesFor, withReleaseYear } from "@/data/catalog";
 import { defaultFilters, decadesFor, matchesFilters, sanitizeFilters, stackSizeOf } from "@/lib/filters";
 import { parseMpaaList } from "@/lib/mpaa";
 import { parseWatchedDate } from "@/lib/director";
+import { emptyFlagMap, emptyIdMap, isMedium, MEDIA } from "@/lib/medium";
 import { pickDistinctTitles, titleIdentity, uniqueTitles } from "@/lib/title-identity";
 import type {
   CatalogTitle,
@@ -23,7 +24,7 @@ export const EMPTY_SESSION: StoredSession = {
   version: 1,
   medium: null,
   playMode: null,
-  remainingIds: { movie: [], game: [] },
+  remainingIds: emptyIdMap(),
   responses: [],
   discards: [],
   watchTags: [],
@@ -33,12 +34,12 @@ export const EMPTY_SESSION: StoredSession = {
   skipTourneyScoring: false,
   customTitles: [],
   pathFilters: {},
-  recentlyShown: { movie: [], game: [] },
+  recentlyShown: emptyIdMap(),
   releaseYears: {},
   liveTitles: [],
-  finalRounds: { movie: null, game: null },
-  tourneyUndos: { movie: [], game: [] },
-  randomizeFilters: { movie: false, game: false },
+  finalRounds: { movie: null, game: null, music: null },
+  tourneyUndos: { movie: [], game: [], music: [] },
+  randomizeFilters: emptyFlagMap(),
 };
 
 export function logsForMedium(session: StoredSession, medium: Medium | null) {
@@ -58,10 +59,19 @@ export function logsForMedium(session: StoredSession, medium: Medium | null) {
   };
 }
 
+function shownMap(session: Pick<StoredSession, "recentlyShown"> | Partial<StoredSession>): Record<Medium, string[]> {
+  return {
+    movie: session.recentlyShown?.movie ?? [],
+    game: session.recentlyShown?.game ?? [],
+    music: session.recentlyShown?.music ?? [],
+  };
+}
+
 function finalRoundsOf(session: Pick<StoredSession, "finalRounds"> | Partial<StoredSession>): Record<Medium, FinalRound | null> {
   return {
     movie: session.finalRounds?.movie ?? null,
     game: session.finalRounds?.game ?? null,
+    music: session.finalRounds?.music ?? null,
   };
 }
 
@@ -69,6 +79,7 @@ function tourneyUndosOf(session: Pick<StoredSession, "tourneyUndos"> | Partial<S
   return {
     movie: session.tourneyUndos?.movie ?? [],
     game: session.tourneyUndos?.game ?? [],
+    music: session.tourneyUndos?.music ?? [],
   };
 }
 
@@ -237,8 +248,7 @@ export function skipTourneyPair(session: StoredSession, replacements: CatalogTit
     liveTitles: mergeLiveTitles(session.liveTitles ?? [], extra, keepCap),
     remainingIds: { ...session.remainingIds, [medium]: nextRemaining },
     recentlyShown: {
-      movie: session.recentlyShown?.movie ?? [],
-      game: session.recentlyShown?.game ?? [],
+      ...shownMap(session),
       [medium]: rememberShown(session, medium, pairIds),
     },
   };
@@ -256,8 +266,7 @@ export function withDealtQueue(
     ...session,
     remainingIds: { ...session.remainingIds, [medium]: queue },
     recentlyShown: {
-      movie: session.recentlyShown?.movie ?? [],
-      game: session.recentlyShown?.game ?? [],
+      ...shownMap(session),
       [medium]: rememberShown(session, medium, shown),
     },
   };
@@ -369,7 +378,7 @@ function parseWatchTags(value: unknown): StoredSession["watchTags"] {
   return value.filter((entry): entry is StoredSession["watchTags"][number] => {
     if (!entry || typeof entry.titleId !== "string" || typeof entry.title !== "string") return false;
     if (typeof entry.year !== "number") return false;
-    return entry.medium === "movie" || entry.medium === "game";
+    return isMedium(entry.medium);
   });
 }
 
@@ -378,12 +387,17 @@ function parseCustomTitles(value: unknown): CatalogTitle[] {
   return value.filter((item): item is CatalogTitle => {
     if (!item || typeof item.id !== "string" || typeof item.title !== "string") return false;
     if (typeof item.year !== "number") return false;
-    if (item.medium !== "movie" && item.medium !== "game") return false;
+    if (!isMedium(item.medium)) return false;
     if (!Array.isArray(item.genres)) return false;
     return [1, 2, 3, 4, 5].includes(item.obscurity);
   }).map((item) => ({
     ...item,
     director: typeof item.director === "string" && item.director.trim() ? item.director.trim() : undefined,
+    artist: typeof item.artist === "string" && item.artist.trim() ? item.artist.trim() : undefined,
+    musicbrainzId:
+      typeof item.musicbrainzId === "string" && item.musicbrainzId.trim()
+        ? item.musicbrainzId.trim()
+        : undefined,
     platforms: Array.isArray(item.platforms)
       ? item.platforms.filter((platform): platform is string => typeof platform === "string")
       : undefined,
@@ -395,6 +409,7 @@ function parseRandomizeFlags(value: unknown): Record<Medium, boolean> {
   return {
     movie: data.movie === true,
     game: data.game === true,
+    music: data.music === true,
   };
 }
 
@@ -427,7 +442,7 @@ function parsePathFilters(value: unknown): StoredSession["pathFilters"] {
   if (!value || typeof value !== "object") return {};
   const rec = value as Record<string, unknown>;
   const next: StoredSession["pathFilters"] = {};
-  for (const medium of ["movie", "game"] as Medium[]) {
+  for (const medium of MEDIA) {
     const raw = rec[medium] ?? rec[`${medium}:rank`] ?? rec[`${medium}:tourney`];
     const parsed = parseOnePathFilters(raw, medium);
     if (parsed) next[medium] = parsed;
@@ -444,7 +459,7 @@ function parseDiscards(value: unknown): DiscardEntry[] {
   return value.filter((entry): entry is DiscardEntry => {
     if (!entry || typeof entry.id !== "string" || typeof entry.titleId !== "string") return false;
     if (typeof entry.title !== "string" || typeof entry.year !== "number") return false;
-    return entry.medium === "movie" || entry.medium === "game";
+    return isMedium(entry.medium);
   }).map((entry) => ({
     ...entry,
     lostToTitle: typeof entry.lostToTitle === "string" ? entry.lostToTitle : "another title",
@@ -459,11 +474,12 @@ export function parseSession(raw: string): StoredSession {
   const pending = parsed.pendingTourney;
   return {
     version: 1,
-    medium: parsed.medium === "movie" || parsed.medium === "game" ? parsed.medium : null,
+    medium: isMedium(parsed.medium) ? parsed.medium : null,
     playMode: parsePlayMode(parsed.playMode),
     remainingIds: {
       movie: Array.isArray(parsed.remainingIds.movie) ? parsed.remainingIds.movie : [],
       game: Array.isArray(parsed.remainingIds.game) ? parsed.remainingIds.game : [],
+      music: Array.isArray(parsed.remainingIds.music) ? parsed.remainingIds.music : [],
     },
     responses: parsed.responses.filter(
       (entry) =>
@@ -499,6 +515,7 @@ export function parseSession(raw: string): StoredSession {
     recentlyShown: {
       movie: parseIdList(parsed.recentlyShown?.movie),
       game: parseIdList(parsed.recentlyShown?.game),
+      music: parseIdList(parsed.recentlyShown?.music),
     },
     releaseYears: parseReleaseYears(parsed.releaseYears),
     finalRounds: parseFinalRounds(parsed),
@@ -508,11 +525,12 @@ export function parseSession(raw: string): StoredSession {
 }
 
 function parseFinalRounds(parsed: StoredSession): Record<Medium, FinalRound | null> {
-  const next: Record<Medium, FinalRound | null> = { movie: null, game: null };
+  const next: Record<Medium, FinalRound | null> = { movie: null, game: null, music: null };
   const maps = (parsed as StoredSession & { finalRound?: FinalRound | null }).finalRounds;
   if (maps && typeof maps === "object") {
     next.movie = parseFinalRound(maps.movie);
     next.game = parseFinalRound(maps.game);
+    next.music = parseFinalRound(maps.music);
   }
   const legacy = parseFinalRound((parsed as StoredSession & { finalRound?: unknown }).finalRound);
   if (legacy && !next[legacy.medium]) next[legacy.medium] = legacy;
@@ -520,19 +538,19 @@ function parseFinalRounds(parsed: StoredSession): Record<Medium, FinalRound | nu
 }
 
 function parseTourneyUndos(parsed: StoredSession): Record<Medium, TourneyUndoFrame[]> {
-  const next: Record<Medium, TourneyUndoFrame[]> = { movie: [], game: [] };
+  const next: Record<Medium, TourneyUndoFrame[]> = { movie: [], game: [], music: [] };
   const maps = parsed.tourneyUndos;
   if (maps && typeof maps === "object") {
     next.movie = parseTourneyUndo(maps.movie);
     next.game = parseTourneyUndo(maps.game);
+    next.music = parseTourneyUndo(maps.music);
   }
   const legacy = parseTourneyUndo((parsed as StoredSession & { tourneyUndo?: unknown }).tourneyUndo);
   if (legacy.length > 0) {
     const fromRound = parseFinalRound((parsed as StoredSession & { finalRound?: unknown }).finalRound);
-    const medium: Medium =
-      parsed.medium === "movie" || parsed.medium === "game"
-        ? parsed.medium
-        : fromRound?.medium ?? "movie";
+    const medium: Medium = isMedium(parsed.medium)
+      ? parsed.medium
+      : fromRound?.medium ?? "movie";
     if (next[medium].length === 0) next[medium] = legacy;
   }
   return next;
@@ -555,6 +573,7 @@ function parseTourneyUndo(value: unknown): TourneyUndoFrame[] {
       recentlyShown: {
         movie: parseIdList(frame.recentlyShown?.movie),
         game: parseIdList(frame.recentlyShown?.game),
+        music: parseIdList(frame.recentlyShown?.music),
       },
     });
   }
@@ -564,7 +583,7 @@ function parseTourneyUndo(value: unknown): TourneyUndoFrame[] {
 function parseFinalRound(value: unknown): FinalRound | null {
   if (!value || typeof value !== "object") return null;
   const round = value as FinalRound;
-  if (round.medium !== "movie" && round.medium !== "game") return null;
+  if (!isMedium(round.medium)) return null;
   if (!Array.isArray(round.remainingIds)) return null;
   return { medium: round.medium, remainingIds: round.remainingIds.filter((id) => typeof id === "string") };
 }
@@ -596,10 +615,13 @@ function captureTourneyUndo(session: StoredSession): TourneyUndoFrame {
     finalRound: round ? { medium: round.medium, remainingIds: [...round.remainingIds] } : null,
     responses: logs.responses,
     discards: logs.discards,
-    recentlyShown: {
-      movie: medium === "movie" ? [...(session.recentlyShown?.movie ?? [])] : [],
-      game: medium === "game" ? [...(session.recentlyShown?.game ?? [])] : [],
-    },
+    recentlyShown: shownMap({
+      recentlyShown: {
+        movie: medium === "movie" ? [...(session.recentlyShown?.movie ?? [])] : [],
+        game: medium === "game" ? [...(session.recentlyShown?.game ?? [])] : [],
+        music: medium === "music" ? [...(session.recentlyShown?.music ?? [])] : [],
+      },
+    }),
   };
 }
 
@@ -689,8 +711,7 @@ export function applyTourneyOutcome(
       [medium]: remaining,
     },
     recentlyShown: {
-      movie: prev.recentlyShown?.movie ?? [],
-      game: prev.recentlyShown?.game ?? [],
+      ...shownMap(prev),
       [medium]: rememberShown(prev, medium, remaining.slice(0, 2)),
     },
     responses: [...prev.responses, response],
@@ -732,8 +753,7 @@ export function undoTourneySelect(session: StoredSession): StoredSession {
           ...frame.discards.filter((entry) => entry.medium === medium),
         ],
         recentlyShown: {
-          movie: session.recentlyShown?.movie ?? [],
-          game: session.recentlyShown?.game ?? [],
+          ...shownMap(session),
           [medium]: frame.recentlyShown?.[medium] ?? session.recentlyShown?.[medium] ?? [],
         },
       },
@@ -793,8 +813,7 @@ export function returnHomeClearingPlayLog(session: StoredSession, medium: Medium
     pendingTourney: session.medium === medium ? null : session.pendingTourney,
     remainingIds: { ...session.remainingIds, [medium]: [] },
     recentlyShown: {
-      movie: session.recentlyShown?.movie ?? [],
-      game: session.recentlyShown?.game ?? [],
+      ...shownMap(session),
       [medium]: [],
     },
     responses: session.responses.filter(
@@ -873,11 +892,12 @@ export function writeSession(next: StoredSession) {
 export function normalizeSession(session: StoredSession): StoredSession {
   const next: StoredSession = {
     version: 1,
-    medium: session.medium === "movie" || session.medium === "game" ? session.medium : null,
+    medium: isMedium(session.medium) ? session.medium : null,
     playMode: parsePlayMode(session.playMode),
     remainingIds: {
       movie: Array.isArray(session.remainingIds?.movie) ? session.remainingIds.movie : [],
       game: Array.isArray(session.remainingIds?.game) ? session.remainingIds.game : [],
+      music: Array.isArray(session.remainingIds?.music) ? session.remainingIds.music : [],
     },
     responses: Array.isArray(session.responses) ? session.responses : [],
     discards: Array.isArray(session.discards) ? session.discards : [],
@@ -892,6 +912,7 @@ export function normalizeSession(session: StoredSession): StoredSession {
     recentlyShown: {
       movie: parseIdList(session.recentlyShown?.movie),
       game: parseIdList(session.recentlyShown?.game),
+      music: parseIdList(session.recentlyShown?.music),
     },
     releaseYears: parseReleaseYears(session.releaseYears),
     finalRounds: parseFinalRounds(session),
@@ -904,6 +925,7 @@ export function normalizeSession(session: StoredSession): StoredSession {
     remainingIds: {
       movie: arrangeDistinctPair(next, uniqueTitleIds(next, next.remainingIds.movie)),
       game: arrangeDistinctPair(next, uniqueTitleIds(next, next.remainingIds.game)),
+      music: arrangeDistinctPair(next, uniqueTitleIds(next, next.remainingIds.music)),
     },
     finalRounds: {
       movie: rounds.movie
@@ -916,6 +938,12 @@ export function normalizeSession(session: StoredSession): StoredSession {
         ? {
             ...rounds.game,
             remainingIds: arrangeDistinctPair(next, uniqueTitleIds(next, rounds.game.remainingIds)),
+          }
+        : null,
+      music: rounds.music
+        ? {
+            ...rounds.music,
+            remainingIds: arrangeDistinctPair(next, uniqueTitleIds(next, rounds.music.remainingIds)),
           }
         : null,
     },

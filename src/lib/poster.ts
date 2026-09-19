@@ -1,3 +1,4 @@
+import { wikiHint } from "@/lib/medium";
 import type { CatalogTitle, Medium } from "@/lib/types";
 
 export type PosterCredit = {
@@ -16,6 +17,8 @@ export type PosterSubject = {
   year: number;
   medium: Medium;
   imdbId?: string;
+  imageUrl?: string;
+  musicbrainzId?: string;
 };
 
 const memory = new Map<string, PosterInfo | null>();
@@ -30,6 +33,7 @@ const FILM_INSTANCE_IDS = new Set([
 ]);
 
 const GAME_INSTANCE_IDS = new Set(["Q7889"]);
+const ALBUM_INSTANCE_IDS = new Set(["Q482994", "Q208569", "Q222910"]);
 
 function cacheKey(subject: PosterSubject): string {
   return ["cinema-v2", subject.medium, subject.title, subject.year, subject.imdbId ?? ""].join("|");
@@ -103,6 +107,7 @@ async function sparql(query: string, signal?: AbortSignal): Promise<Record<strin
 
 function filmOrGameFilter(medium: Medium): string {
   if (medium === "movie") return "?item wdt:P31/wdt:P279* wd:Q11424 .";
+  if (medium === "music") return "?item wdt:P31/wdt:P279* wd:Q482994 .";
   return "?item wdt:P31/wdt:P279* wd:Q7889 .";
 }
 
@@ -143,11 +148,13 @@ async function wikiSearchCandidates(
   medium: Medium,
   signal?: AbortSignal
 ): Promise<string[]> {
-  const hint = medium === "movie" ? "film" : "video game";
+  const hint = wikiHint(medium);
   const queries =
     medium === "movie"
       ? [`"${title}" (${year} film)`, `"${title}" ${year} film`, `"${title}" film`]
-      : [`"${title}" (${year} video game)`, `"${title}" video game`];
+      : medium === "music"
+        ? [`"${title}" (${year} album)`, `"${title}" album`]
+        : [`"${title}" (${year} video game)`, `"${title}" video game`];
   const found: string[] = [];
   for (const srsearch of queries) {
     const api = new URL("https://en.wikipedia.org/w/api.php");
@@ -226,16 +233,23 @@ async function entityIsCinema(qid: string, medium: Medium, signal?: AbortSignal)
   if (medium === "movie") {
     return ids.some((id) => FILM_INSTANCE_IDS.has(id));
   }
+  if (medium === "music") {
+    return ids.some((id) => ALBUM_INSTANCE_IDS.has(id));
+  }
   return ids.some((id) => GAME_INSTANCE_IDS.has(id));
 }
 
 function titleLooksLikeCinema(pageTitle: string, medium: Medium): boolean {
   if (medium === "movie") return /\(\d{4} film\)$|\(film\)$/i.test(pageTitle);
+  if (medium === "music") return /\(\d{4} album\)$|\(album\)$/i.test(pageTitle);
   return /\(\d{4} video game\)$|\(video game\)$/i.test(pageTitle);
 }
 
 function templatesLookLikeCinema(templates: string[], medium: Medium): boolean {
   if (medium === "movie") return templates.some((name) => name === "template:infobox film");
+  if (medium === "music") {
+    return templates.some((name) => name === "template:infobox album" || name === "template:infobox studio album");
+  }
   return templates.some((name) => name === "template:infobox video game");
 }
 
@@ -259,6 +273,12 @@ export async function isCinemaWikiPage(
       /\b(singer|actor|actress|novel|album|song|video game|franchise|television series|band)\b/.test(blob) &&
       !/\b\d{4} (american |british |french |italian )?(animated )?film\b/.test(blob);
     if (filmish && !notFilm) return meta.title;
+    return null;
+  }
+  if (medium === "music") {
+    if (/\balbum\b/.test(blob) && !/\b(film|video game|novel)\b/.test(`${summary.description ?? ""}`.toLowerCase())) {
+      return meta.title;
+    }
     return null;
   }
   if (/\bvideo game\b/.test(blob) && !/\b(film|novel|album)\b/.test(`${summary.description ?? ""}`.toLowerCase())) {
@@ -309,6 +329,22 @@ export async function fetchPoster(
   const key = cacheKey(subject);
   if (memory.has(key)) return memory.get(key) ?? null;
 
+  if (subject.medium === "music") {
+    const mbid = subject.musicbrainzId ?? subject.id?.replace(/^mbid-/, "");
+    const coverUrl = subject.imageUrl ?? (mbid ? `https://coverartarchive.org/release-group/${mbid}/front-250` : "");
+    if (coverUrl) {
+      const info: PosterInfo = {
+        url: coverUrl,
+        credit: {
+          label: "Cover Art Archive",
+          href: mbid ? `https://musicbrainz.org/release-group/${mbid}` : coverUrl,
+        },
+      };
+      memory.set(key, info);
+      return info;
+    }
+  }
+
   try {
     const pageTitle = await resolveCinemaWikiPage(
       subject.title,
@@ -357,6 +393,8 @@ export function catalogPosterSubject(title: CatalogTitle): PosterSubject {
     year: title.year,
     medium: title.medium,
     imdbId: title.imdbId,
+    imageUrl: title.imageUrl,
+    musicbrainzId: title.musicbrainzId,
   };
 }
 

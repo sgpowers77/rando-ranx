@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { parseWatchedDate } from "@/lib/director";
+import type { Medium } from "@/lib/types";
 import { useState } from "react";
 
 type RatingFormProps = {
-  medium: "movie" | "game";
+  medium: Medium;
   onSubmit: (rating: number, comments: string, watchedDate?: string) => void;
   onCancel: () => void;
   initialRating?: number;
@@ -35,7 +36,7 @@ export function RatingForm({
   const [comments, setComments] = useState(initialComments);
   const [watchedDate, setWatchedDate] = useState(parseWatchedDate(initialWatchedDate) ?? "");
 
-  const verb = medium === "movie" ? "this movie" : "this game";
+  const verb = medium === "movie" ? "this movie" : medium === "music" ? "this album" : "this game";
 
   return (
     <form

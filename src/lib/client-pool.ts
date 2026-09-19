@@ -33,10 +33,26 @@ type GameIndexFile = {
   }>;
 };
 
+type MusicIndexFile = {
+  source?: string;
+  albums?: Array<{
+    id: string;
+    title: string;
+    year: number;
+    genres: string[];
+    obscurity: CatalogTitle["obscurity"];
+    artist?: string;
+    musicbrainzId?: string;
+    imageUrl?: string;
+  }>;
+};
+
 let movieCache: CatalogTitle[] | null = null;
 let movieSource: "dataset" | "catalog" = "catalog";
 let gameCache: CatalogTitle[] | null = null;
 let gameSource: "dataset" | "catalog" = "catalog";
+let musicCache: CatalogTitle[] | null = null;
+let musicSource: "dataset" | "catalog" = "catalog";
 
 function shuffle<T>(items: T[]): T[] {
   const next = [...items];
@@ -106,6 +122,36 @@ export async function loadGameCatalog(): Promise<{ titles: CatalogTitle[]; sourc
   }
 }
 
+export async function loadMusicCatalog(): Promise<{ titles: CatalogTitle[]; source: "dataset" | "catalog" }> {
+  if (musicCache) return { titles: musicCache, source: musicSource };
+  try {
+    const res = await fetch(publicUrl("music-index.json"));
+    if (!res.ok) throw new Error("index missing");
+    const data = (await res.json()) as MusicIndexFile;
+    const fromIndex = (data.albums ?? []).map((item) => ({
+      id: item.id,
+      medium: "music" as const,
+      title: item.title,
+      year: item.year,
+      genres: item.genres,
+      obscurity: item.obscurity,
+      source: "dataset" as const,
+      artist: item.artist,
+      musicbrainzId: item.musicbrainzId,
+      imageUrl: item.imageUrl,
+    }));
+    const albums = uniqueTitles([...titlesFor("music"), ...fromIndex]);
+    if (albums.length === 0) throw new Error("empty index");
+    musicCache = albums;
+    musicSource = fromIndex.length > 0 ? "dataset" : "catalog";
+    return { titles: albums, source: musicSource };
+  } catch {
+    musicCache = titlesFor("music");
+    musicSource = "catalog";
+    return { titles: musicCache, source: "catalog" };
+  }
+}
+
 export async function sampleClientPool(options: {
   medium: Medium;
   filters: PathFilters;
@@ -121,6 +167,17 @@ export async function sampleClientPool(options: {
   const exclude = new Set(options.excludeIds ?? []);
   if (options.medium === "game") {
     const loaded = await loadGameCatalog();
+    const eligible = uniqueTitles(
+      loaded.titles.filter((item) => !exclude.has(item.id) && matchesFilters(item, options.filters))
+    );
+    return {
+      titles: shuffle(eligible).slice(0, take),
+      source: loaded.source,
+      available: eligible.length,
+    };
+  }
+  if (options.medium === "music") {
+    const loaded = await loadMusicCatalog();
     const eligible = uniqueTitles(
       loaded.titles.filter((item) => !exclude.has(item.id) && matchesFilters(item, options.filters))
     );

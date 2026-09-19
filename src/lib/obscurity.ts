@@ -56,3 +56,11 @@ export const GAME_OBSCURITY_COPY: Record<number, string> = {
   4: "4 · Cult / Niche Release",
   5: "5 · Micro-Indie / Ultra Obscure",
 };
+
+export const MUSIC_OBSCURITY_COPY: Record<number, string> = {
+  1: "1 · Chart / canonical",
+  2: "2 · Widely circulated",
+  3: "3 · Known if you follow music",
+  4: "4 · Cult / crate-digger",
+  5: "5 · Obscure / private press",
+};

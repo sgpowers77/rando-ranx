@@ -4,6 +4,7 @@ import { TitlePoster } from "@/components/title-poster";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { catalogNoun, wikiHint } from "@/lib/medium";
 import { searchWikipediaClient } from "@/lib/wiki-client";
 import type { CatalogTitle, Medium } from "@/lib/types";
 import { useState } from "react";
@@ -26,7 +27,7 @@ export function TitleSearch({ medium, queuedIds = [], onQueue }: TitleSearchProp
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [selected, setSelected] = useState<string[]>([]);
 
-  const noun = medium === "movie" ? "film" : "game";
+  const noun = wikiHint(medium);
   const queued = new Set(queuedIds);
 
   async function runSearch(event: React.FormEvent) {
@@ -54,17 +55,17 @@ export function TitleSearch({ medium, queuedIds = [], onQueue }: TitleSearchProp
   return (
     <div className="rounded-xl border border-border/70 bg-card/50 p-4">
       <p className="text-sm font-medium">
-        Search {medium === "movie" ? "films on Wikipedia" : "games on Wikipedia"}
+        Search {catalogNoun(medium)} on Wikipedia
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
         Build your own custom queue by searching titles from Wikipedia.com. Queue can be viewed and
-        edited from the Queue icon to the right of the Movies or Games Log.
+        edited from the Queue icon to the right of the catalog log.
       </p>
       <form className="mt-3 flex flex-col gap-2 sm:flex-row" onSubmit={runSearch}>
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder={medium === "movie" ? "Search a film title" : "Search a game title"}
+          placeholder={`Search ${medium === "movie" ? "a film" : medium === "music" ? "an album" : "a game"} title`}
           aria-label={`Search ${noun}s`}
         />
         <Button type="submit" disabled={status === "loading" || query.trim().length < 2}>

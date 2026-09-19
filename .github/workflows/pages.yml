@@ -31,10 +31,14 @@ jobs:
         run: npm run fetch-movies
       - name: Fetch game catalogs
         run: npm run fetch-games
+      - name: Fetch MusicBrainz albums
+        run: npm run fetch-music
       - name: Build movie index
         run: npm run build-movies-index
       - name: Build game index
         run: npm run build-games-index
+      - name: Build music index
+        run: npm run build-music-index
       - name: Static export
         run: npm run build
         env:

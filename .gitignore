@@ -37,10 +37,12 @@ yarn-error.log*
 /data/*.csv
 /data/*.zip
 /data/games/
+/data/music/
 
 # Generated catalogs for static / GitHub Pages builds
 /public/movies-index.json
 /public/games-index.json
+/public/music-index.json
 
 # vercel
 .vercel

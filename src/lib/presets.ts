@@ -1,4 +1,4 @@
-import { decadesFor, GAME_GENRES, GAME_PLATFORMS, MOVIE_GENRES, sanitizeFilters } from "@/lib/filters";
+import { decadesFor, GAME_PLATFORMS, genresFor, MUSIC_GENRES, sanitizeFilters } from "@/lib/filters";
 import type { Medium, PathFilters } from "@/lib/types";
 
 export type TourneyPreset = {
@@ -307,10 +307,116 @@ export const GAME_PRESET_GROUPS: PresetGroup[] = [
   },
 ];
 
+export const MUSIC_PRESETS: TourneyPreset[] = [
+  {
+    id: "vinyl-night",
+    title: "Vinyl Night, No Skip",
+    blurb: "Canonical LPs you would actually drop the needle on.",
+  },
+  {
+    id: "walkman-commute",
+    title: "Walkman Commute",
+    blurb: "Tape-era pop, rock, and hip-hop that survived the bus.",
+  },
+  {
+    id: "headphones-after-dark",
+    title: "Headphones After Dark",
+    blurb: "Electronic, jazz, and metal for the 1 a.m. volume knob.",
+  },
+  {
+    id: "chart-or-bust",
+    title: "Chart or Bust",
+    blurb: "Widely heard pop, R&B, and hip-hop. Radio did the work.",
+  },
+  {
+    id: "crate-digging",
+    title: "Crate Digging Required",
+    blurb: "Obscure and cult pressings. The sticker is half the fun.",
+  },
+  {
+    id: "jazz-club",
+    title: "Jazz Club, Two Drinks",
+    blurb: "Jazz first. Conversation second. Maybe never.",
+  },
+  {
+    id: "folk-porch",
+    title: "Folk on the Porch",
+    blurb: "Folk and singer-songwriter records that still breathe.",
+  },
+  {
+    id: "metal-practice",
+    title: "Metal Practice Space",
+    blurb: "Loud. Tuned down. The neighbors already know.",
+  },
+  {
+    id: "classical-homework",
+    title: "Classical Homework",
+    blurb: "Canonical scores and the recordings people actually own.",
+  },
+  {
+    id: "country-radio",
+    title: "Country Radio Adjacent",
+    blurb: "Country and Americana. Trucks optional. Heartbreak included.",
+  },
+  {
+    id: "streaming-era",
+    title: "Streaming Era Playlist",
+    blurb: "2010s onward. The algorithm already likes these.",
+  },
+  {
+    id: "cd-longbox",
+    title: "CD Longbox Energy",
+    blurb: "1990s albums that lived in a jewel case and a cup holder.",
+  },
+  {
+    id: "boombox-block",
+    title: "Boombox on the Block",
+    blurb: "Hip-hop that needed a sidewalk and extra D batteries.",
+  },
+  {
+    id: "dance-floor",
+    title: "Dance Floor, Then Cab",
+    blurb: "Electronic and pop built to leave the house.",
+  },
+  {
+    id: "deep-cuts-only",
+    title: "Deep Cuts Only",
+    blurb: "Skip the singles collection. Little-heard albums, all decades.",
+  },
+];
+
+export const MUSIC_PRESET_GROUPS: PresetGroup[] = [
+  {
+    id: "formats",
+    title: "Formats & Decades",
+    presetIds: ["vinyl-night", "walkman-commute", "cd-longbox", "streaming-era"],
+  },
+  {
+    id: "radio",
+    title: "Radio & Charts",
+    presetIds: ["chart-or-bust", "country-radio", "boombox-block"],
+  },
+  {
+    id: "late-night",
+    title: "Late Night Listening",
+    presetIds: ["headphones-after-dark", "jazz-club", "dance-floor"],
+  },
+  {
+    id: "scenes",
+    title: "Scenes & Homework",
+    presetIds: ["folk-porch", "metal-practice", "classical-homework"],
+  },
+  {
+    id: "digging",
+    title: "Crate Duty",
+    presetIds: ["crate-digging", "deep-cuts-only"],
+  },
+];
+
 export function groupedPresets(medium: Medium): { group: PresetGroup; presets: TourneyPreset[] }[] {
-  const list = medium === "game" ? GAME_PRESETS : TOURNEY_PRESETS;
+  const list = medium === "game" ? GAME_PRESETS : medium === "music" ? MUSIC_PRESETS : TOURNEY_PRESETS;
   const byId = new Map(list.map((preset) => [preset.id, preset]));
-  const groups = medium === "game" ? GAME_PRESET_GROUPS : MOVIE_PRESET_GROUPS;
+  const groups = medium === "game" ? GAME_PRESET_GROUPS : medium === "music" ? MUSIC_PRESET_GROUPS : MOVIE_PRESET_GROUPS;
   return groups.map((group) => ({
     group,
     presets: group.presetIds
@@ -700,11 +806,121 @@ function gamePreset(id: string): PathFilters {
   }
 }
 
+function musicFilters(
+  partial: Pick<PathFilters, "decades" | "genres" | "obscurity"> & Partial<Pick<PathFilters, "stackSize">>
+): PathFilters {
+  return {
+    mpaa: [],
+    includeForeign: true,
+    platforms: [],
+    stackSize: 50,
+    ...partial,
+  };
+}
+
+function musicPreset(id: string): PathFilters {
+  switch (id) {
+    case "vinyl-night":
+      return musicFilters({
+        decades: [1950, 1960, 1970],
+        genres: ["Rock", "Jazz", "R&B", "Folk", "Classical"],
+        obscurity: [1, 2],
+      });
+    case "walkman-commute":
+      return musicFilters({
+        decades: [1980, 1990],
+        genres: ["Pop", "Rock", "Hip-Hop", "R&B"],
+        obscurity: [1, 2, 3],
+      });
+    case "headphones-after-dark":
+      return musicFilters({
+        decades: [1990, 2000, 2010, 2020],
+        genres: ["Electronic", "Jazz", "Metal"],
+        obscurity: [2, 3, 4],
+      });
+    case "chart-or-bust":
+      return musicFilters({
+        decades: [1980, 1990, 2000, 2010, 2020],
+        genres: ["Pop", "R&B", "Hip-Hop"],
+        obscurity: [1, 2],
+      });
+    case "crate-digging":
+      return musicFilters({
+        decades: [1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020],
+        genres: [...MUSIC_GENRES],
+        obscurity: [4, 5],
+      });
+    case "jazz-club":
+      return musicFilters({
+        decades: [1950, 1960, 1970, 1980, 1990],
+        genres: ["Jazz"],
+        obscurity: [1, 2, 3, 4],
+      });
+    case "folk-porch":
+      return musicFilters({
+        decades: [1960, 1970, 1990, 2000, 2010, 2020],
+        genres: ["Folk"],
+        obscurity: [2, 3, 4],
+      });
+    case "metal-practice":
+      return musicFilters({
+        decades: [1980, 1990, 2000, 2010, 2020],
+        genres: ["Metal"],
+        obscurity: [1, 2, 3, 4],
+      });
+    case "classical-homework":
+      return musicFilters({
+        decades: [1950, 1960, 1970, 1980, 1990, 2000],
+        genres: ["Classical"],
+        obscurity: [1, 2, 3],
+      });
+    case "country-radio":
+      return musicFilters({
+        decades: [1970, 1980, 1990, 2000, 2010, 2020],
+        genres: ["Country", "Folk"],
+        obscurity: [1, 2, 3],
+      });
+    case "streaming-era":
+      return musicFilters({
+        decades: [2010, 2020],
+        genres: ["Pop", "Hip-Hop", "R&B", "Electronic"],
+        obscurity: [1, 2, 3],
+      });
+    case "cd-longbox":
+      return musicFilters({
+        decades: [1990],
+        genres: ["Rock", "Pop", "Hip-Hop", "R&B", "Country"],
+        obscurity: [1, 2, 3],
+      });
+    case "boombox-block":
+      return musicFilters({
+        decades: [1980, 1990, 2000],
+        genres: ["Hip-Hop"],
+        obscurity: [1, 2, 3],
+      });
+    case "dance-floor":
+      return musicFilters({
+        decades: [1990, 2000, 2010, 2020],
+        genres: ["Electronic", "Pop"],
+        obscurity: [1, 2, 3],
+      });
+    case "deep-cuts-only":
+      return musicFilters({
+        decades: [1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020],
+        genres: [...MUSIC_GENRES],
+        obscurity: [4, 5],
+        stackSize: 100,
+      });
+    default:
+      return musicPreset("vinyl-night");
+  }
+}
+
 export function filtersForPreset(id: string, medium: Medium): PathFilters {
-  const raw = medium === "movie" ? moviePreset(id) : gamePreset(id);
+  const raw = medium === "movie" ? moviePreset(id) : medium === "game" ? gamePreset(id) : musicPreset(id);
   const allowed = new Set(decadesFor(medium));
   const decades = raw.decades.filter((decade) => allowed.has(decade));
-  const allowedGenres = new Set(medium === "movie" ? MOVIE_GENRES : GAME_GENRES);
+  const allowedGenres = new Set(genresFor(medium));
   const genres = raw.genres.filter((genre) => allowedGenres.has(genre as never));
   const allowedPlatforms = new Set(GAME_PLATFORMS);
   const platforms =

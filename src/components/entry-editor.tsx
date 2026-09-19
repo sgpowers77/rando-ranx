@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { parseWatchedDate } from "@/lib/director";
+import { heardItLabel, skippedItLabel, wantItLabel, unitNoun } from "@/lib/medium";
 import type { RatingExtras, ResponseKind, SessionResponse } from "@/lib/types";
 import { useState } from "react";
 
@@ -22,9 +23,9 @@ export function EntryEditor({ entry, onSave, onCancel }: EntryEditorProps) {
   const [saved, setSaved] = useState(false);
 
   const medium = entry.medium;
-  const seenLabel = medium === "movie" ? "Seen It" : "Played It";
-  const skipLabel = medium === "movie" ? "Haven't Seen It" : "Haven't Played It";
-  const wantLabel = medium === "movie" ? "Want to See It" : "Want to Play It";
+  const seenLabel = heardItLabel(medium);
+  const skipLabel = skippedItLabel(medium);
+  const wantLabel = wantItLabel(medium);
 
   const canSave = kind !== "rated" || rating != null;
 
@@ -32,7 +33,7 @@ export function EntryEditor({ entry, onSave, onCancel }: EntryEditorProps) {
     <Card className="border-none bg-card/80 ring-1 ring-white/10">
       <CardHeader className="gap-3">
         <p className="text-xs font-medium tracking-widest text-primary uppercase">
-          Editing {medium === "movie" ? "movie" : "game"}
+          Editing {unitNoun(medium)}
         </p>
         <CardTitle className="font-heading text-3xl leading-tight text-balance sm:text-4xl">
           {entry.title}

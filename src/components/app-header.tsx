@@ -52,7 +52,7 @@ export function AppHeader({
           type="button"
           onClick={onHome}
           className="text-left"
-          aria-label={showHome ? "Back to Movies or Games" : "RandoRanx home"}
+          aria-label={showHome ? "Back to Movies, Games, or Music" : "RandoRanx home"}
         >
           <p className="font-heading text-lg tracking-tight">RandoRanx</p>
           <p className="text-xs text-muted-foreground">It&apos;s Showdown Time</p>
