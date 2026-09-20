@@ -21,21 +21,17 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { downloadSessionCsv } from "@/lib/csv";
 import { downloadLetterboxdCsv, letterboxdRowCount } from "@/lib/letterboxd";
-import { PALETTES, type PaletteId } from "@/lib/theme";
+import { PALETTES } from "@/lib/theme";
 import { usePalette } from "@/components/theme-provider";
 import type { CatalogTitle, DiscardEntry, SessionResponse, WatchTag } from "@/lib/types";
 import { Settings } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type AppSettingsMenuProps = {
   responses: SessionResponse[];
@@ -49,18 +45,6 @@ type AppSettingsMenuProps = {
   catalogTitles: CatalogTitle[];
 };
 
-function useWideSettingsMenu() {
-  const [wide, setWide] = useState(false);
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 768px)");
-    const sync = () => setWide(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
-  return wide;
-}
-
 export function AppSettingsMenu({
   responses,
   discards,
@@ -73,7 +57,6 @@ export function AppSettingsMenu({
   catalogTitles,
 }: AppSettingsMenuProps) {
   const { palette, choose } = usePalette();
-  const wide = useWideSettingsMenu();
   const [clearOpen, setClearOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const hasAnything = responses.length + discards.length + watchTags.length > 0;
@@ -108,31 +91,13 @@ export function AppSettingsMenu({
           ) : null}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" side="bottom" className="w-56 min-w-56" sideOffset={8}>
-          {wide ? (
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>Color palette</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={palette}
-                onValueChange={(value) => {
-                  if (value) choose(value as PaletteId);
-                }}
-              >
-                {PALETTES.map((item) => (
-                  <DropdownMenuRadioItem key={item.id} value={item.id}>
-                    {item.label}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuGroup>
-          ) : (
-            <DropdownMenuItem
-              onClick={() => {
-                window.setTimeout(() => setPaletteOpen(true), 0);
-              }}
-            >
-              Color palette
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            onClick={() => {
+              window.setTimeout(() => setPaletteOpen(true), 0);
+            }}
+          >
+            Color Palette
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem disabled={!hasAnything} onClick={() => window.print()}>
             Export to PDF
@@ -159,7 +124,7 @@ export function AppSettingsMenu({
       <Dialog open={paletteOpen} onOpenChange={setPaletteOpen}>
         <DialogContent className="sm:max-w-sm" showCloseButton>
           <DialogHeader>
-            <DialogTitle>Color palette</DialogTitle>
+            <DialogTitle>Color Palette</DialogTitle>
             <DialogDescription>Applies across RandoRanx and is remembered on this device.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
