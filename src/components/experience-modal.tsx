@@ -53,7 +53,7 @@ export function ExperienceModal({
   }, [open, medium, groups]);
 
   const toggleGroup = (id: string) => {
-    setOpenGroupIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+    setOpenGroupIds((prev) => (prev.includes(id) ? [] : [id]));
   };
 
   return (
