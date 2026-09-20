@@ -9,21 +9,31 @@ const outPath = path.join(process.cwd(), "public", "games-index.json");
 const GAME_GENRES = [
   "Action",
   "Adventure",
+  "Beat 'em Up",
   "Casual",
   "Fighting",
   "Horror",
+  "Immersive Sim",
   "Indie",
+  "JRPG",
+  "Metroidvania",
   "Open World",
+  "Party",
   "Platformer",
   "Puzzle",
   "Racing",
+  "Rhythm",
   "RPG",
   "Roguelike",
+  "Sandbox",
   "Shooter",
   "Simulation",
+  "Soulslike",
   "Sports",
+  "Stealth",
   "Strategy",
   "Survival",
+  "Tactics",
   "Visual Novel",
 ];
 
@@ -136,11 +146,12 @@ function parseYear(raw) {
   return year;
 }
 
-function mapGenres(raw) {
+function mapGenres(raw, title = "") {
   const blob = String(raw ?? "")
     .toLowerCase()
     .replace(/[_/»]+/g, " ")
     .replace(/-/g, " ");
+  const name = String(title ?? "").toLowerCase();
   const found = [];
   const add = (genre) => {
     if (GAME_GENRES.includes(genre) && !found.includes(genre)) found.push(genre);
@@ -150,6 +161,33 @@ function mapGenres(raw) {
   if (/open[\s]*world/.test(blob)) add("Open World");
   if (/\bsurvival\b/.test(blob)) add("Survival");
   if (/\bhorror\b/.test(blob)) add("Horror");
+  if (/metroidvania/.test(blob) || /metroid|hollow knight|axiom verge|ori and the|blasphemous|ender lilies|animal well|dead cells/.test(name)) {
+    add("Metroidvania");
+  }
+  if (
+    /souls[\s-]*like|soulsborne/.test(blob) ||
+    (!/^bleach/.test(name) &&
+      /dark souls|elden ring|sekiro|bloodborne|demon'?s souls|nioh|\blies of p\b|another crab|salt and sanctuary|lords of the fallen|wo long/.test(
+        name
+      ))
+  ) {
+    add("Soulslike");
+  }
+  if (/japanese[\s-]*style|\bjrpg\b/.test(blob)) add("JRPG");
+  if (/\btactics\b|tactical rpg|turn[\s]*based[\s]*tactics/.test(blob) && !/tactical shooter|shooter.*tactical/.test(blob)) {
+    add("Tactics");
+  }
+  if (
+    /immersive[\s-]*sim/.test(blob) ||
+    /deus ex|dishonored|system shock|\bbioshock\b|\bprey\b|vampire.the masquerade|deathloop|\bthief\b|cruelty squad/.test(name)
+  ) {
+    add("Immersive Sim");
+  }
+  if (/beat[\s']*em[\s']*up|brawler/.test(blob)) add("Beat 'em Up");
+  if (/\bstealth\b/.test(blob)) add("Stealth");
+  if (/\bsandbox\b/.test(blob)) add("Sandbox");
+  if (/\bparty\b|minigame collection|mini[\s-]*game collection/.test(blob)) add("Party");
+  if (/\brhythm\b|\bdancing\b/.test(blob)) add("Rhythm");
   if (/shooter|\bfps\b|\btps\b|shoot[\s']*em[\s']*up/.test(blob)) add("Shooter");
   if (
     /\bsports?\b|football|soccer|basketball|baseball|hockey|tennis|golf|wrestling|fifa|\bnba\b|\bnfl\b|madden/.test(
@@ -161,17 +199,17 @@ function mapGenres(raw) {
   if (/racing|driving|\brally\b/.test(blob)) add("Racing");
   if (/platform/.test(blob)) add("Platformer");
   if (/puzzle|match 3|hidden object/.test(blob)) add("Puzzle");
-  if (/fight|beat[\s']*em|brawler/.test(blob)) add("Fighting");
+  if (/\bfight/.test(blob) && !found.includes("Beat 'em Up")) add("Fighting");
   if (/role[\s]*play|\brpg\b|jrpg/.test(blob)) add("RPG");
   if (/simulat|tycoon|life sim|management|\bfarm\b/.test(blob)) add("Simulation");
-  if (/strateg|tactics|\b4x\b|\brts\b/.test(blob)) add("Strategy");
+  if (/strateg|\b4x\b|\brts\b/.test(blob)) add("Strategy");
   if (/\bcasual\b/.test(blob)) add("Casual");
   if (/\bindie\b|experimental/.test(blob)) add("Indie");
-  if (/point[\s]*and[\s]*click|metroidvania|\badventure\b/.test(blob)) add("Adventure");
+  if (/point[\s]*and[\s]*click|\badventure\b/.test(blob)) add("Adventure");
   const specificCombat = found.some((genre) =>
-    ["Shooter", "Fighting", "Platformer", "Sports", "Racing"].includes(genre)
+    ["Shooter", "Fighting", "Beat 'em Up", "Platformer", "Sports", "Racing", "Stealth", "Rhythm"].includes(genre)
   );
-  if (/\baction\b|stealth|arcade/.test(blob) && !specificCombat) add("Action");
+  if (/\baction\b|arcade/.test(blob) && !specificCombat) add("Action");
   return found;
 }
 
@@ -276,7 +314,7 @@ async function loadOpenGameDb(byKey) {
       if (!title) continue;
       const year = parseYear(cols[iReleased]);
       if (!year) continue;
-      const genres = mapGenres(cols[iGenre] ?? "");
+      const genres = mapGenres(cols[iGenre] ?? "", title);
       if (genres.length === 0) continue;
       const metascore = Number(cols[iMeta]);
       const gfScore = Number(cols[iGf]);
@@ -371,7 +409,7 @@ async function loadGameDex(byKey) {
       const genreName =
         genreById.get(String(row.genre ?? "")) ??
         (typeof row.genre === "string" ? row.genre : "");
-      const genres = mapGenres(genreName);
+      const genres = mapGenres(genreName, title);
       if (genres.length === 0) continue;
       const consoleNames = [];
       const consoles = row.consoles;

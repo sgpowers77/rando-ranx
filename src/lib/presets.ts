@@ -647,14 +647,14 @@ function gamePreset(id: string): PathFilters {
     case "nintendo-direct":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Platformer", "Adventure", "Simulation", "Action", "Casual"],
+        genres: ["Platformer", "Adventure", "Simulation", "Action", "Casual", "Metroidvania"],
         obscurity: [1, 2],
         platforms: ["Nintendo"],
       });
     case "playstation-prestige":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Action", "Adventure", "RPG", "Shooter", "Open World"],
+        genres: ["Action", "Adventure", "RPG", "Shooter", "Open World", "Stealth"],
         obscurity: [1, 2],
         platforms: ["PlayStation"],
       });
@@ -668,28 +668,28 @@ function gamePreset(id: string): PathFilters {
     case "pc-master-race":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Action", "Adventure", "Indie", "RPG", "Simulation", "Strategy", "Shooter"],
+        genres: ["Action", "Adventure", "Indie", "RPG", "Simulation", "Strategy", "Shooter", "Immersive Sim", "Stealth", "Tactics"],
         obscurity: [1, 2, 3],
         platforms: ["PC"],
       });
     case "handheld-back-seat":
       return gameFilters({
         decades: [1990],
-        genres: ["RPG", "Adventure", "Action", "Platformer"],
+        genres: ["JRPG", "Metroidvania", "RPG", "Adventure", "Platformer"],
         obscurity: [1, 2, 3],
         platforms: ["Nintendo"],
       });
     case "keyboard-mouse":
       return gameFilters({
         decades: [2000, 2010, 2020],
-        genres: ["Strategy", "Puzzle", "Simulation"],
+        genres: ["Strategy", "Puzzle", "Simulation", "Tactics"],
         obscurity: [2, 3, 4],
         platforms: ["PC"],
       });
     case "souls-borne":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Action", "RPG", "Survival"],
+        genres: ["Soulslike", "Action", "RPG"],
         obscurity: [1, 2, 3],
         platforms: ["PlayStation", "Xbox", "PC"],
       });
@@ -724,21 +724,21 @@ function gamePreset(id: string): PathFilters {
     case "jrpg-homework":
       return gameFilters({
         decades: [1990, 2000, 2010, 2020],
-        genres: ["RPG"],
+        genres: ["JRPG", "RPG"],
         obscurity: [1, 2, 3],
         platforms: ["Nintendo", "PlayStation"],
       });
     case "cartridge-era":
       return gameFilters({
         decades: [1990],
-        genres: ["Action", "Adventure", "RPG", "Platformer", "Puzzle"],
+        genres: ["Action", "Adventure", "JRPG", "Metroidvania", "Platformer", "Puzzle"],
         obscurity: [2, 3, 4],
         platforms: ["Nintendo"],
       });
     case "split-screen":
       return gameFilters({
         decades: [2000, 2010, 2020],
-        genres: ["Action", "Fighting", "Shooter"],
+        genres: ["Action", "Fighting", "Shooter", "Party", "Beat 'em Up"],
         obscurity: [1, 2],
         platforms: ["Xbox", "PlayStation", "Nintendo"],
       });
@@ -752,7 +752,7 @@ function gamePreset(id: string): PathFilters {
     case "open-world-hangover":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Open World", "Action", "Adventure", "RPG"],
+        genres: ["Open World", "Action", "Adventure", "RPG", "Sandbox"],
         obscurity: [1, 2],
         platforms: ["PlayStation", "Xbox", "PC"],
         stackSize: 25,
@@ -788,7 +788,7 @@ function gamePreset(id: string): PathFilters {
     case "couch-co-op":
       return gameFilters({
         decades: [2010, 2020],
-        genres: ["Platformer", "Adventure", "Puzzle", "Casual"],
+        genres: ["Platformer", "Adventure", "Puzzle", "Casual", "Party"],
         obscurity: [1, 2, 3],
         platforms: ["Nintendo", "PlayStation", "Xbox"],
         stackSize: 25,
@@ -796,7 +796,7 @@ function gamePreset(id: string): PathFilters {
     case "day-one-patch":
       return gameFilters({
         decades: [2020],
-        genres: ["Action", "Adventure", "RPG", "Shooter", "Open World"],
+        genres: ["Action", "Adventure", "RPG", "Shooter", "Open World", "Soulslike"],
         obscurity: [1, 2],
         platforms: ["PlayStation", "Xbox", "PC"],
         stackSize: 100,

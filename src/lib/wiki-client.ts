@@ -32,6 +32,18 @@ function guessGenres(text: string, medium: Medium): string[] {
     drama: "Drama",
   };
   const gameMap: Record<string, string> = {
+    metroidvania: "Metroidvania",
+    soulslike: "Soulslike",
+    "souls-like": "Soulslike",
+    jrpg: "JRPG",
+    "immersive sim": "Immersive Sim",
+    "beat 'em up": "Beat 'em Up",
+    "beat em up": "Beat 'em Up",
+    stealth: "Stealth",
+    sandbox: "Sandbox",
+    party: "Party",
+    rhythm: "Rhythm",
+    tactics: "Tactics",
     "visual novel": "Visual Novel",
     roguelike: "Roguelike",
     "open world": "Open World",
