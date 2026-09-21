@@ -33,7 +33,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { defaultFilters } from "@/lib/filters";
+import { defaultFilters, hasUserScores } from "@/lib/filters";
 import {
   catalogLabel,
   otherCatalogsLabel,
@@ -239,6 +239,7 @@ export function RandoRanxApp() {
                 setRandomizeFilters(session.medium, on);
               }}
               onBack={goHome}
+              showRatings={hasUserScores(session.responses, session.medium)}
             />
           ) : null}
 
@@ -367,6 +368,7 @@ export function RandoRanxApp() {
             if (!session.medium) return;
             savePathFilters(session.medium, next);
           }}
+          showRatings={hasUserScores(session.responses, session.medium)}
         />
       ) : null}
 

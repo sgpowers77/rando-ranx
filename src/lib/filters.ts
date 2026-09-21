@@ -1,6 +1,7 @@
 import { titleIsEnglishDialogue } from "@/lib/language";
 import { MPAA_RATINGS, titleMpaa } from "@/lib/mpaa";
-import type { CatalogTitle, Medium, PathFilters, StackSize } from "@/lib/types";
+import { titleIdentity } from "@/lib/title-identity";
+import type { CatalogTitle, Medium, PathFilters, SessionResponse, StackSize } from "@/lib/types";
 
 export const MOVIE_GENRES = [
   "Action",
@@ -77,6 +78,9 @@ export type GamePlatform = (typeof GAME_PLATFORMS)[number];
 
 export const OBSCURITY_LEVELS = [1, 2, 3, 4, 5] as const;
 
+/** User 1–10 scores from Results (Ranx Seen/Played/Heard and scored Tourney winners). */
+export const SCORE_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+
 export const STACK_SIZES = [10, 25, 50, 100] as const;
 /** Nearest allowed size to the previous ~40-title Tourney sample. */
 export const DEFAULT_STACK_SIZE: StackSize = 50;
@@ -108,6 +112,55 @@ export function decadeOf(year: number): number {
   return Math.floor(year / 10) * 10;
 }
 
+export type UserScoreIndex = {
+  byId: Map<string, number>;
+  byKey: Map<string, number>;
+};
+
+export function isUserScore(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 10;
+}
+
+export function buildUserScoreIndex(responses: SessionResponse[], medium: Medium): UserScoreIndex {
+  const byId = new Map<string, number>();
+  const byKey = new Map<string, number>();
+  for (const entry of responses) {
+    if (entry.medium !== medium || !isUserScore(entry.rating)) continue;
+    byId.set(entry.titleId, entry.rating);
+    byKey.set(
+      titleIdentity({
+        id: entry.titleId,
+        title: entry.title,
+        year: entry.year,
+        medium: entry.medium,
+      }),
+      entry.rating
+    );
+  }
+  return { byId, byKey };
+}
+
+export function hasUserScores(responses: SessionResponse[], medium: Medium): boolean {
+  return responses.some((entry) => entry.medium === medium && isUserScore(entry.rating));
+}
+
+export function scoreForTitle(title: CatalogTitle, index: UserScoreIndex): number | undefined {
+  return index.byId.get(title.id) ?? index.byKey.get(titleIdentity(title));
+}
+
+export function ratingsFilterActive(filters: PathFilters, index: UserScoreIndex): boolean {
+  return (filters.scores?.length ?? 0) > 0 && (index.byId.size > 0 || index.byKey.size > 0);
+}
+
+function validScores(values: number[] | undefined): number[] {
+  const found: number[] = [];
+  for (const value of values ?? []) {
+    if (!isUserScore(value) || found.includes(value)) continue;
+    found.push(value);
+  }
+  return found.sort((a, b) => a - b);
+}
+
 export function defaultFilters(medium: Medium): PathFilters {
   return {
     decades: [...decadesFor(medium)],
@@ -120,7 +173,11 @@ export function defaultFilters(medium: Medium): PathFilters {
   };
 }
 
-export function matchesFilters(title: CatalogTitle, filters: PathFilters): boolean {
+export function matchesFilters(
+  title: CatalogTitle,
+  filters: PathFilters,
+  ctx?: { scores?: UserScoreIndex }
+): boolean {
   const decades = filters.decades ?? [];
   const genres = filters.genres ?? [];
   const obscurity = filters.obscurity ?? [];
@@ -143,6 +200,11 @@ export function matchesFilters(title: CatalogTitle, filters: PathFilters): boole
     if (allowed.length === 0) return false;
     const families = titlePlatforms(title);
     if (!families.some((platform) => allowed.includes(platform))) return false;
+  }
+  const index = ctx?.scores;
+  if (index && ratingsFilterActive(filters, index)) {
+    const score = scoreForTitle(title, index);
+    if (score == null || !filters.scores!.includes(score)) return false;
   }
   return true;
 }
@@ -173,6 +235,7 @@ export function sanitizeFilters(filters: PathFilters, medium: Medium): PathFilte
     includeForeign: filters.includeForeign !== false,
     stackSize: stackSizeOf(filters.stackSize),
     platforms: medium === "game" ? validGamePlatforms(filters) : [],
+    scores: validScores(filters.scores),
   };
 }
 
@@ -182,12 +245,17 @@ function validGamePlatforms(filters: PathFilters): string[] {
   );
 }
 
-export function filtersComplete(filters: PathFilters, medium: Medium): boolean {
+export function filtersComplete(
+  filters: PathFilters,
+  medium: Medium,
+  opts?: { requireScores?: boolean }
+): boolean {
   if ((filters.decades?.length ?? 0) === 0) return false;
   if ((filters.genres?.length ?? 0) === 0) return false;
   if ((filters.obscurity?.length ?? 0) === 0) return false;
   if (medium === "movie" && (filters.mpaa?.length ?? 0) === 0) return false;
   if (medium === "game" && (filters.platforms?.length ?? 0) === 0) return false;
+  if (opts?.requireScores && (filters.scores?.length ?? 0) === 0) return false;
   return true;
 }
 
@@ -202,7 +270,7 @@ function shufflePick<T>(items: readonly T[]): T[] {
 }
 
 /** Random non-empty selection for every required Filters group (Done-lock safe). */
-export function randomizeFilters(medium: Medium): PathFilters {
+export function randomizeFilters(medium: Medium, opts?: { requireScores?: boolean }): PathFilters {
   const next: PathFilters = {
     decades: shufflePick(decadesFor(medium)),
     genres: shufflePick(genresFor(medium)),
@@ -211,6 +279,7 @@ export function randomizeFilters(medium: Medium): PathFilters {
     mpaa: medium === "movie" ? shufflePick([...MPAA_RATINGS]) : [],
     includeForeign: medium === "movie" ? Math.random() < 0.5 : true,
     platforms: medium === "game" ? shufflePick([...GAME_PLATFORMS]) : [],
+    scores: opts?.requireScores ? shufflePick([...SCORE_LEVELS]) : [],
   };
   return sanitizeFilters(next, medium);
 }
@@ -224,6 +293,7 @@ export function filtersActive(filters: PathFilters, medium: Medium): boolean {
     (medium === "movie" && (filters.mpaa?.length ?? 0) !== defaults.mpaa.length) ||
     (medium === "movie" && filters.includeForeign === false) ||
     (medium === "game" && (filters.platforms?.length ?? 0) !== GAME_PLATFORMS.length) ||
-    stackSizeOf(filters.stackSize) !== defaults.stackSize
+    stackSizeOf(filters.stackSize) !== defaults.stackSize ||
+    (filters.scores?.length ?? 0) > 0
   );
 }

@@ -18,6 +18,7 @@ type ModePickerProps = {
   onSaveFilters: (filters: PathFilters) => void;
   onFullRandoChange: (on: boolean) => void;
   onBack: () => void;
+  showRatings?: boolean;
 };
 
 export function ModePicker({
@@ -28,6 +29,7 @@ export function ModePicker({
   onSaveFilters,
   onFullRandoChange,
   onBack,
+  showRatings = false,
 }: ModePickerProps) {
   const catalog = catalogNoun(medium);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -81,6 +83,7 @@ export function ModePicker({
         medium={medium}
         filters={filters ?? defaultFilters(medium)}
         onSave={onSaveFilters}
+        showRatings={showRatings}
       />
       <ExperienceModal
         open={experienceOpen}

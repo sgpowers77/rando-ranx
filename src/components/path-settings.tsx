@@ -17,6 +17,7 @@ import {
   GAME_PLATFORMS,
   genresFor,
   OBSCURITY_LEVELS,
+  SCORE_LEVELS,
   STACK_SIZES,
   sanitizeFilters,
 } from "@/lib/filters";
@@ -32,6 +33,7 @@ type PathSettingsProps = {
   medium: Medium;
   filters: PathFilters;
   onSave: (filters: PathFilters) => void;
+  showRatings?: boolean;
 };
 
 export function PathSettings({
@@ -40,23 +42,24 @@ export function PathSettings({
   medium,
   filters,
   onSave,
+  showRatings = false,
 }: PathSettingsProps) {
-  const [draft, setDraft] = useState<PathFilters>(() => sanitizeFilters(filters, medium));
+  const [draft, setDraft] = useState<PathFilters>(() => withRatingsDraft(filters, medium, showRatings));
   const wasOpen = useRef(false);
 
   useEffect(() => {
     if (open && !wasOpen.current) {
-      setDraft(sanitizeFilters(filters, medium));
+      setDraft(withRatingsDraft(filters, medium, showRatings));
     }
     wasOpen.current = open;
-  }, [open, filters, medium]);
+  }, [open, filters, medium, showRatings]);
 
   const genres = genresFor(medium);
   const decades = decadesFor(medium);
   const obscurityCopy =
     medium === "game" ? GAME_OBSCURITY_COPY : medium === "music" ? MUSIC_OBSCURITY_COPY : MOVIE_OBSCURITY_COPY;
-  const canClose = filtersComplete(draft, medium);
-  const missing = missingGroups(draft, medium);
+  const canClose = filtersComplete(draft, medium, { requireScores: showRatings });
+  const missing = missingGroups(draft, medium, showRatings);
 
   const apply = (patch: Partial<PathFilters>) => {
     const nextFilters: PathFilters = {
@@ -78,7 +81,7 @@ export function PathSettings({
       open={open}
       onOpenChange={(next) => {
         if (next) {
-          setDraft(sanitizeFilters(filters, medium));
+          setDraft(withRatingsDraft(filters, medium, showRatings));
           onOpenChange(true);
           return;
         }
@@ -228,6 +231,39 @@ export function PathSettings({
             </div>
           </fieldset>
 
+          {showRatings ? (
+            <fieldset className="space-y-2">
+              <legend className="w-full">
+                <GroupControls
+                  label="Ratings"
+                  onCheckAll={() => apply({ scores: [...SCORE_LEVELS] })}
+                  onUncheckAll={() => apply({ scores: [] })}
+                />
+              </legend>
+              <p className="text-xs text-muted-foreground">
+                Your 1–10 scores from Results. Deals only titles you already rated that match the
+                boxes you check.
+              </p>
+              <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
+                {SCORE_LEVELS.map((score) => {
+                  const id = `filter-score-${score}`;
+                  return (
+                    <label key={score} htmlFor={id} className="flex items-center gap-2 text-sm tabular-nums">
+                      <Checkbox
+                        id={id}
+                        checked={(draft.scores ?? []).includes(score)}
+                        onCheckedChange={() =>
+                          apply({ scores: toggle(draft.scores ?? [], score) as number[] })
+                        }
+                      />
+                      {score}
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ) : null}
+
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium">Stack size</legend>
             <p className="text-xs text-muted-foreground">
@@ -297,7 +333,7 @@ export function PathSettings({
           </p>
         )}
         <DialogFooter className="gap-2 sm:justify-between">
-          <Button type="button" variant="ghost" onClick={() => apply(defaultFilters(medium))}>
+          <Button type="button" variant="ghost" onClick={() => apply(withRatingsDraft(defaultFilters(medium), medium, showRatings))}>
             Reset filters
           </Button>
           <Button
@@ -317,13 +353,21 @@ export function PathSettings({
   );
 }
 
-function missingGroups(filters: PathFilters, medium: Medium): string[] {
+function withRatingsDraft(filters: PathFilters, medium: Medium, showRatings: boolean): PathFilters {
+  const next = sanitizeFilters(filters, medium);
+  if (!showRatings) return { ...next, scores: [] };
+  if ((next.scores?.length ?? 0) > 0) return next;
+  return { ...next, scores: [...SCORE_LEVELS] };
+}
+
+function missingGroups(filters: PathFilters, medium: Medium, showRatings: boolean): string[] {
   const missing: string[] = [];
   if ((filters.decades?.length ?? 0) === 0) missing.push("Decades");
   if ((filters.genres?.length ?? 0) === 0) missing.push("Genre");
   if ((filters.obscurity?.length ?? 0) === 0) missing.push("Obscurity");
   if (medium === "movie" && (filters.mpaa?.length ?? 0) === 0) missing.push("MPAA Rating");
   if (medium === "game" && (filters.platforms?.length ?? 0) === 0) missing.push("Platform");
+  if (showRatings && (filters.scores?.length ?? 0) === 0) missing.push("Ratings");
   return missing;
 }
 

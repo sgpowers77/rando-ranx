@@ -1,5 +1,5 @@
 import { resolveTitle, titlesFor, withReleaseYear } from "@/data/catalog";
-import { defaultFilters, decadesFor, matchesFilters, sanitizeFilters, stackSizeOf } from "@/lib/filters";
+import { defaultFilters, decadesFor, matchesFilters, ratingsFilterActive, buildUserScoreIndex, sanitizeFilters, stackSizeOf } from "@/lib/filters";
 import { parseMpaaList } from "@/lib/mpaa";
 import { parseWatchedDate } from "@/lib/director";
 import { emptyFlagMap, emptyIdMap, isMedium, MEDIA } from "@/lib/medium";
@@ -327,11 +327,14 @@ export function eligibleFor(session: StoredSession, medium: Medium, playMode: Pl
     return queuedForMedium(session, medium);
   }
   const filters = filtersFor(session, medium, playMode);
-  return catalogWithYears(session, medium).filter((item) => matchesFilters(item, filters));
+  const scores = buildUserScoreIndex(session.responses, medium);
+  return catalogWithYears(session, medium).filter((item) => matchesFilters(item, filters, { scores }));
 }
 
 export function poolFor(session: StoredSession, medium: Medium, playMode: PlayMode): CatalogTitle[] {
-  const used = usedTitleIds(session, medium, playMode);
+  const filters = filtersFor(session, medium, playMode);
+  const scores = buildUserScoreIndex(session.responses, medium);
+  const used = ratingsFilterActive(filters, scores) ? new Set<string>() : usedTitleIds(session, medium, playMode);
   return eligibleFor(session, medium, playMode).filter((item) => !used.has(item.id));
 }
 
@@ -341,7 +344,9 @@ export function dealtQueue(
   playMode: PlayMode,
   pinnedId?: string
 ): string[] {
-  const used = usedTitleIds(session, medium, playMode);
+  const filters = filtersFor(session, medium, playMode);
+  const scores = buildUserScoreIndex(session.responses, medium);
+  const used = ratingsFilterActive(filters, scores) ? new Set<string>() : usedTitleIds(session, medium, playMode);
   const pool = eligibleFor(session, medium, playMode).filter((item) => !used.has(item.id));
   const recent = new Set((session.recentlyShown?.[medium] ?? []).filter((id) => id !== pinnedId));
   const fresh = pool.filter((item) => item.id !== pinnedId && !recent.has(item.id));
@@ -462,6 +467,9 @@ function parseOnePathFilters(raw: unknown, medium: Medium): PathFilters | null {
           ? data.platforms.filter((item) => typeof item === "string")
           : []
         : [],
+    scores: Array.isArray(data.scores)
+      ? data.scores.filter((n) => typeof n === "number" && Number.isInteger(n) && n >= 1 && n <= 10)
+      : [],
   };
 }
 
@@ -736,7 +744,9 @@ export function applyTourneyOutcome(
         if (id === winnerId || id === loserId) return false;
         const item = resolveTitle(id, prev.customTitles, prev.releaseYears, prev.liveTitles);
         if (!item) return true;
-        return matchesFilters(item, filtersFor(prev, medium, prev.playMode ?? "tourney"));
+        return matchesFilters(item, filtersFor(prev, medium, prev.playMode ?? "tourney"), {
+          scores: buildUserScoreIndex(prev.responses, medium),
+        });
       })
     )
   );

@@ -38,6 +38,11 @@ export type PathFilters = {
   stackSize: StackSize;
   /** Games only. First-release families such as Nintendo, PlayStation, Xbox, PC. */
   platforms?: string[];
+  /**
+   * Selected 1–10 user scores. When set (Ratings group visible and saved), deals
+   * only titles the user already scored that match. Omitted when the group is hidden.
+   */
+  scores?: number[];
 };
 
 export type ResponseKind = "rated" | "skipped" | "queued" | "winner";

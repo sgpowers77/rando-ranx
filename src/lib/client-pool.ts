@@ -1,5 +1,5 @@
 import { SEARCH_FALLBACK, titlesFor } from "@/data/catalog";
-import { matchesFilters, sanitizeFilters, stackSizeOf } from "@/lib/filters";
+import { matchesFilters, ratingsFilterActive, sanitizeFilters, stackSizeOf, type UserScoreIndex } from "@/lib/filters";
 import { publicUrl } from "@/lib/public-url";
 import { mergeCatalogTitles, uniqueTitles } from "@/lib/title-identity";
 import type { CatalogTitle, Medium, PathFilters } from "@/lib/types";
@@ -163,17 +163,23 @@ export async function sampleClientPool(options: {
   limit?: number;
   /** Exact draw size. Use this for Skip replenishment; `limit` is a stack-size bucket. */
   count?: number;
+  userScores?: UserScoreIndex;
+  extraTitles?: CatalogTitle[];
 }): Promise<{ titles: CatalogTitle[]; source: "dataset" | "catalog"; available: number }> {
   const take =
     typeof options.count === "number" && Number.isFinite(options.count) && options.count > 0
       ? Math.floor(options.count)
       : stackSizeOf(options.limit);
-  const exclude = new Set(options.excludeIds ?? []);
   const filters = sanitizeFilters(options.filters, options.medium);
+  const scores = options.userScores;
+  const rewatch = scores ? ratingsFilterActive(filters, scores) : false;
+  const exclude = new Set(rewatch ? [] : (options.excludeIds ?? []));
+  const ctx = scores ? { scores } : undefined;
+  const extras = (options.extraTitles ?? []).filter((item) => item.medium === options.medium);
   if (options.medium === "game") {
     const loaded = await loadGameCatalog();
     const eligible = uniqueTitles(
-      loaded.titles.filter((item) => !exclude.has(item.id) && matchesFilters(item, filters))
+      [...extras, ...loaded.titles].filter((item) => !exclude.has(item.id) && matchesFilters(item, filters, ctx))
     );
     return {
       titles: shuffle(eligible).slice(0, take),
@@ -184,7 +190,7 @@ export async function sampleClientPool(options: {
   if (options.medium === "music") {
     const loaded = await loadMusicCatalog();
     const eligible = uniqueTitles(
-      loaded.titles.filter((item) => !exclude.has(item.id) && matchesFilters(item, filters))
+      [...extras, ...loaded.titles].filter((item) => !exclude.has(item.id) && matchesFilters(item, filters, ctx))
     );
     return {
       titles: shuffle(eligible).slice(0, take),
@@ -193,12 +199,11 @@ export async function sampleClientPool(options: {
     };
   }
   const loaded = await loadMovieCatalog();
-  const eligible = loaded.titles.filter(
-    (item) => !exclude.has(item.id) && matchesFilters(item, filters)
+  const eligible = uniqueTitles(
+    [...extras, ...loaded.titles].filter((item) => !exclude.has(item.id) && matchesFilters(item, filters, ctx))
   );
-  const sampled = shuffle(eligible).slice(0, take);
   return {
-    titles: sampled,
+    titles: shuffle(eligible).slice(0, take),
     source: loaded.source,
     available: eligible.length,
   };

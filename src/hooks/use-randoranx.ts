@@ -2,7 +2,7 @@
 
 import { resolveTitle } from "@/data/catalog";
 import { loadGameCatalog, loadMovieCatalog, loadMusicCatalog, sampleClientPool } from "@/lib/client-pool";
-import { matchesFilters, randomizeFilters as rollPathFilters, stackSizeOf } from "@/lib/filters";
+import { matchesFilters, randomizeFilters as rollPathFilters, ratingsFilterActive, buildUserScoreIndex, hasUserScores, stackSizeOf } from "@/lib/filters";
 import { distinctTourneyPair, pickDistinctTitles, uniqueTitles } from "@/lib/title-identity";
 import { POSTER_PRELOAD_EVERY, scheduleStackPosters } from "@/lib/poster";
 import {
@@ -79,12 +79,15 @@ export function useRandoRanx() {
         .filter((title): title is CatalogTitle => title != null && !used.has(title.id));
     }
     const filters = filtersFor(session, session.medium, session.playMode);
-    const used = usedTitleIds(session, session.medium, session.playMode);
+    const scores = buildUserScoreIndex(session.responses, session.medium);
+    const used = ratingsFilterActive(filters, scores)
+      ? new Set<string>()
+      : usedTitleIds(session, session.medium, session.playMode);
     return session.remainingIds[session.medium]
       .map((id) => titleLookup(session, id))
       .filter(
         (title): title is CatalogTitle =>
-          title != null && matchesFilters(title, filters) && !used.has(title.id)
+          title != null && matchesFilters(title, filters, { scores }) && !used.has(title.id)
       );
   }, [session]);
 
@@ -154,11 +157,19 @@ export function useRandoRanx() {
     try {
       const filters = filtersFor(snapshot, requestedMedium, requestedMode);
       const recent = snapshot.recentlyShown?.[requestedMedium] ?? [];
+      const userScores = buildUserScoreIndex(snapshot.responses, requestedMedium);
+      const extraTitles = [
+        ...(snapshot.liveTitles ?? []),
+        ...(snapshot.customTitles ?? []),
+        ...(snapshot.userQueue ?? []),
+      ];
       const data = await sampleClientPool({
         medium: requestedMedium,
         filters,
         excludeIds: [...usedTitleIds(snapshot, requestedMedium, requestedMode), ...recent],
         limit: stackSizeOf(filters.stackSize),
+        userScores,
+        extraTitles,
       });
       if (gen !== refreshGen.current) return;
       const titles = data.titles;
@@ -278,9 +289,10 @@ export function useRandoRanx() {
       persist((prev) => {
         if (!prev.medium || !prev.playMode) return prev;
         const filters = filtersFor(prev, prev.medium, prev.playMode);
+        const scores = buildUserScoreIndex(prev.responses, prev.medium);
         const matching = prev.remainingIds[prev.medium].filter((id) => {
           const item = titleLookup(prev, id);
-          return Boolean(item) && matchesFilters(item!, filters);
+          return Boolean(item) && matchesFilters(item!, filters, { scores });
         });
         const currentId = matching[0];
         const title = currentId ? titleLookup(prev, currentId) : undefined;
@@ -397,7 +409,10 @@ export function useRandoRanx() {
         return {
           ...prev,
           randomizeFilters: flags,
-          pathFilters: { ...prev.pathFilters, [medium]: rollPathFilters(medium) },
+          pathFilters: {
+            ...prev.pathFilters,
+            [medium]: rollPathFilters(medium, { requireScores: hasUserScores(prev.responses, medium) }),
+          },
         };
       });
       const snap = getSessionSnapshot();
@@ -501,6 +516,12 @@ export function useRandoRanx() {
             filters: filtersFor(snapshot, medium, "tourney"),
             excludeIds: [...exclude],
             count: 8,
+            userScores: buildUserScoreIndex(snapshot.responses, medium),
+            extraTitles: [
+              ...(snapshot.liveTitles ?? []),
+              ...(snapshot.customTitles ?? []),
+              ...(snapshot.userQueue ?? []),
+            ],
           });
           extras = pickDistinctTitles(data.titles, remainingTitles, 2);
         }
