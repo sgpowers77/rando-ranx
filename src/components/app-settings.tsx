@@ -59,6 +59,7 @@ export function AppSettingsMenu({
   const { palette, choose } = usePalette();
   const [clearOpen, setClearOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const hasAnything = responses.length + discards.length + watchTags.length > 0;
   const letterboxdInput = {
     responses: movieResponses,
@@ -99,20 +100,12 @@ export function AppSettingsMenu({
             Color Palette
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem disabled={!hasAnything} onClick={() => window.print()}>
-            Export to PDF
-          </DropdownMenuItem>
           <DropdownMenuItem
-            disabled={!hasAnything}
-            onClick={() => downloadSessionCsv(responses, discards, watchTags)}
+            onClick={() => {
+              window.setTimeout(() => setExportOpen(true), 0);
+            }}
           >
-            Export to CSV
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={!hasLetterboxd}
-            onClick={() => downloadLetterboxdCsv(letterboxdInput)}
-          >
-            Letterboxd CSV
+            Export
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={() => setClearOpen(true)}>
@@ -161,6 +154,70 @@ export function AppSettingsMenu({
                 </button>
               );
             })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Export</DialogTitle>
+            <DialogDescription>
+              Print this catalog’s log, download a spreadsheet, or make a Letterboxd import for movies.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start whitespace-normal px-4 py-3 text-left"
+              disabled={!hasAnything}
+              onClick={() => {
+                setExportOpen(false);
+                window.print();
+              }}
+            >
+              <span className="flex flex-col gap-0.5">
+                <span className="font-medium">Export to PDF</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Opens the print dialog so you can save this catalog’s log as a PDF.
+                </span>
+              </span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start whitespace-normal px-4 py-3 text-left"
+              disabled={!hasAnything}
+              onClick={() => {
+                downloadSessionCsv(responses, discards, watchTags);
+                setExportOpen(false);
+              }}
+            >
+              <span className="flex flex-col gap-0.5">
+                <span className="font-medium">Export to CSV</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Downloads this catalog’s Results, Discard, and Watch rows.
+                </span>
+              </span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start whitespace-normal px-4 py-3 text-left"
+              disabled={!hasLetterboxd}
+              onClick={() => {
+                downloadLetterboxdCsv(letterboxdInput);
+                setExportOpen(false);
+              }}
+            >
+              <span className="flex flex-col gap-0.5">
+                <span className="font-medium">Letterboxd CSV</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Movies only. Letterboxd import with ratings, reviews, and watch dates.
+                </span>
+              </span>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
