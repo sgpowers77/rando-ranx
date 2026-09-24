@@ -1,4 +1,5 @@
 import { ThemeHydrator } from "@/components/theme-provider";
+import { LIGHT_PALETTE_IDS, PALETTE_IDS } from "@/lib/theme";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
@@ -30,7 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-dvh bg-background">
         <Script id="randoranx-palette" strategy="beforeInteractive">
-          {`try{var p=localStorage.getItem("randoranx-palette");if(p==="arcade"||p==="pine"||p==="daylight"||p==="midnight"){document.documentElement.setAttribute("data-palette",p);document.documentElement.classList.toggle("dark",p!=="daylight");}}catch(e){}`}
+          {`try{var p=localStorage.getItem("randoranx-palette");var ids=${JSON.stringify(PALETTE_IDS)};var light=${JSON.stringify(LIGHT_PALETTE_IDS)};if(ids.indexOf(p)>=0){document.documentElement.setAttribute("data-palette",p);document.documentElement.classList.toggle("dark",light.indexOf(p)<0);}}catch(e){}`}
         </Script>
         <ThemeHydrator />
         {children}

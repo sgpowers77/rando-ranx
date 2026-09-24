@@ -122,12 +122,12 @@ export function AppSettingsMenu({
       </DropdownMenu>
 
       <Dialog open={paletteOpen} onOpenChange={setPaletteOpen}>
-        <DialogContent className="sm:max-w-sm" showCloseButton>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton>
           <DialogHeader>
             <DialogTitle>Color Palette</DialogTitle>
             <DialogDescription>Applies across RandoRanx and is remembered on this device.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {PALETTES.map((item) => {
               const selected = palette === item.id;
               return (
@@ -141,10 +141,10 @@ export function AppSettingsMenu({
                   className="flex items-center gap-3 rounded-lg border border-border/70 px-3 py-2.5 text-left ring-offset-background hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
                   aria-pressed={selected}
                 >
-                  <span className="flex overflow-hidden rounded-md ring-1 ring-white/15">
+                  <span className="flex overflow-hidden rounded-md ring-1 ring-black/10 ring-white/15">
                     {item.swatches.map((color) => (
                       <span
-                        key={color}
+                        key={`${item.id}-${color}`}
                         className="h-8 w-6"
                         style={{ backgroundColor: color }}
                         aria-hidden
