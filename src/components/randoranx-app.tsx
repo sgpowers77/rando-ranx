@@ -65,6 +65,9 @@ export function RandoRanxApp() {
     goToModePick,
     recordAndAdvance,
     pickTourneyWinner,
+    likeTourneyTitle,
+    passTourneyTitle,
+    tourneyStyle,
     savePathFilters,
     setRandomizeFilters,
     queueSearchedTitles,
@@ -284,7 +287,7 @@ export function RandoRanxApp() {
           {showTourney && tourneyPair ? (
             <div className="flex flex-1 flex-col justify-center gap-4">
               <StageMeta
-                label={`${finalRoundActive ? "Final Round" : "Tourney"} · ${catalogLabel(session.medium)} · ${remainingCount} left in this stack`}
+                label={`${finalRoundActive ? "Final Round" : tourneyStyle === "like" ? "Tourney · Like Mode" : "Tourney · VS Mode"} · ${catalogLabel(session.medium)} · ${remainingCount} left in this stack`}
                 onChangeMode={goToModePick}
                 onHome={goHome}
                 compactMobile
@@ -292,7 +295,10 @@ export function RandoRanxApp() {
               <TourneyStage
                 key={`${tourneyPair[0].id}-${tourneyPair[1].id}`}
                 pair={tourneyPair}
+                style={tourneyStyle}
                 onPick={pickTourneyWinner}
+                onLike={likeTourneyTitle}
+                onPass={passTourneyTitle}
                 onWatchlist={addWatchTag}
                 onToggleWatch={toggleWatchTag}
                 watchedIds={logs.watchTags.map((tag) => tag.titleId)}
@@ -395,13 +401,15 @@ export function RandoRanxApp() {
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <p>
-              Select a Contender. Star adds an optional score. Bookmark adds Watch without voting.
-              Drag a card onto WTF?? for a Wikipedia blurb — that does not count as a pick.
+              {finalRoundActive || tourneyStyle !== "like"
+                ? "Select a Contender. Star adds an optional score. Bookmark adds Watch without voting. Drag a card onto WTF?? for a Wikipedia blurb — that does not count as a pick."
+                : "Thumb up logs that title as a Contender. Thumb down sends it to Discard. Star adds an optional score. Bookmark adds Watch without voting. Drag a card onto WTF?? for a Wikipedia blurb — that does not count as a pick."}
             </p>
             <p>
-              Skip both titles without picking a winner. Two new titles that match your filters join
-              the stack; this pair will not show up again right away. Skip does not shrink the stack.
-              Undo undoes the last Select, up to three times.
+              Skip both titles without logging them. Two new titles that match your filters join the
+              stack; this pair will not show up again right away. Skip does not shrink the stack.
+              Undo undoes the last {finalRoundActive || tourneyStyle !== "like" ? "Select" : "thumb"},
+              up to three times.
             </p>
             <p className="text-muted-foreground">
               Star and bookmark sit on each poster. Change the filter mix from Choose an Experience

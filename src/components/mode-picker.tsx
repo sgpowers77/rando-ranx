@@ -2,19 +2,20 @@
 
 import { PathSettings } from "@/components/path-settings";
 import { ExperienceModal } from "@/components/experience-modal";
+import { TourneyStyleModal } from "@/components/tourney-style-modal";
 import { Button } from "@/components/ui/button";
 import { defaultFilters } from "@/lib/filters";
 import { setExperienceHidden, experienceHidden } from "@/lib/tourney-experience";
-import type { Medium, PathFilters, PlayMode } from "@/lib/types";
+import type { Medium, PathFilters, PlayMode, TourneyStyle } from "@/lib/types";
 import { catalogLabel, catalogNoun } from "@/lib/medium";
 import { Dices, ListOrdered } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type ModePickerProps = {
   medium: Medium;
   filters: PathFilters;
   fullRando: boolean;
-  onChoose: (mode: PlayMode) => void;
+  onChoose: (mode: PlayMode, tourneyStyle?: TourneyStyle) => void;
   onSaveFilters: (filters: PathFilters) => void;
   onFullRandoChange: (on: boolean) => void;
   onBack: () => void;
@@ -33,16 +34,43 @@ export function ModePicker({
 }: ModePickerProps) {
   const catalog = catalogNoun(medium);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [experienceOpen, setExperienceOpen] = useState(false);
+  const [step, setStep] = useState<"idle" | "experience" | "style">("idle");
   const [pendingMode, setPendingMode] = useState<PlayMode | null>(null);
+  const proceedRef = useRef<PlayMode | null>(null);
 
-  const beginMode = (mode: PlayMode) => {
-    if (experienceHidden()) {
-      onChoose(mode);
+  const finish = (mode: PlayMode, style?: TourneyStyle) => {
+    proceedRef.current = null;
+    setPendingMode(null);
+    setStep("idle");
+    onChoose(mode, style);
+  };
+
+  const openStyle = () => {
+    setPendingMode("tourney");
+    setStep("style");
+  };
+
+  const afterExperience = (mode: PlayMode) => {
+    if (mode === "tourney") {
+      window.setTimeout(() => openStyle(), 50);
       return;
     }
+    finish("rank");
+  };
+
+  const takeProceed = () => {
+    const mode = proceedRef.current;
+    proceedRef.current = null;
+    return mode;
+  };
+
+  const beginMode = (mode: PlayMode) => {
     setPendingMode(mode);
-    setExperienceOpen(true);
+    if (experienceHidden()) {
+      afterExperience(mode);
+      return;
+    }
+    setStep("experience");
   };
 
   return (
@@ -55,8 +83,9 @@ export function ModePicker({
           Ranx one at a time, or run a Tourney.
         </h1>
         <p className="mt-4 max-w-lg text-base text-muted-foreground sm:text-lg">
-          Ranx deals a single {catalog.slice(0, -1)}. Tourney puts two titles against each other. After
-          you pick a mode, Wikipedia search can Queue titles you choose — never as an automated deal.
+          Ranx deals a single {catalog.slice(0, -1)}. Tourney deals two titles: VS Mode (Select a
+          Contender) or Like Mode (thumb up / thumb down). After you pick a mode, Wikipedia search
+          can Queue titles you choose — never as an automated deal.
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -86,12 +115,19 @@ export function ModePicker({
         showRatings={showRatings}
       />
       <ExperienceModal
-        open={experienceOpen}
+        open={step === "experience"}
         medium={medium}
         fullRando={fullRando}
         onOpenChange={(open) => {
-          setExperienceOpen(open);
-          if (!open) setPendingMode(null);
+          if (open) return;
+          if (settingsOpen) return;
+          const mode = takeProceed();
+          if (mode) {
+            afterExperience(mode);
+            return;
+          }
+          setStep("idle");
+          setPendingMode(null);
         }}
         onOpenFilters={() => setSettingsOpen(true)}
         onApplyFilters={onSaveFilters}
@@ -99,10 +135,23 @@ export function ModePicker({
         onContinue={(hideNextTime) => {
           setExperienceHidden(hideNextTime);
           const mode = pendingMode;
-          setExperienceOpen(false);
-          setPendingMode(null);
-          if (mode) onChoose(mode);
+          proceedRef.current = mode;
+          setStep("idle");
+          window.setTimeout(() => {
+            const next = takeProceed();
+            if (next) afterExperience(next);
+          }, 80);
         }}
+      />
+      <TourneyStyleModal
+        open={step === "style"}
+        onOpenChange={(open) => {
+          if (!open) {
+            setStep("idle");
+            setPendingMode(null);
+          }
+        }}
+        onChoose={(style) => finish("tourney", style)}
       />
     </section>
   );

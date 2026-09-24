@@ -18,13 +18,16 @@ import { unitLabel } from "@/lib/medium";
 import { TitleDirector } from "@/hooks/use-director";
 import { useWtfDropReveal } from "@/hooks/use-wtf-drop-reveal";
 import { decadeOf } from "@/lib/filters";
-import type { CatalogTitle, RatingExtras } from "@/lib/types";
-import { SkipForward, Undo2 } from "lucide-react";
+import type { CatalogTitle, RatingExtras, TourneyStyle } from "@/lib/types";
+import { SkipForward, ThumbsDown, ThumbsUp, Undo2 } from "lucide-react";
 import { useRef, useState } from "react";
 
 type TourneyStageProps = {
   pair: [CatalogTitle, CatalogTitle];
+  style?: TourneyStyle;
   onPick: (winnerId: string, loserId: string, extras?: RatingExtras) => void;
+  onLike?: (titleId: string, extras?: RatingExtras) => void;
+  onPass?: (titleId: string) => void;
   onWatchlist: (title: CatalogTitle) => void;
   onToggleWatch: (title: CatalogTitle) => void;
   watchedIds: string[];
@@ -39,11 +42,14 @@ const DRAG_TYPE = TITLE_DRAG_TYPE;
 export function TourneyUndoButton({
   onUndo,
   undoCount = 0,
+  likeMode = false,
 }: {
   onUndo?: () => void;
   undoCount?: number;
+  likeMode?: boolean;
 }) {
   const disabled = !onUndo || undoCount < 1;
+  const label = likeMode ? "Undo last thumb" : "Undo last Select";
   return (
     <Button
       type="button"
@@ -52,8 +58,8 @@ export function TourneyUndoButton({
       className="h-9 gap-1.5 self-start"
       disabled={disabled}
       aria-disabled={disabled}
-      aria-label="Undo last Select"
-      title="Undo last Select, up to three times"
+      aria-label={label}
+      title={`${label}, up to three times`}
       onClick={() => {
         if (disabled || !onUndo) return;
         onUndo();
@@ -67,7 +73,10 @@ export function TourneyUndoButton({
 
 export function TourneyStage({
   pair,
+  style = "vs",
   onPick,
+  onLike,
+  onPass,
   onWatchlist,
   onToggleWatch,
   watchedIds,
@@ -77,6 +86,7 @@ export function TourneyStage({
   isFinalRound = false,
 }: TourneyStageProps) {
   const [left, right] = pair;
+  const likeMode = style === "like" && !isFinalRound;
   const [dropArmed, setDropArmed] = useState(false);
   const [wtfTitle, setWtfTitle] = useState<CatalogTitle | null>(null);
   const [notes, setNotes] = useState<Record<string, RatingExtras>>({});
@@ -101,17 +111,21 @@ export function TourneyStage({
         </p>
       ) : null}
       <p className="hidden text-xs text-muted-foreground lg:block">
-        Select a Contender. Star adds an optional score. Bookmark adds Watch without voting. Drag a
-        card onto WTF?? for a Wikipedia blurb — that does not count as a pick.
+        {likeMode
+          ? "Thumb up logs that title as a Contender. Thumb down sends it to Discard. Star adds an optional score. Bookmark adds Watch without voting. Drag a card onto WTF?? for a Wikipedia blurb — that does not count as a pick."
+          : "Select a Contender. Star adds an optional score. Bookmark adds Watch without voting. Drag a card onto WTF?? for a Wikipedia blurb — that does not count as a pick."}
       </p>
-      <TourneyUndoButton onUndo={onUndo} undoCount={undoCount} />
+      <TourneyUndoButton onUndo={onUndo} undoCount={undoCount} likeMode={likeMode} />
       <div className="grid grid-cols-2 items-stretch gap-2 lg:gap-3">
         <MatchupCard
           title={left}
           notes={notes[left.id]}
           watched={watchedIds.includes(left.id)}
           draggedRef={dragged}
+          likeMode={likeMode}
           onSelect={() => select(left, right)}
+          onLike={() => onLike?.(left.id, notes[left.id])}
+          onPass={() => onPass?.(left.id)}
           onToggleWatch={() => onToggleWatch(left)}
           onSaveNotes={(extras) => setNotes((prev) => ({ ...prev, [left.id]: extras }))}
           onDragBegin={(clientX, clientY) => wtfDrop.begin(clientX, clientY)}
@@ -124,7 +138,10 @@ export function TourneyStage({
           notes={notes[right.id]}
           watched={watchedIds.includes(right.id)}
           draggedRef={dragged}
+          likeMode={likeMode}
           onSelect={() => select(right, left)}
+          onLike={() => onLike?.(right.id, notes[right.id])}
+          onPass={() => onPass?.(right.id)}
           onToggleWatch={() => onToggleWatch(right)}
           onSaveNotes={(extras) => setNotes((prev) => ({ ...prev, [right.id]: extras }))}
           onDragBegin={(clientX, clientY) => wtfDrop.begin(clientX, clientY)}
@@ -145,7 +162,7 @@ export function TourneyStage({
           Skip
         </Button>
         <p className="hidden text-center text-xs text-muted-foreground lg:block">
-          Skip both titles without picking a winner. Two new titles that match your filters join the
+          Skip both titles without logging them. Two new titles that match your filters join the
           stack and this pair will not show up again right away. Skip does not shrink the stack.
         </p>
       </div>
@@ -178,7 +195,10 @@ function MatchupCard({
   title,
   notes,
   watched,
+  likeMode,
   onSelect,
+  onLike,
+  onPass,
   onToggleWatch,
   onSaveNotes,
   onDragBegin,
@@ -188,7 +208,10 @@ function MatchupCard({
   title: CatalogTitle;
   notes?: RatingExtras;
   watched: boolean;
+  likeMode: boolean;
   onSelect: () => void;
+  onLike: () => void;
+  onPass: () => void;
   onToggleWatch: () => void;
   onSaveNotes: (extras: RatingExtras) => void;
   onDragBegin: (clientX: number, clientY: number) => void;
@@ -196,6 +219,14 @@ function MatchupCard({
   draggedRef: { current: boolean };
 }) {
   const [rateOpen, setRateOpen] = useState(false);
+
+  const run = (action: () => void) => {
+    if (draggedRef.current) {
+      draggedRef.current = false;
+      return;
+    }
+    action();
+  };
 
   return (
     <Card
@@ -252,19 +283,39 @@ function MatchupCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="mt-auto shrink-0 px-2 pb-2 lg:px-4 lg:pb-4">
-        <Button
-          type="button"
-          className="h-9 w-full text-sm lg:h-12 lg:text-base"
-          onClick={() => {
-            if (draggedRef.current) {
-              draggedRef.current = false;
-              return;
-            }
-            onSelect();
-          }}
-        >
-          Select
-        </Button>
+        {likeMode ? (
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 gap-1.5 text-sm lg:h-12 lg:text-base"
+              aria-label={`Discard ${title.title}`}
+              title="Discard"
+              onClick={() => run(onPass)}
+            >
+              <ThumbsDown className="size-4" />
+              <span className="hidden sm:inline">Pass</span>
+            </Button>
+            <Button
+              type="button"
+              className="h-9 gap-1.5 text-sm lg:h-12 lg:text-base"
+              aria-label={`Like ${title.title}`}
+              title="Like"
+              onClick={() => run(onLike)}
+            >
+              <ThumbsUp className="size-4" />
+              <span className="hidden sm:inline">Like</span>
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            className="h-9 w-full text-sm lg:h-12 lg:text-base"
+            onClick={() => run(onSelect)}
+          >
+            Select
+          </Button>
+        )}
       </CardContent>
       <Dialog open={rateOpen} onOpenChange={setRateOpen}>
         <DialogContent className="sm:max-w-lg" showCloseButton>
@@ -273,8 +324,9 @@ function MatchupCard({
               Rate {title.title}
             </DialogTitle>
             <DialogDescription>
-              Optional. Save a 1–10 score and comment, then Select this card if it is your Contender.
-              Close with X or by clicking outside.
+              {likeMode
+                ? "Optional. Save a 1–10 score and comment, then thumb up this card to log it as a Contender. Close with X or by clicking outside."
+                : "Optional. Save a 1–10 score and comment, then Select this card if it is your Contender. Close with X or by clicking outside."}
             </DialogDescription>
           </DialogHeader>
           <RatingForm

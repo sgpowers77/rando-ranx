@@ -2,14 +2,17 @@
 
 import { resolveTitle } from "@/data/catalog";
 import { loadGameCatalog, loadMovieCatalog, loadMusicCatalog, sampleClientPool } from "@/lib/client-pool";
-import { matchesFilters, randomizeFilters as rollPathFilters, ratingsFilterActive, buildUserScoreIndex, hasUserScores, stackSizeOf } from "@/lib/filters";
+import { matchesFilters, randomizeFilters as rollPathFilters, ratingsFilterActive, buildUserScoreIndex, hasUserScores, sanitizeFilters, stackSizeOf } from "@/lib/filters";
 import { distinctTourneyPair, pickDistinctTitles, uniqueTitles } from "@/lib/title-identity";
 import { POSTER_PRELOAD_EVERY, scheduleStackPosters } from "@/lib/poster";
 import {
+  applyTourneyLike,
   applyTourneyOutcome,
+  applyTourneyPass,
   clearStoredSession,
   dismissHydrateError,
   activeFinalRound,
+  activeTourneyStyle,
   eligibleFor,
   enqueueUserTitles,
   filtersFor,
@@ -38,6 +41,7 @@ import type {
   RatingExtras,
   SessionResponse,
   StoredSession,
+  TourneyStyle,
 } from "@/lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
@@ -155,7 +159,7 @@ export function useRandoRanx() {
       setPoolError(null);
     }
     try {
-      const filters = filtersFor(snapshot, requestedMedium, requestedMode);
+      let filters = filtersFor(snapshot, requestedMedium, requestedMode);
       const recent = snapshot.recentlyShown?.[requestedMedium] ?? [];
       const userScores = buildUserScoreIndex(snapshot.responses, requestedMedium);
       const extraTitles = [
@@ -163,14 +167,37 @@ export function useRandoRanx() {
         ...(snapshot.customTitles ?? []),
         ...(snapshot.userQueue ?? []),
       ];
-      const data = await sampleClientPool({
+      const excludeIds = [...usedTitleIds(snapshot, requestedMedium, requestedMode), ...recent];
+      let data = await sampleClientPool({
         medium: requestedMedium,
         filters,
-        excludeIds: [...usedTitleIds(snapshot, requestedMedium, requestedMode), ...recent],
+        excludeIds,
         limit: stackSizeOf(filters.stackSize),
         userScores,
         extraTitles,
       });
+      if (
+        data.available < 2 &&
+        requestedMedium === "movie" &&
+        !(filters.mpaa ?? []).includes("Not Rated")
+      ) {
+        filters = sanitizeFilters(
+          { ...filters, mpaa: [...(filters.mpaa ?? []), "Not Rated"] },
+          "movie"
+        );
+        persist((prev) => ({
+          ...prev,
+          pathFilters: { ...prev.pathFilters, movie: filters },
+        }));
+        data = await sampleClientPool({
+          medium: "movie",
+          filters,
+          excludeIds,
+          limit: stackSizeOf(filters.stackSize),
+          userScores,
+          extraTitles,
+        });
+      }
       if (gen !== refreshGen.current) return;
       const titles = data.titles;
       setPoolSource(data.source);
@@ -248,15 +275,28 @@ export function useRandoRanx() {
   );
 
   const choosePlayMode = useCallback(
-    (playMode: PlayMode) => {
+    (playMode: PlayMode, tourneyStyle?: TourneyStyle) => {
       posterAdvances.current = 0;
+      setPoolStatus("loading");
+      setPoolError(null);
       persist((prev) => {
         if (!prev.medium) return prev;
-        return {
+        const next = {
           ...prev,
           playMode,
           pendingTourney: null,
           remainingIds: { ...prev.remainingIds, [prev.medium]: [] },
+          liveTitles: (prev.liveTitles ?? []).filter((item) => item.medium !== prev.medium),
+        };
+        if (playMode !== "tourney") return next;
+        return {
+          ...next,
+          tourneyStyles: {
+            movie: prev.tourneyStyles?.movie ?? "vs",
+            game: prev.tourneyStyles?.game ?? "vs",
+            music: prev.tourneyStyles?.music ?? "vs",
+            [prev.medium]: tourneyStyle === "like" ? "like" : "vs",
+          },
         };
       });
       void refreshPool();
@@ -282,6 +322,7 @@ export function useRandoRanx() {
 
   const goToModePick = useCallback(() => {
     persist((prev) => ({ ...prev, playMode: null, pendingTourney: null }));
+    setPoolStatus("idle");
   }, [persist]);
 
   const recordAndAdvance = useCallback(
@@ -334,6 +375,22 @@ export function useRandoRanx() {
     [persist, notePosterAdvance]
   );
 
+  const likeTourneyTitle = useCallback(
+    (titleId: string, extras?: RatingExtras) => {
+      persist((prev) => applyTourneyLike(prev, titleId, extras));
+      notePosterAdvance();
+    },
+    [persist, notePosterAdvance]
+  );
+
+  const passTourneyTitle = useCallback(
+    (titleId: string) => {
+      persist((prev) => applyTourneyPass(prev, titleId));
+      notePosterAdvance();
+    },
+    [persist, notePosterAdvance]
+  );
+
   const pickTourneyWinner = useCallback(
     (winnerId: string, loserId: string, extras?: RatingExtras) => {
       persist((prev) => applyTourneyOutcome(prev, winnerId, loserId, extras));
@@ -380,7 +437,7 @@ export function useRandoRanx() {
     (medium: Medium, filters: PathFilters) => {
       persist((prev) => ({
         ...prev,
-        pathFilters: { ...prev.pathFilters, [medium]: filters },
+        pathFilters: { ...prev.pathFilters, [medium]: sanitizeFilters(filters, medium) },
         randomizeFilters: {
           movie: prev.randomizeFilters?.movie === true,
           game: prev.randomizeFilters?.game === true,
@@ -595,6 +652,7 @@ export function useRandoRanx() {
     poolStatus,
     poolError,
     poolSource,
+    tourneyStyle: activeTourneyStyle(session),
     finalRoundActive: Boolean(activeFinalRound(session)),
     tourneyUndoCount: session.medium ? (session.tourneyUndos?.[session.medium]?.length ?? 0) : 0,
     contenderCount: session.medium ? tourneyContenderIds(session, session.medium).length : 0,
@@ -605,6 +663,8 @@ export function useRandoRanx() {
     goToModePick,
     recordAndAdvance,
     pickTourneyWinner,
+    likeTourneyTitle,
+    passTourneyTitle,
     cancelTourneyPick,
     completeTourneyRound,
     setSkipTourneyScoring,

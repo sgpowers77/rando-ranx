@@ -425,6 +425,12 @@ export function groupedPresets(medium: Medium): { group: PresetGroup; presets: T
   }));
 }
 
+/** Unknown MPAA should not empty a themed deal. Most of the movies index is unrated. */
+function movieRatings(...ratings: NonNullable<PathFilters["mpaa"]>): PathFilters["mpaa"] {
+  const next = ratings.filter((rating) => rating !== "Not Rated");
+  return next.includes("Not Rated") ? next : [...next, "Not Rated"];
+}
+
 function moviePreset(id: string): PathFilters {
   switch (id) {
     case "star-wars-newbie":
@@ -432,7 +438,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1990, 2000, 2010, 2020],
         genres: ["Action", "Adventure", "Animation", "Comedy", "Sci-Fi"],
         obscurity: [1, 2],
-        mpaa: ["G", "PG", "PG-13"],
+        mpaa: movieRatings("G", "PG", "PG-13"),
         includeForeign: false,
         stackSize: 50,
       };
@@ -441,7 +447,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1980, 1990, 2000, 2010, 2020],
         genres: ["Action", "Adventure", "Horror", "Sci-Fi", "Thriller"],
         obscurity: [1, 2, 3],
-        mpaa: ["PG-13", "R", "NC-17"],
+        mpaa: movieRatings("PG-13", "R", "NC-17"),
         includeForeign: true,
         stackSize: 50,
       };
@@ -450,7 +456,7 @@ function moviePreset(id: string): PathFilters {
         decades: [2000, 2010, 2020],
         genres: ["Action", "Adventure", "Animation", "Comedy", "Sci-Fi"],
         obscurity: [1, 2],
-        mpaa: ["G", "PG", "PG-13"],
+        mpaa: movieRatings("G", "PG", "PG-13"),
         includeForeign: false,
         stackSize: 50,
       };
@@ -459,7 +465,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1950, 1960, 1970],
         genres: ["Action", "Adventure", "Horror", "Romance", "Sci-Fi", "Thriller"],
         obscurity: [1, 2, 3],
-        mpaa: ["G", "PG", "PG-13", "R", "Not Rated"],
+        mpaa: movieRatings("G", "PG", "PG-13", "R"),
         includeForeign: true,
         stackSize: 50,
       };
@@ -468,7 +474,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1980, 1990],
         genres: ["Action", "Adventure", "Comedy", "Horror", "Sci-Fi", "Thriller"],
         obscurity: [1, 2, 3],
-        mpaa: ["PG", "PG-13", "R"],
+        mpaa: movieRatings("PG", "PG-13", "R"),
         includeForeign: false,
         stackSize: 50,
       };
@@ -477,7 +483,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1960, 1970, 1980, 1990, 2000, 2010, 2020],
         genres: ["Drama", "Romance", "Thriller"],
         obscurity: [3, 4, 5],
-        mpaa: ["PG-13", "R", "Not Rated"],
+        mpaa: movieRatings("PG-13", "R"),
         includeForeign: true,
         stackSize: 50,
       };
@@ -486,7 +492,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1960, 1970, 1980, 1990, 2000, 2010, 2020],
         genres: ["Drama", "Romance", "Thriller", "Animation", "Comedy"],
         obscurity: [2, 3, 4, 5],
-        mpaa: ["PG", "PG-13", "R", "Not Rated"],
+        mpaa: movieRatings("PG", "PG-13", "R"),
         includeForeign: true,
         stackSize: 50,
       };
@@ -495,7 +501,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1970, 1980, 1990, 2000, 2010, 2020],
         genres: ["Horror", "Thriller"],
         obscurity: [1, 2, 3, 4],
-        mpaa: ["PG-13", "R", "NC-17", "Not Rated"],
+        mpaa: movieRatings("PG-13", "R", "NC-17"),
         includeForeign: true,
         stackSize: 50,
       };
@@ -504,7 +510,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1990, 2000, 2010, 2020],
         genres: ["Comedy", "Romance", "Drama"],
         obscurity: [1, 2, 3],
-        mpaa: ["PG", "PG-13", "R"],
+        mpaa: movieRatings("PG", "PG-13", "R"),
         includeForeign: true,
         stackSize: 25,
       };
@@ -513,7 +519,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1980, 1990, 2000, 2010, 2020],
         genres: ["Comedy", "Animation", "Adventure", "Romance"],
         obscurity: [1, 2],
-        mpaa: ["G", "PG", "PG-13"],
+        mpaa: movieRatings("G", "PG", "PG-13"),
         includeForeign: true,
         stackSize: 50,
       };
@@ -522,7 +528,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1990, 2000, 2010, 2020],
         genres: ["Action", "Adventure", "Animation", "Comedy", "Sci-Fi"],
         obscurity: [1, 2],
-        mpaa: ["G", "PG", "PG-13"],
+        mpaa: movieRatings("G", "PG", "PG-13"),
         includeForeign: false,
         stackSize: 50,
       };
@@ -531,7 +537,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1940],
         genres: ["Drama", "Romance", "Crime", "Comedy", "Thriller"],
         obscurity: [1, 2, 3, 4],
-        mpaa: ["G", "PG", "Not Rated"],
+        mpaa: movieRatings("G", "PG"),
         includeForeign: true,
         stackSize: 50,
       };
@@ -540,7 +546,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1970, 1980, 1990, 2000, 2010, 2020],
         genres: ["Horror", "Crime", "Action", "Thriller"],
         obscurity: [1, 2, 3, 4],
-        mpaa: ["R", "NC-17", "Not Rated"],
+        mpaa: movieRatings("R", "NC-17"),
         includeForeign: true,
         stackSize: 50,
       };
@@ -549,7 +555,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1960, 1970, 1980, 1990, 2000, 2010, 2020],
         genres: ["Drama", "Romance", "Thriller"],
         obscurity: [1, 2],
-        mpaa: ["PG-13", "R", "Not Rated"],
+        mpaa: movieRatings("PG-13", "R"),
         includeForeign: true,
         stackSize: 50,
       };
@@ -558,7 +564,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1980, 1990, 2000, 2010, 2020],
         genres: ["Comedy"],
         obscurity: [1, 2, 3],
-        mpaa: ["PG", "PG-13", "R"],
+        mpaa: movieRatings("PG", "PG-13", "R"),
         includeForeign: false,
         stackSize: 50,
       };
@@ -567,7 +573,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1990, 2000, 2010, 2020],
         genres: ["Drama"],
         obscurity: [2, 3, 4],
-        mpaa: ["PG-13", "R", "Not Rated"],
+        mpaa: movieRatings("PG-13", "R"),
         includeForeign: true,
         stackSize: 25,
       };
@@ -576,7 +582,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1990, 2000, 2010, 2020],
         genres: ["Animation", "Adventure", "Comedy"],
         obscurity: [1, 2],
-        mpaa: ["G", "PG"],
+        mpaa: movieRatings("G", "PG"),
         includeForeign: true,
         stackSize: 50,
       };
@@ -584,8 +590,8 @@ function moviePreset(id: string): PathFilters {
       return {
         decades: [1980, 1990, 2000],
         genres: ["Action", "Horror", "Crime", "Thriller"],
-        obscurity: [4, 5],
-        mpaa: ["PG-13", "R", "Not Rated"],
+        obscurity: [3, 4, 5],
+        mpaa: movieRatings("PG-13", "R"),
         includeForeign: false,
         stackSize: 50,
       };
@@ -594,7 +600,7 @@ function moviePreset(id: string): PathFilters {
         decades: [1970, 1980],
         genres: ["Action", "Crime", "Horror", "Thriller"],
         obscurity: [1, 2, 3],
-        mpaa: ["R", "NC-17", "Not Rated"],
+        mpaa: movieRatings("R", "NC-17"),
         includeForeign: true,
         stackSize: 50,
       };
@@ -603,7 +609,7 @@ function moviePreset(id: string): PathFilters {
         decades: [2000, 2010, 2020],
         genres: ["Comedy", "Adventure", "Romance", "Action"],
         obscurity: [1, 2],
-        mpaa: ["G", "PG", "PG-13"],
+        mpaa: movieRatings("G", "PG", "PG-13"),
         includeForeign: false,
         stackSize: 25,
       };
@@ -612,7 +618,7 @@ function moviePreset(id: string): PathFilters {
         decades: [2000, 2010],
         genres: ["Action", "Comedy", "Horror", "Sci-Fi"],
         obscurity: [3, 4, 5],
-        mpaa: ["PG-13", "R"],
+        mpaa: movieRatings("PG-13", "R"),
         includeForeign: false,
         stackSize: 50,
       };
@@ -621,7 +627,7 @@ function moviePreset(id: string): PathFilters {
         decades: [2000, 2010, 2020],
         genres: ["Action", "Adventure", "Animation", "Sci-Fi"],
         obscurity: [1, 2],
-        mpaa: ["PG", "PG-13"],
+        mpaa: movieRatings("PG", "PG-13"),
         includeForeign: true,
         stackSize: 100,
       };
@@ -848,7 +854,7 @@ function musicPreset(id: string): PathFilters {
       return musicFilters({
         decades: [1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020],
         genres: [...MUSIC_GENRES],
-        obscurity: [4, 5],
+        obscurity: [3, 4, 5],
       });
     case "jazz-club":
       return musicFilters({
@@ -865,13 +871,13 @@ function musicPreset(id: string): PathFilters {
     case "metal-practice":
       return musicFilters({
         decades: [1980, 1990, 2000, 2010, 2020],
-        genres: ["Metal"],
+        genres: ["Metal", "Rock"],
         obscurity: [1, 2, 3, 4],
       });
     case "classical-homework":
       return musicFilters({
         decades: [1950, 1960, 1970, 1980, 1990, 2000],
-        genres: ["Classical"],
+        genres: ["Classical", "Jazz"],
         obscurity: [1, 2, 3],
       });
     case "country-radio":
@@ -908,7 +914,7 @@ function musicPreset(id: string): PathFilters {
       return musicFilters({
         decades: [1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020],
         genres: [...MUSIC_GENRES],
-        obscurity: [4, 5],
+        obscurity: [3, 4, 5],
         stackSize: 100,
       });
     default:

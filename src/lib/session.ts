@@ -14,6 +14,7 @@ import type {
   RatingExtras,
   SessionResponse,
   StoredSession,
+  TourneyStyle,
   TourneyUndoFrame,
 } from "@/lib/types";
 
@@ -40,6 +41,7 @@ export const EMPTY_SESSION: StoredSession = {
   finalRounds: { movie: null, game: null, music: null },
   tourneyUndos: { movie: [], game: [], music: [] },
   randomizeFilters: emptyFlagMap(),
+  tourneyStyles: { movie: "vs", game: "vs", music: "vs" },
 };
 
 export function logsForMedium(session: StoredSession, medium: Medium | null) {
@@ -88,6 +90,26 @@ export function activeFinalRound(session: StoredSession): FinalRound | null {
   const round = finalRoundsOf(session)[session.medium];
   if (!round || round.medium !== session.medium) return null;
   return round;
+}
+
+function parseTourneyStyle(value: unknown): TourneyStyle {
+  return value === "like" ? "like" : "vs";
+}
+
+function tourneyStylesOf(
+  session: Pick<StoredSession, "tourneyStyles"> | Partial<StoredSession>
+): Record<Medium, TourneyStyle> {
+  return {
+    movie: parseTourneyStyle(session.tourneyStyles?.movie),
+    game: parseTourneyStyle(session.tourneyStyles?.game),
+    music: parseTourneyStyle(session.tourneyStyles?.music),
+  };
+}
+
+export function activeTourneyStyle(session: StoredSession): TourneyStyle {
+  if (!session.medium || session.playMode !== "tourney") return "vs";
+  if (activeFinalRound(session)) return "vs";
+  return tourneyStylesOf(session)[session.medium];
 }
 
 function withMediumFinalRound(
@@ -281,8 +303,8 @@ export function withDealtQueue(
 function catalogWithYears(session: StoredSession, medium: Medium): CatalogTitle[] {
   const extras = session.customTitles.filter((item) => item.medium === medium);
   const live = (session.liveTitles ?? []).filter((item) => item.medium === medium);
-  const preset = titlesFor(medium);
-  const primary = live.length > 0 ? live : preset;
+  const builtin = titlesFor(medium);
+  const primary = live.length > 0 ? uniqueTitles([...live, ...builtin]) : builtin;
   return uniqueTitles(
     [...primary, ...extras].map((item) => withReleaseYear(item, session.releaseYears))
   );
@@ -556,6 +578,7 @@ export function parseSession(raw: string): StoredSession {
     finalRounds: parseFinalRounds(parsed),
     tourneyUndos: parseTourneyUndos(parsed),
     randomizeFilters: parseRandomizeFlags(parsed.randomizeFilters),
+    tourneyStyles: tourneyStylesOf(parsed),
   };
 }
 
@@ -762,6 +785,92 @@ export function applyTourneyOutcome(
       [medium]: rememberShown(prev, medium, remaining.slice(0, 2)),
     },
     responses: [...prev.responses, response],
+    discards: [...prev.discards, discard],
+  });
+}
+
+function remainingAfterRemoving(prev: StoredSession, medium: Medium, titleId: string): string[] {
+  return arrangeDistinctPair(
+    prev,
+    uniqueTitleIds(
+      prev,
+      prev.remainingIds[medium].filter((id) => {
+        if (id === titleId) return false;
+        const item = resolveTitle(id, prev.customTitles, prev.releaseYears, prev.liveTitles);
+        if (!item) return true;
+        return matchesFilters(item, filtersFor(prev, medium, prev.playMode ?? "tourney"), {
+          scores: buildUserScoreIndex(prev.responses, medium),
+        });
+      })
+    )
+  );
+}
+
+export function applyTourneyLike(
+  prev: StoredSession,
+  titleId: string,
+  extras?: RatingExtras
+): StoredSession {
+  if (!prev.medium || prev.playMode !== "tourney" || activeFinalRound(prev)) return prev;
+  const medium = prev.medium;
+  const title = resolveTitle(titleId, prev.customTitles, prev.releaseYears, prev.liveTitles);
+  if (!title) return prev;
+  if (!(prev.remainingIds[medium] ?? []).includes(titleId)) return prev;
+
+  const now = new Date().toISOString();
+  const scored = extras?.rating != null;
+  const response: SessionResponse = {
+    id: `${title.id}-${Date.now()}`,
+    titleId: title.id,
+    medium: title.medium,
+    title: title.title,
+    year: title.year,
+    kind: scored ? "rated" : "winner",
+    rating: scored ? extras.rating : undefined,
+    comments: extras?.comments?.trim() ? extras.comments.trim() : undefined,
+    watchedDate: parseWatchedDate(extras?.watchedDate),
+    recordedAt: now,
+    origin: "tourney",
+  };
+  const remaining = remainingAfterRemoving(prev, medium, titleId);
+  return withTourneyUndo(prev, {
+    ...prev,
+    pendingTourney: null,
+    remainingIds: { ...prev.remainingIds, [medium]: remaining },
+    recentlyShown: {
+      ...shownMap(prev),
+      [medium]: rememberShown(prev, medium, remaining.slice(0, 2)),
+    },
+    responses: [...prev.responses, response],
+  });
+}
+
+export function applyTourneyPass(prev: StoredSession, titleId: string): StoredSession {
+  if (!prev.medium || prev.playMode !== "tourney" || activeFinalRound(prev)) return prev;
+  const medium = prev.medium;
+  const title = resolveTitle(titleId, prev.customTitles, prev.releaseYears, prev.liveTitles);
+  if (!title) return prev;
+  if (!(prev.remainingIds[medium] ?? []).includes(titleId)) return prev;
+
+  const now = new Date().toISOString();
+  const discard: DiscardEntry = {
+    id: `${title.id}-${Date.now()}-discard`,
+    titleId: title.id,
+    medium: title.medium,
+    title: title.title,
+    year: title.year,
+    lostToTitle: "Passed",
+    recordedAt: now,
+  };
+  const remaining = remainingAfterRemoving(prev, medium, titleId);
+  return withTourneyUndo(prev, {
+    ...prev,
+    pendingTourney: null,
+    remainingIds: { ...prev.remainingIds, [medium]: remaining },
+    recentlyShown: {
+      ...shownMap(prev),
+      [medium]: rememberShown(prev, medium, remaining.slice(0, 2)),
+    },
     discards: [...prev.discards, discard],
   });
 }
@@ -980,6 +1089,7 @@ export function normalizeSession(session: StoredSession): StoredSession {
     finalRounds: parseFinalRounds(session),
     tourneyUndos: parseTourneyUndos(session),
     randomizeFilters: parseRandomizeFlags(session.randomizeFilters),
+    tourneyStyles: tourneyStylesOf(session),
   };
   const rounds = next.finalRounds;
   return {

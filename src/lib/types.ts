@@ -2,6 +2,8 @@ export type Medium = "movie" | "game" | "music";
 
 export type PlayMode = "rank" | "tourney";
 
+export type TourneyStyle = "vs" | "like";
+
 export type CatalogTitle = {
   id: string;
   medium: Medium;
@@ -125,4 +127,6 @@ export type StoredSession = {
   finalRounds: Record<Medium, FinalRound | null>;
   tourneyUndos: Record<Medium, TourneyUndoFrame[]>;
   randomizeFilters: Record<Medium, boolean>;
+  /** Per-catalog Tourney card style. Final Round always uses VS Select. */
+  tourneyStyles: Record<Medium, TourneyStyle>;
 };
