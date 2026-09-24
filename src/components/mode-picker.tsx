@@ -93,12 +93,7 @@ export function ModePicker({
           <Dices className="size-5" />
           Tourney
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => beginMode("rank")}
-          className="h-14 w-full gap-2 text-base"
-        >
+        <Button type="button" onClick={() => beginMode("rank")} className="h-14 w-full gap-2 text-base">
           <ListOrdered className="size-5" />
           Ranx
         </Button>

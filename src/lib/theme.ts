@@ -147,6 +147,28 @@ export const PALETTES: Array<{
   },
 ];
 
+/** First-paint colors for the loading screen, before CSS variables resolve. */
+export const PALETTE_BOOT: Record<PaletteId, { background: string; foreground: string; primary: string }> = {
+  midnight: { background: "#2d2418", foreground: "#f4efe4", primary: "#e6c35c" },
+  arcade: { background: "#16122b", foreground: "#c8f4ff", primary: "#ff4ecd" },
+  pine: { background: "#10241c", foreground: "#e7f6ec", primary: "#7dce9a" },
+  daylight: { background: "#f4efe4", foreground: "#1c1914", primary: "#c45c26" },
+  void: { background: "#04030b", foreground: "#eef2ff", primary: "#0061cb" },
+  cabin: { background: "#161313", foreground: "#f3eee6", primary: "#6e9762" },
+  sky: { background: "#ffffff", foreground: "#0c2740", primary: "#0088e5" },
+  harbor: { background: "#011218", foreground: "#e8f4f8", primary: "#e2a22d" },
+  pale: { background: "#f5fbfb", foreground: "#2c3e46", primary: "#577387" },
+  orchid: { background: "#211f32", foreground: "#f8eef4", primary: "#b72e74" },
+  neon: { background: "#091f49", foreground: "#fff4ee", primary: "#ff509d" },
+  blush: { background: "#f5fbfb", foreground: "#4c2250", primary: "#ab3f68" },
+  graphite: { background: "#171818", foreground: "#c1bbaa", primary: "#90908e" },
+  steel: { background: "#3a3f42", foreground: "#f7c586", primary: "#e8aa61" },
+  wine: { background: "#1a0a10", foreground: "#ffe8ec", primary: "#ce3a57" },
+  olive: { background: "#f1f0f1", foreground: "#212a0a", primary: "#6f8629" },
+  taupe: { background: "#2c2626", foreground: "#c7b587", primary: "#c7b587" },
+  brass: { background: "#0d1f38", foreground: "#d0b76e", primary: "#a57b4d" },
+};
+
 export function isPaletteId(value: string | null): value is PaletteId {
   return PALETTE_IDS.includes(value as PaletteId);
 }
@@ -169,7 +191,15 @@ export function applyPalette(id: PaletteId) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   root.setAttribute("data-palette", id);
-  root.classList.toggle("dark", !isLightPalette(id));
+  const light = isLightPalette(id);
+  root.classList.toggle("dark", !light);
+  root.style.colorScheme = light ? "light" : "dark";
+  root.style.removeProperty("background-color");
+  root.style.removeProperty("color");
+  if (document.body) {
+    document.body.style.removeProperty("background-color");
+    document.body.style.removeProperty("color");
+  }
   try {
     window.localStorage.setItem(PALETTE_STORAGE_KEY, id);
   } catch {

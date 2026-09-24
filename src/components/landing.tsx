@@ -34,7 +34,6 @@ export function Landing({ onChoose }: LandingProps) {
         </Button>
         <Button
           type="button"
-          variant="outline"
           onClick={() => onChoose("game")}
           className="h-14 w-full gap-2 text-base"
         >
@@ -43,7 +42,6 @@ export function Landing({ onChoose }: LandingProps) {
         </Button>
         <Button
           type="button"
-          variant="outline"
           onClick={() => onChoose("music")}
           className="h-14 w-full gap-2 text-base"
         >

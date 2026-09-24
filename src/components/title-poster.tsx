@@ -79,7 +79,7 @@ export function TitlePoster(props: TitlePosterProps) {
     <figure className={cn("shrink-0", props.className)}>
       <div
         className={cn(
-          "overflow-hidden rounded-lg bg-muted/40 ring-1 ring-white/10",
+          "overflow-hidden rounded-lg bg-muted/50 text-primary ring-1 ring-primary/20",
           frame[size]
         )}
       >

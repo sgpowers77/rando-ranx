@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { EmptyCatalog } from "@/components/empty-catalog";
 import { EntryEditor } from "@/components/entry-editor";
 import { Landing } from "@/components/landing";
+import { StageLoading } from "@/components/stage-loading";
 import { ModePicker } from "@/components/mode-picker";
 import { ResultsTable } from "@/components/results-log";
 import { SessionLog } from "@/components/session-log";
@@ -154,7 +155,7 @@ export function RandoRanxApp() {
       (session.playMode === "tourney" && !tourneyPair));
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <AppHeader
         onHome={() => {
           stopEditing();
@@ -190,15 +191,11 @@ export function RandoRanxApp() {
 
         <main className={`no-print mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-3xl flex-1 flex-col px-4 sm:px-6 ${showTourney ? "py-3 lg:py-8" : "py-8"}`}>
           {status === "loading" ? (
-            <div className="flex flex-1 flex-col justify-center" role="status" aria-live="polite">
-              <p className="text-sm font-medium tracking-wide text-primary uppercase">
-                Loading
-              </p>
-              <h1 className="mt-2 font-heading text-3xl">Shuffling the stacks…</h1>
-              <p className="mt-2 text-muted-foreground">
-                Restoring anything you already ranked on this device.
-              </p>
-            </div>
+            <StageLoading
+              kicker="Loading"
+              title="Shuffling the stacks…"
+              body="Restoring anything you already ranked on this device."
+            />
           ) : null}
 
           {errorMessage ? (
@@ -247,15 +244,11 @@ export function RandoRanxApp() {
           ) : null}
 
           {showPoolLoading ? (
-            <div className="flex flex-1 flex-col justify-center" role="status" aria-live="polite">
-              <p className="text-sm font-medium tracking-wide text-primary uppercase">
-                Live catalog
-              </p>
-              <h1 className="mt-2 font-heading text-3xl">
-                {samplingHeadline(session.medium)}
-              </h1>
-              <p className="mt-2 text-muted-foreground">{samplingBody(session.medium)}</p>
-            </div>
+            <StageLoading
+              kicker="Live catalog"
+              title={samplingHeadline(session.medium)}
+              body={samplingBody(session.medium)}
+            />
           ) : null}
           {showRank && currentTitle ? (
             <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-4">
